@@ -1,0 +1,50 @@
+{
+  "name": "coin-hopper",
+  "productName": "Coin Hopper",
+  "version": "1.0.0",
+  "description": "Coin Hopper platformer",
+  "author": "Carlos Serrano",
+  "main": "main.js",
+  "scripts": {
+    "copy-index": "node copy-index.js"
+  },
+  "build": {
+    "appId": "com.guardian6b.coinhopper",
+    "productName": "Coin Hopper",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "icon.png"
+    ],
+    "icon": "icon.png",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3"
+  }
+}
