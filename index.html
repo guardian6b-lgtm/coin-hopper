@@ -3,10 +3,36 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Coin Hopper</title>
 <style>
-html,body{margin:0;height:100%;background:#1b1f3a;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
-canvas{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);image-rendering:auto;background:#7ec8ff}
+html,body{margin:0;height:100%;background:#1b1f3a;overflow:hidden;touch-action:auto;-webkit-user-select:none;user-select:none}
+canvas{touch-action:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);image-rendering:auto;background:#7ec8ff}
+button,input{font:inherit}
+[hidden]{display:none!important}
+#menu{position:fixed;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;background:rgba(15,22,48,.62);padding:16px;box-sizing:border-box;color:#f6f8ff;font:18px "Trebuchet MS",Verdana,sans-serif}
+.menu-panel{box-sizing:border-box;width:min(600px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:28px;border:2px solid #6b81ba;border-radius:24px;background:linear-gradient(150deg,#26375f,#192541);box-shadow:0 18px 70px #111a;border-top-color:#a9c1ff}
+.menu-panel h1{margin:0 0 8px;font-size:clamp(28px,5vw,48px);line-height:1.1;color:#ffd84a}
+.menu-panel p{line-height:1.5;margin:8px 0 20px;color:#dae7ff}
+#menu-content{line-height:1.5}#menu-content p{margin:8px 0}
+#menu-actions{display:grid;gap:10px;margin-top:20px}
+.menu-button,#pause-button{box-sizing:border-box;cursor:pointer;touch-action:manipulation;border:2px solid #788fc7;border-radius:12px;padding:12px 18px;color:#fff;background:#344b7a;font-weight:bold;min-height:48px}
+.menu-button:hover,#pause-button:hover{background:#456298}
+.menu-button.primary{color:#172445;background:#ffd84a;border-color:#ffe99a}.menu-button.primary:hover{background:#ffe77e}
+button:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:4px}
+.setting{display:grid;grid-template-columns:1fr auto;gap:8px 16px;margin:20px 0}
+.setting input{grid-column:1/-1;width:100%;min-height:36px;accent-color:#ffd84a;touch-action:pan-x}
+.setting output{color:#ffd84a;font-weight:bold}
+#pause-button{position:fixed;right:14px;top:14px;z-index:1;font:16px "Trebuchet MS",Verdana,sans-serif;padding:10px 16px}
+@media(max-height:560px){.menu-panel{padding:20px}.menu-panel h1{font-size:30px}.menu-panel p{margin-bottom:12px}#menu-actions{gap:8px;margin-top:12px}.menu-button{padding:9px 16px}}
 </style></head><body>
-<canvas id="c" width="960" height="540"></canvas>
+<canvas id="c" width="960" height="540" tabindex="-1" aria-label="Coin Hopper game. Move with arrows or A and D. Jump with Space, W, or Up. Pause with P or Escape."></canvas>
+<button id="pause-button" type="button" hidden aria-label="Pause game">Pause</button>
+<div id="menu" role="dialog" aria-modal="true" aria-labelledby="menu-title" aria-describedby="menu-description">
+  <section class="menu-panel">
+    <h1 id="menu-title"></h1>
+    <p id="menu-description"></p>
+    <div id="menu-content"></div>
+    <div id="menu-actions"></div>
+  </section>
+</div>
 <script>
 "use strict";
 const cv=document.getElementById('c'),cx=cv.getContext('2d');
@@ -75,11 +101,18 @@ function collide(e,ax){
 }
 
 // ---------- Sound ----------
-let ac=null;
-function audio(){if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(ac&&ac.state==='suspended')ac.resume();}
+const settings={music:.35,effects:.65};
+try{const saved=JSON.parse(localStorage.getItem('coinhopper_settings'));
+  for(const name of ['music','effects'])if(saved&&typeof saved[name]==='number'&&Number.isFinite(saved[name]))settings[name]=Math.max(0,Math.min(1,saved[name]));
+}catch(e){}
+let ac=null,effectsGain=null;
+function saveSettings(){try{localStorage.setItem('coinhopper_settings',JSON.stringify(settings));}catch(e){}}
+function applySettings(){if(effectsGain)effectsGain.gain.setValueAtTime(settings.effects,ac.currentTime);}
+function audio(){if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();effectsGain=ac.createGain();effectsGain.connect(ac.destination);applySettings();}catch(e){ac=null;effectsGain=null;}}
+  if(ac&&ac.state==='suspended'){const result=ac.resume();if(result&&result.catch)result.catch(()=>{});}}
 function snd(f,d,type='square',f2=null,vol=.12){if(!ac)return;const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;
   o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
-  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d);}
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(effectsGain);o.start(t);o.stop(t+d);}
 const SFX={jump:()=>snd(330,.18,'square',660,.08),coin:()=>{snd(988,.08);setTimeout(()=>snd(1319,.15),70);},
  stomp:()=>snd(400,.15,'triangle',120,.2),hurt:()=>snd(300,.5,'sawtooth',60,.12),
  win:()=>[523,659,784,1047].forEach((f,i)=>setTimeout(()=>snd(f,.2,'triangle',null,.15),i*130)),
@@ -88,40 +121,57 @@ const SFX={jump:()=>snd(330,.18,'square',660,.08),coin:()=>{snd(988,.08);setTime
 // ---------- Input ----------
 const keys={};let jumpEdge=false,anyEdge=false;
 const K={left:['ArrowLeft','KeyA'],right:['ArrowRight','KeyD'],jump:['Space','ArrowUp','KeyW']};
-addEventListener('keydown',e=>{audio();if(!keys[e.code]){if(K.jump.includes(e.code))jumpEdge=true;if(e.code==='KeyP')togglePause();
-  if(['Enter','Space'].includes(e.code))anyEdge=true;}keys[e.code]=true;if(e.code.startsWith('Arrow')||e.code==='Space')e.preventDefault();});
+addEventListener('keydown',e=>{
+  if(state!=='play'&&e.code==='Tab'){trapMenuFocus(e);return;}
+  if(e.repeat)return;
+  if(state!=='play'&&e.code==='Escape'){e.preventDefault();backFromMenu();return;}
+  if((e.code==='KeyP'||e.code==='Escape')&&(state==='play'||state==='pause')){e.preventDefault();togglePause();return;}
+  // Native menu buttons and range controls keep their standard keyboard behavior.
+  if(e.target&&e.target.closest&&e.target.closest('button,input,select,textarea,a'))return;
+  audio();
+  if(e.code==='KeyP'||e.code==='Escape'){e.preventDefault();togglePause();return;}
+  if(state==='play'){
+    if(!keys[e.code]&&K.jump.includes(e.code))jumpEdge=true;
+    keys[e.code]=true;
+  }else if(['title','done','over','win'].includes(state)&&['Enter','Space'].includes(e.code))anyEdge=true;
+  if(e.code.startsWith('Arrow')||e.code==='Space')e.preventDefault();
+});
 addEventListener('keyup',e=>{keys[e.code]=false;});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;if(state==='play')state='pause';});
-let touchMode=false;const tb={left:false,right:false,jump:false};
+addEventListener('blur',()=>{clearInput();if(state==='play')showMenu('pause');});
+let touchMode=false;const tb={left:false,right:false,jump:false,pause:false};
 const BTN={left:{x:70,y:H-70,r:48},right:{x:190,y:H-70,r:48},jump:{x:W-85,y:H-75,r:58},pause:{x:W-40,y:40,r:26}};
-function onTouch(e){e.preventDefault();audio();touchMode=true;const r=cv.getBoundingClientRect();
-  const now={left:false,right:false,jump:false,pause:false};
+function clearInput(){for(const k in keys)keys[k]=false;for(const b in tb)tb[b]=false;jumpEdge=false;anyEdge=false;}
+function onTouch(e){e.preventDefault();audio();touchMode=true;pauseButton.hidden=true;
+  if(state!=='play'){clearInput();return;}
+  const r=cv.getBoundingClientRect(),now={left:false,right:false,jump:false,pause:false};
   for(const t of e.touches){const x=(t.clientX-r.left)*W/r.width,y=(t.clientY-r.top)*H/r.height;
     for(const b in BTN){const B=BTN[b];if(Math.hypot(x-B.x,y-B.y)<B.r*1.35)now[b]=true;}
-    if(e.type==='touchstart'&&state!=='play')anyEdge=true;}
-  if(now.jump&&!tb.jump)jumpEdge=true;if(now.pause&&!tb.pause)togglePause();
-  Object.assign(tb,now);}
+  }
+  if(now.pause&&!tb.pause){showMenu('pause');return;}
+  if(now.jump&&!tb.jump)jumpEdge=true;
+  Object.assign(tb,now);
+}
 ['touchstart','touchmove','touchend','touchcancel'].forEach(n=>cv.addEventListener(n,onTouch,{passive:false}));
-cv.addEventListener('mousedown',()=>{audio();anyEdge=true;});
+cv.addEventListener('mousedown',()=>{audio();if(state==='play')cv.focus();});
 const held=a=>K[a].some(k=>keys[k])||tb[a];
 
 // ---------- Game state ----------
 let state='title',lvl=0,score=0,lives=3,best=0,cam=0,time=0,pl,levelScore=0,timer=0;
 try{best=+localStorage.getItem('coinhopper_best')||0;}catch(e){}
 function saveBest(){if(score>best){best=score;try{localStorage.setItem('coinhopper_best',best);}catch(e){}}}
-function togglePause(){if(state==='play')state='pause';else if(state==='pause')state='play';}
+function togglePause(){if(state==='play')showMenu('pause');else if(state==='pause')resumeGame();}
 function spawn(){pl={x:start.x,y:start.y,w:26,h:32,vx:0,vy:0,ground:false,coyote:0,buf:0,face:1,inv:1,squash:1};cam=Math.max(0,pl.x-W/3);}
-function startLevel(i){lvl=i;load(i);spawn();levelScore=0;timer=0;state='play';}
+function startLevel(i){lvl=i;load(i);spawn();levelScore=0;timer=0;state='play';syncMenu();}
 function newGame(){score=0;lives=3;startLevel(0);}
 function burst(x,y,col,n=10){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.5)*300,vy:-Math.random()*300,l:.6,col});}
-function hurt(){if(pl.inv>0)return;SFX.hurt();lives--;burst(pl.x+13,pl.y+16,'#ff6b6b',16);
-  if(lives<=0){saveBest();state='over';SFX.over();}else spawn();}
+// Stop the current update after damage: spawn() replaces the player object.
+function hurt(){if(state!=='play'||pl.inv>0)return false;SFX.hurt();lives--;burst(pl.x+13,pl.y+16,'#ff6b6b',16);
+  if(lives<=0){saveBest();state='over';SFX.over();syncMenu();}else spawn();return true;}
 
 function update(){
   time+=DT;
   if(state!=='play'){
-    if(anyEdge){if(state==='title')newGame();else if(state==='done'){if(lvl+1<LEVELS.length)startLevel(lvl+1);else{saveBest();state='win';SFX.win();}}
-      else if(state==='over'||state==='win')state='title';else if(state==='pause')state='play';}
+    if(anyEdge){if(state==='title'||state==='over')newGame();else if(state==='done')advanceLevel();else if(state==='win')showMenu('title');}
     anyEdge=false;jumpEdge=false;return;}
   anyEdge=false;timer+=DT;
   const p=pl,acc=p.ground?2600:1700,max=260;
@@ -140,24 +190,24 @@ function update(){
   if(p.y>ROWS*T+50){pl.inv=0;hurt();return;}
   // spikes
   const sx0=Math.floor((p.x+4)/T),sx1=Math.floor((p.x+p.w-4)/T),sy0=Math.floor((p.y+8)/T),sy1=Math.floor((p.y+p.h-1)/T);
-  for(let y=sy0;y<=sy1;y++)for(let x=sx0;x<=sx1;x++)if(y>=0&&y<ROWS&&x>=0&&x<LW&&grid[y][x]==='^'&&p.y+p.h>y*T+T*.45)hurt();
+  for(let y=sy0;y<=sy1;y++)for(let x=sx0;x<=sx1;x++)if(y>=0&&y<ROWS&&x>=0&&x<LW&&grid[y][x]==='^'&&p.y+p.h>y*T+T*.45){if(hurt())return;}
   // coins
   for(const c of coins)if(!c.got&&Math.abs(p.x+13-c.x)<24&&Math.abs(p.y+16-c.y)<28){c.got=1;score+=10;levelScore+=10;SFX.coin();burst(c.x,c.y,'#ffd84a',8);}
   // enemies
   for(const e of enemies){
-    if(e.dead){e.dead-=DT;continue;}
+    if(e.dead){e.dead-=DT;if(e.dead<=0)e.dead=-1;continue;}
     e.vy=Math.min(e.vy+1800*DT,900);e.x+=e.vx*DT;if(collide(e,'x'))e.vx*=-1;
     e.ground=false;e.y+=e.vy*DT;collide(e,'y');
     if(e.ground){const fx=Math.floor((e.vx>0?e.x+e.w+1:e.x-1)/T),fy=Math.floor((e.y+e.h+2)/T);if(!isSolid(fx,fy))e.vx*=-1;}
-    if(e.y>ROWS*T+50)e.dead=-99;
+    if(e.y>ROWS*T+50){e.dead=-1;continue;}
     if(p.x<e.x+e.w&&p.x+p.w>e.x&&p.y<e.y+e.h&&p.y+p.h>e.y){
       if(p.vy>0&&p.y+p.h-e.y<20){e.dead=.4;p.vy=held('jump')?-560:-380;score+=50;levelScore+=50;SFX.stomp();burst(e.x+14,e.y+14,'#9b5de5',12);}
-      else hurt();}
+      else if(hurt())return;}
   }
-  enemies=enemies.filter(e=>e.dead>=0||e.dead===0||e.dead>-1);
+  enemies=enemies.filter(e=>e.dead>=0);
   for(const q of parts){q.vy+=900*DT;q.x+=q.vx*DT;q.y+=q.vy*DT;q.l-=DT;}parts=parts.filter(q=>q.l>0);
   // flag
-  if(p.x+p.w>flag.x+10){const bonus=Math.max(0,300-Math.floor(timer)*5);score+=100+bonus;levelScore+=100+bonus;saveBest();state='done';SFX.win();}
+  if(p.x+p.w>flag.x+10){const bonus=Math.max(0,300-Math.floor(timer)*5);score+=100+bonus;levelScore+=100+bonus;saveBest();state='done';SFX.win();syncMenu();}
   const target=Math.max(0,Math.min(p.x-W/3,LW*T-W));cam+=(target-cam)*.12;
 }
 
@@ -211,7 +261,7 @@ function txt(s,x,y,size,col='#fff',al='center'){cx.font=`bold ${size}px "Trebuch
   cx.strokeStyle='rgba(0,0,0,.55)';cx.strokeText(s,x,y);cx.fillStyle=col;cx.fillText(s,x,y);}
 function hud(){txt('Score '+score,20,38,26,'#fff','left');txt('Best '+best,20,70,18,'#ffe38a','left');
   for(let i=0;i<lives;i++){const x=W/2-((lives-1)*18)+i*36;cx.fillStyle='#ff5d8f';cx.beginPath();cx.arc(x-6,24,8,0,7);cx.arc(x+6,24,8,0,7);cx.moveTo(x-14,27);cx.lineTo(x,42);cx.lineTo(x+14,27);cx.fill();}
-  txt('Level '+(lvl+1)+': '+LEVELS[lvl].name,W-(touchMode?80:20),38,20,'#fff','right');}
+  txt('Level '+(lvl+1)+': '+LEVELS[lvl].name,touchMode?W-80:W/2,touchMode?38:76,20,'#fff',touchMode?'right':'center');}
 function touchUI(){if(!touchMode)return;cx.globalAlpha=.45;
   for(const b in BTN){const B=BTN[b];cx.fillStyle=tb[b]?'#fff':'#000';cx.beginPath();cx.arc(B.x,B.y,B.r,0,7);cx.fill();}
   cx.globalAlpha=.9;cx.fillStyle='#fff';const a=BTN.left,r=BTN.right,j=BTN.jump,p=BTN.pause;
@@ -219,24 +269,124 @@ function touchUI(){if(!touchMode)return;cx.globalAlpha=.45;
   cx.beginPath();cx.moveTo(r.x+18,r.y);cx.lineTo(r.x-12,r.y-20);cx.lineTo(r.x-12,r.y+20);cx.fill();
   cx.beginPath();cx.moveTo(j.x,j.y-24);cx.lineTo(j.x+24,j.y+14);cx.lineTo(j.x-24,j.y+14);cx.fill();
   cx.fillRect(p.x-9,p.y-11,6,22);cx.fillRect(p.x+3,p.y-11,6,22);cx.globalAlpha=1;}
-function panel(){cx.fillStyle='rgba(20,20,50,.55)';cx.fillRect(0,0,W,H);}
-const tap=()=>touchMode?'Tap':'Press Enter or Space';
 function draw(){
-  if(state==='title'){lvl=0;if(!grid)load(0);cam=(Math.sin(time*.2)*.5+.5)*(LW*T-W);drawBG();drawTiles();
-    panel();txt('COIN HOPPER',W/2,170,78,'#ffd84a');txt('Jump, stomp, and grab every coin!',W/2,230,26);
-    if(Math.floor(time*2)%2)txt(tap()+' to start',W/2,320,30,'#aef');
-    txt('Move: Arrows / A D    Jump: Space / W / Up    Pause: P',W/2,400,20,'#fff');txt('Best score: '+best,W/2,450,24,'#ffe38a');touchUI();return;}
-  drawWorld();hud();touchUI();
-  if(state==='pause'){panel();txt('PAUSED',W/2,240,64);txt('Press P '+(touchMode?'or tap ':'')+'to keep playing',W/2,300,24);}
-  if(state==='done'){panel();txt('Level Complete!',W/2,200,60,'#ffd84a');txt('Level points: '+levelScore,W/2,260,28);txt('Score: '+score,W/2,300,28);
-    txt(tap()+(lvl+1<LEVELS.length?' for the next level':' to finish'),W/2,370,24,'#aef');}
-  if(state==='over'){panel();txt('Game Over',W/2,220,64,'#ff8fa8');txt('Score: '+score+'   Best: '+best,W/2,280,28);txt(tap()+' to try again',W/2,350,24,'#aef');}
-  if(state==='win'){panel();txt('YOU WIN!',W/2,200,72,'#ffd84a');txt('Final score: '+score,W/2,270,32);txt(score>=best?'New best score!':'Best: '+best,W/2,315,26,'#ffe38a');txt(tap()+' for the title screen',W/2,380,24,'#aef');}
+  if(!pl||['title'].includes(state)||(['controls','settings'].includes(state)&&menuReturn==='title')){
+    lvl=0;if(!grid)load(0);cam=(Math.sin(time*.2)*.5+.5)*(LW*T-W);drawBG();drawTiles();return;
+  }
+  drawWorld();hud();if(state==='play')touchUI();
 }
+
+// ---------- Menus ----------
+const menu=document.getElementById('menu'),menuTitle=document.getElementById('menu-title'),
+  menuDescription=document.getElementById('menu-description'),menuContent=document.getElementById('menu-content'),
+  menuActions=document.getElementById('menu-actions'),pauseButton=document.getElementById('pause-button');
+let menuReturn='title',menuItems=[];
+function showMenu(screen,returnTo=menuReturn){if(screen==='title'){lvl=0;load(0);pl=null;cam=0;}state=screen;menuReturn=returnTo;syncMenu();}
+function resumeGame(){state='play';syncMenu();}
+function requestRestart(){showMenu('restart','pause');}
+function confirmRestart(){
+  if(state!=='restart')return;
+  const keptScore=score-levelScore,remainingLives=lives;
+  startLevel(lvl);score=keptScore;lives=remainingLives;
+}
+function advanceLevel(){
+  if(lvl+1<LEVELS.length)startLevel(lvl+1);
+  else{saveBest();state='win';SFX.win();syncMenu();}
+}
+function backFromMenu(){
+  if(state==='pause')resumeGame();
+  else if(state==='restart')showMenu('pause');
+  else if(state==='settings'||state==='controls')showMenu(menuReturn);
+}
+function activateMenuAction(action){
+  audio();
+  if(action==='play'||action==='retry')newGame();
+  else if(action==='resume')resumeGame();
+  else if(action==='restart')requestRestart();
+  else if(action==='confirm-restart')confirmRestart();
+  else if(action==='cancel-restart')showMenu('pause');
+  else if(action==='next')advanceLevel();
+  else if(action==='title'){saveBest();showMenu('title','title');}
+  else if(action==='controls'||action==='settings')showMenu(action,state==='pause'?'pause':'title');
+  else if(action==='back')showMenu(menuReturn);
+}
+function menuButton(label,action,primary=false){
+  const button=document.createElement('button');button.type='button';button.className='menu-button'+(primary?' primary':'');
+  const screen=state;button.textContent=label;button.addEventListener('click',()=>{if(state===screen)activateMenuAction(action);});
+  menuActions.appendChild(button);menuItems.push(button);
+}
+function menuParagraph(text){const p=document.createElement('p');p.textContent=text;menuContent.appendChild(p);}
+function volumeControl(name,label){
+  const row=document.createElement('label');row.className='setting';row.htmlFor=name+'-volume';
+  const text=document.createElement('span');text.textContent=label;
+  const value=document.createElement('output');value.textContent=Math.round(settings[name]*100)+'%';value.htmlFor=name+'-volume';
+  const input=document.createElement('input');input.type='range';input.id=name+'-volume';input.min='0';input.max='100';input.step='5';input.value=String(Math.round(settings[name]*100));
+  input.setAttribute('aria-label',label);
+  input.addEventListener('input',()=>{settings[name]=Math.max(0,Math.min(100,Number(input.value)))/100;value.textContent=Math.round(settings[name]*100)+'%';applySettings();saveSettings();});
+  row.appendChild(text);row.appendChild(value);row.appendChild(input);menuContent.appendChild(row);menuItems.push(input);
+}
+function trapMenuFocus(e){
+  if(!menuItems.length)return;
+  e.preventDefault();const index=menuItems.indexOf(document.activeElement);
+  const next=index<0?(e.shiftKey?menuItems.length-1:0):(index+(e.shiftKey?-1:1)+menuItems.length)%menuItems.length;
+  menuItems[next].focus();
+}
+function syncMenu(){
+  clearInput();const playing=state==='play';menu.hidden=playing;pauseButton.hidden=playing?touchMode:true;
+  cv.tabIndex=playing?0:-1;cv.setAttribute('aria-hidden',playing?'false':'true');
+  if(playing){cv.focus();return;}
+  menuContent.replaceChildren();menuActions.replaceChildren();menuItems=[];
+  const titles={title:'COIN HOPPER',pause:'Paused',controls:'How to play',settings:'Sound settings',restart:'Restart this level?',done:'Level complete!',over:'Game over',win:'You win!'};
+  const descriptions={
+    title:'Jump, stomp, and grab every coin!',
+    pause:'Take a breather. Your run is paused.',
+    controls:'A short hop or a big leap. You choose.',
+    settings:'Adjust the sound to suit you.',
+    restart:'Your points and coins from this level will reset. Your remaining lives stay the same.',
+    done:LEVELS[lvl].name+' complete.',
+    over:'Ready for another run?',
+    win:'All '+LEVELS.length+' levels complete. Nicely done!'
+  };
+  menuTitle.textContent=titles[state]||'Coin Hopper';menuDescription.textContent=descriptions[state]||'';
+  if(state==='title'){
+    menuParagraph('Best score: '+best);
+    menuButton('Play','play',true);menuButton('Controls','controls');menuButton('Settings','settings');
+  }else if(state==='pause'){
+    menuButton('Resume','resume',true);menuButton('Restart level','restart');menuButton('Controls','controls');menuButton('Settings','settings');menuButton('Title screen','title');
+  }else if(state==='controls'){
+    menuParagraph('Move: Arrow keys or A / D.');
+    menuParagraph('Jump: Space, W, or Up. Hold for a higher jump. Land on enemies to stomp them.');
+    menuParagraph('Pause: P or Escape, or use Pause on screen. On phones, use the arrow and jump buttons.');
+    menuParagraph('Use Tab to move between menu controls, Enter or Space to choose, and Escape to go back.');
+    menuButton('Back','back',true);
+  }else if(state==='settings'){
+    volumeControl('effects','Sound effects');
+    volumeControl('music','Music volume');
+    menuParagraph('Music is coming soon. Your volume choice is saved.');
+    menuButton('Back','back',true);
+  }else if(state==='restart'){
+    menuButton('Cancel','cancel-restart',true);menuButton('Restart level','confirm-restart');
+  }else if(state==='done'){
+    menuParagraph('Coins: '+coins.filter(c=>c.got).length+' / '+coins.length);
+    menuParagraph('Level points: '+levelScore+'   Total score: '+score);
+    menuButton(lvl+1<LEVELS.length?'Next level':'Finish','next',true);menuButton('Title screen','title');
+  }else if(state==='over'){
+    menuParagraph('Score: '+score+'   Best: '+best);
+    menuButton('Try again','retry',true);menuButton('Title screen','title');
+  }else if(state==='win'){
+    menuParagraph('Final score: '+score+'   Best: '+best);
+    menuButton('Title screen','title',true);
+  }
+  menuItems[0]?.focus();
+}
+pauseButton.addEventListener('click',()=>{audio();if(state==='play')showMenu('pause','pause');});
+menu.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')touchMode=true;});
+menu.addEventListener('touchstart',()=>{touchMode=true;},{passive:true});
 
 // ---------- Loop: fixed 60 Hz step ----------
 let last=performance.now(),accum=0;
 function frame(now){accum+=Math.min(.25,(now-last)/1000);last=now;
   while(accum>=DT){update();accum-=DT;}draw();requestAnimationFrame(frame);}
+syncMenu();
 requestAnimationFrame(frame);
 </script></body></html>
