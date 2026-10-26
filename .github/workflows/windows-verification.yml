@@ -1,0 +1,113 @@
+name: Windows verification
+
+on:
+  push:
+    branches: [codex/moonlit-gardens]
+    paths:
+      - index.html
+      - desktop/**
+      - tests/**
+      - scripts/verify-executable.cjs
+      - .github/workflows/windows-verification.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-verification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-x64:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - name: Initialize temporary artifacts
+        shell: pwsh
+        run: |
+          $bundle = Join-Path $env:RUNNER_TEMP 'coin-hopper-windows-artifacts'
+          New-Item -ItemType Directory -Force $bundle | Out-Null
+          "WINDOWS_ARTIFACTS=$bundle" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          @{ commit=$env:GITHUB_SHA; run=$env:GITHUB_RUN_ID; platform='windows-x64'; published=$false } |
+            ConvertTo-Json | Set-Content (Join-Path $bundle 'build.json')
+      - name: Run all gameplay tests and four recorded routes
+        shell: pwsh
+        run: |
+          node --test --test-reporter=tap | Tee-Object -FilePath "$env:WINDOWS_ARTIFACTS/gameplay.tap"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install locked desktop dependencies
+        working-directory: desktop
+        run: npm ci
+      - name: Prepare the pinned Electron runtime
+        working-directory: desktop
+        run: node node_modules/electron/install.js
+      - name: Copy the PR game page
+        working-directory: desktop
+        run: npm run copy-index
+      - name: Check the copied page matches the PR head
+        shell: pwsh
+        run: |
+          if ((Get-FileHash index.html).Hash -ne (Get-FileHash desktop/index.html).Hash) {
+            throw 'Desktop page differs from PR source'
+          }
+      - name: Build Windows x64 NSIS and portable without publishing
+        id: build
+        working-directory: desktop
+        run: npx --no-install electron-builder --win nsis portable --x64 --publish never
+      - name: Retain executables and checksums
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem desktop/dist -Filter *.exe -File)
+          if ($files.Count -ne 2) { throw "Expected NSIS and portable executables; got $($files.Count)" }
+          $files | Copy-Item -Destination $env:WINDOWS_ARTIFACTS
+          $files | Sort-Object Name | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          } | Set-Content "$env:WINDOWS_ARTIFACTS/SHA256SUMS.txt"
+      - name: Install isolated smoke-test tools
+        id: smoke_tools
+        shell: pwsh
+        run: |
+          npm install --prefix "$env:RUNNER_TEMP/coin-hopper-smoke-tools" --no-save --package-lock=false playwright@1.62.0
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "NODE_PATH=$env:RUNNER_TEMP/coin-hopper-smoke-tools/node_modules" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Silently install and smoke-test the NSIS application
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.smoke_tools.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          $installer = @(Get-ChildItem desktop/dist -Filter '*Setup*.exe' -File)
+          if ($installer.Count -ne 1) { throw 'Expected exactly one NSIS installer' }
+          $installDir = Join-Path $env:RUNNER_TEMP 'coin-hopper-installed'
+          $process = Start-Process -FilePath $installer[0].FullName -ArgumentList @('/S', "/D=$installDir") -PassThru
+          if (-not $process.WaitForExit(180000)) { $process.Kill(); throw 'NSIS installation timed out' }
+          if ($process.ExitCode -ne 0) { throw "NSIS install exited $($process.ExitCode)" }
+          $exe = Join-Path $installDir 'Coin Hopper.exe'
+          if (-not (Test-Path $exe)) { throw 'Installed executable missing' }
+          node scripts/verify-executable.cjs --executable "$exe" --label nsis-installed --output "$env:WINDOWS_ARTIFACTS"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Smoke-test the actual portable executable
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.smoke_tools.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          $portable = @(Get-ChildItem desktop/dist -Filter '*.exe' -File | Where-Object Name -NotLike '*Setup*')
+          if ($portable.Count -ne 1) { throw 'Expected exactly one portable executable' }
+          node scripts/verify-executable.cjs --executable "$($portable[0].FullName)" --label portable --output "$env:WINDOWS_ARTIFACTS"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload temporary executable and verification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coin-hopper-windows-x64-verification
+          path: ${{ runner.temp }}/coin-hopper-windows-artifacts/
+          if-no-files-found: error
+          retention-days: 7

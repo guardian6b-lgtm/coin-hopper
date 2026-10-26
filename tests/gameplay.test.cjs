@@ -11,8 +11,8 @@ const originalLevels = [
 
 test('all three original maps, names, and order stay unchanged', () => {
   const levels = createGame().snapshot('LEVELS');
-  assert.equal(levels.length, originalLevels.length);
-  for (let i = 0; i < levels.length; i++) {
+  assert.equal(levels.length, 4);
+  for (let i = 0; i < originalLevels.length; i++) {
     assert.equal(levels[i].name, originalLevels[i][0]);
     assert.equal(crypto.createHash('sha256').update(levels[i].map.join('\n')).digest('hex'), originalLevels[i][1]);
   }
@@ -240,12 +240,12 @@ test('pause and blur freeze player, enemies, level timer, and score', () => {
   assert.equal(game.eval('held("right")'), false);
 });
 
-test('completion scores once, advances all three levels, and saves the best score', () => {
+test('completion scores once, advances all four levels, and saves the best score', () => {
   const game = createGame();
   game.event('keydown', { code: 'Enter' });
   game.step();
   game.event('keyup', { code: 'Enter' });
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     assert.equal(game.eval('lvl'), i);
     game.eval('enemies=[];pl.x=flag.x;pl.vx=0;timer=10');
     game.step();
@@ -259,16 +259,16 @@ test('completion scores once, advances all three levels, and saves the best scor
     game.event('keyup', { code: 'Enter' });
   }
   assert.equal(game.eval('state'), 'win');
-  assert.equal(game.storage.get('coinhopper_best'), '1050');
+  assert.equal(game.storage.get('coinhopper_best'), '1400');
   const reloaded = createGame({ saved: Object.fromEntries(game.storage) });
-  assert.equal(reloaded.eval('best'), 1050);
+  assert.equal(reloaded.eval('best'), 1400);
   game.event('keydown', { code: 'Enter' });
   game.step();
   game.event('keyup', { code: 'Enter' });
   assert.equal(game.eval('state'), 'title');
   game.event('keydown', { code: 'Enter' });
   game.step();
-  assert.deepEqual(game.snapshot('({lvl,lives,score,best})'), { lvl: 0, lives: 3, score: 0, best: 1050 });
+  assert.deepEqual(game.snapshot('({lvl,lives,score,best})'), { lvl: 0, lives: 3, score: 0, best: 1400 });
 });
 
 test('the actual animation loop draws title and gameplay without throwing', () => {
