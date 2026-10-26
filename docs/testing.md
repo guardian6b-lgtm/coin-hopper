@@ -1,5 +1,9 @@
 # Baseline verification
 
+For the stacked character powers, see [ability rules](abilities.md) and the
+[135-test, 38-browser-check verification report](abilities-verification.md).
+The checklist below remains the shared baseline.
+
 Visual V1 adds character selection before Start game. The
 [character design/verification note](character-select.md) covers the new flow,
 versioned preference, identical-gameplay checks and screenshot evidence.

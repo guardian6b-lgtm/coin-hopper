@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const routes = require('../tests/fixtures/routes.cjs');
+const verifyAbilities = require('./ability-browser-checks.cjs');
 
 const output = process.env.COIN_HOPPER_TEST_OUTPUT || path.join(os.tmpdir(), 'coin-hopper-browser-check');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'));
@@ -210,6 +211,7 @@ async function main() {
     await bp.getByRole('button', { name: 'Start game', exact: true }).click();
     assert.equal(await bp.evaluate('pl.character'), 'ember');
     await blocked.close();results.push('PASS blocked browser storage safely permits character choice and gameplay');
+    results.push(...await verifyAbilities(browser, url, output));
     assert.deepEqual(errors, []);
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ browser: browser.version(), results, errors }, null, 2));
     console.log(results.join('\n'));

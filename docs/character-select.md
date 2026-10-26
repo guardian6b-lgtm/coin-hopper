@@ -1,5 +1,10 @@
 # Visual V1: Choose Your Hopper
 
+This document records the isolated **Issue #4 foundation**. On the separate
+`codex/character-abilities` branch, [Issue #5 adds explicitly activated powers](abilities.md).
+Its current verification is in [the abilities report](abilities-verification.md);
+the historical counts and cosmetic-only scope below describe the parent change.
+
 Implements [Issue #4](https://github.com/guardian6b-lgtm/coin-hopper/issues/4) on
 `codex/character-select-redesign`, based on verified `codex/moonlit-gardens`
 `f2c87511898f9ccdbd01f8ebe8bae10380083ea0`. The draft PR targets that branch.

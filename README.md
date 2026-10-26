@@ -2,9 +2,11 @@
 
 A small self-contained browser platformer. Jump across the levels, stomp enemies, and grab every coin.
 
-**Visual V1:** choose Hopper, Minty, Ember, Nova, or Bolt before a new run. All five
-are cosmetic-only: the same hitbox, movement, jumps, collisions, shields, and scores.
-The new rounded portraits and player artwork are drawn locally on canvas.
+Choose Hopper, Minty, Ember, Nova, or Bolt before a new run. Each now has an
+optional special ability: **Crown Slam, Vine Snare, Fireball, Star Glide, or
+Chain Lightning**. Shared movement, jumps, hitboxes and scoring stay the same;
+only an explicitly activated power changes play. Rounded portraits, characters
+and power effects are drawn locally on canvas.
 
 This branch adds **Moonlit Gardens**, a fourth level with a crescent moon, glowing
 garden scenery, mint leaf-eared hopping enemies, and collectible cyan shields.
@@ -16,6 +18,8 @@ Play it here: https://guardian6b-lgtm.github.io/coin-hopper/
 
 - **Move:** Arrow keys or A / D
 - **Jump:** Space, Up, or W — hold for a higher jump
+- **Ability:** E or the separate on-screen Ability button. Hopper and Nova must
+  be airborne. The compact skill HUD shows readiness and cooldown.
 - **Pause / resume:** P or Escape, or use the on-screen Pause button
 - **Phones:** on-screen touch buttons
 - **Menus:** Tab / Shift+Tab to move, Enter or Space to choose, Escape to go back
@@ -26,7 +30,10 @@ Start game saves your confirmed character where browser storage is available.
 Missing, invalid, or blocked storage safely defaults to Hopper. Death, restart,
 level changes, and Try again keep your character. Controls and Settings remain
 available; they never change a running game's character. See the
-[cosmetic-only design note and verification](docs/character-select.md).
+[character-selection foundation](docs/character-select.md). Issue #4 stays
+cosmetic-only on its own branch; this stacked Issue #5 branch adds the powers.
+See [ability rules and provisional balance](docs/abilities.md) and
+[the PASS / FAIL / NOT TESTED report](docs/abilities-verification.md).
 
 Use Settings to save separate effects and music volume preferences. Music playback
 will arrive in a later upgrade. Restart level asks for confirmation, resets that
