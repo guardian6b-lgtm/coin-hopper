@@ -1,5 +1,9 @@
 # Baseline verification
 
+Visual V1 adds character selection before Start game. The
+[character design/verification note](character-select.md) covers the new flow,
+versioned preference, identical-gameplay checks and screenshot evidence.
+
 For the completed PR #1 technical verification, results, and remaining manual checks,
 see [the verification report](verification-pr-1.md).
 

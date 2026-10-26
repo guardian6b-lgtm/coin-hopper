@@ -212,7 +212,7 @@ test('level transitions and a new run reset protection and show four-level compl
   game.click('Finish');
   assert.equal(game.eval('state'), 'win');
   assert.match(game.element('menu-description').textContent, /All 4 levels complete/);
-  game.click('Title screen');game.click('Play');
+  game.click('Title screen');game.click('Play');game.click('Start game');
   assert.equal(game.eval('lvl===0 && !pl.shield && shields.length===0 && lives===3 && score===0'), true);
 });
 

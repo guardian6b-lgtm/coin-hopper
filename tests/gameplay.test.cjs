@@ -245,6 +245,8 @@ test('completion scores once, advances all four levels, and saves the best score
   game.event('keydown', { code: 'Enter' });
   game.step();
   game.event('keyup', { code: 'Enter' });
+  assert.equal(game.eval('state'), 'characters');
+  game.click('Start game');
   for (let i = 0; i < 4; i++) {
     assert.equal(game.eval('lvl'), i);
     game.eval('enemies=[];pl.x=flag.x;pl.vx=0;timer=10');
@@ -268,6 +270,7 @@ test('completion scores once, advances all four levels, and saves the best score
   assert.equal(game.eval('state'), 'title');
   game.event('keydown', { code: 'Enter' });
   game.step();
+  game.click('Start game');
   assert.deepEqual(game.snapshot('({lvl,lives,score,best})'), { lvl: 0, lives: 3, score: 0, best: 1400 });
 });
 
@@ -276,5 +279,8 @@ test('the actual animation loop draws title and gameplay without throwing', () =
   assert.doesNotThrow(() => game.frame(17));
   game.event('keydown', { code: 'Enter' });
   assert.doesNotThrow(() => game.frame(34));
+  assert.equal(game.eval('state'), 'characters');
+  game.click('Start game');
+  assert.doesNotThrow(() => game.frame(51));
   assert.equal(game.eval('state'), 'play');
 });

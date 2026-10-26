@@ -35,7 +35,7 @@ for (const [index, route] of routes.entries()) {
 
 test('a continuous run completes all four levels in order using native menu actions', () => {
   const game = createGame();
-  game.click('Play');
+  game.click('Play');game.click('Start game');
   for (const [index, route] of routes.entries()) {
     game.event('keydown', { code: 'ArrowRight' });
     let nextJump = 0;
