@@ -33,6 +33,55 @@ async function main() {
     assert.match(await page.locator('#menu-content').innerText(), /shields absorb one enemy or spike hit/);
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Play', exact: true }).click();
+    assert.equal(await page.locator('#menu-title').innerText(), 'Choose Your Hopper');
+    assert.equal(await page.locator('.character-card').count(), 5);
+    assert.equal(await page.locator('#character-hopper').evaluate(el => el === document.activeElement), true);
+    await page.keyboard.press('ArrowLeft');
+    assert.equal(await page.locator('#character-bolt').getAttribute('aria-pressed'), 'true');
+    await page.keyboard.press('Home');await page.keyboard.press('ArrowRight');await page.keyboard.press('Space');
+    assert.equal(await page.evaluate('state'), 'characters');
+    assert.equal(await page.locator('#character-minty').getAttribute('aria-pressed'), 'true');
+    await page.keyboard.press('End');await page.keyboard.press('Tab');
+    assert.equal(await page.getByRole('button', { name: 'Start game', exact: true }).evaluate(el => el === document.activeElement), true);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate('state'), 'title');
+    assert.equal(await page.evaluate("localStorage.getItem('coinhopper_character_v1')"), null);
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    await page.getByRole('button', { name: 'Nova', exact: true }).click();
+    const portraits = await page.locator('.character-card canvas').evaluateAll(canvases => canvases.map(c => c.toDataURL()));
+    assert.equal(new Set(portraits).size, 5, 'all five portraits have distinct artwork');
+    await page.screenshot({ path: path.join(output, 'character-select-desktop.png') });
+    await page.getByRole('button', { name: 'Start game', exact: true }).click();
+    assert.equal(await page.evaluate('pl.character'), 'nova');
+    await page.reload();
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    assert.equal(await page.locator('#character-nova').getAttribute('aria-pressed'), 'true');
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    assert.equal(await page.getByRole('button', { name: 'Play', exact: true }).evaluate(el => el === document.activeElement), true);
+    results.push('PASS five distinct portraits, mouse/keyboard selection, cancellation, focus and real reload persistence');
+    for (const size of [{ width: 390, height: 844 }, { width: 320, height: 240 }, { width: 844, height: 390 }]) {
+      await page.setViewportSize(size);
+      await page.getByRole('button', { name: 'Play', exact: true }).click();
+      for (const name of ['Hopper', 'Minty', 'Ember', 'Nova', 'Bolt', 'Start game', 'Back']) {
+        const button = page.getByRole('button', { name, exact: true });
+        await button.scrollIntoViewIfNeeded();
+        const rect = await button.boundingBox();
+        assert.ok(rect.width >= 44 && rect.height >= 44, name);
+        assert.ok(rect.x >= -1 && rect.x + rect.width <= size.width + 1, name);
+        assert.ok(rect.y >= -1 && rect.y + rect.height <= size.height + 1, JSON.stringify({ name, rect, size }));
+      }
+      assert.equal(await page.evaluate('document.documentElement.scrollWidth<=innerWidth'), true);
+      if (size.height === 844) {
+        await page.locator('#character-hopper').scrollIntoViewIfNeeded();
+        await page.screenshot({ path: path.join(output, 'character-select-mobile.png') });
+      }
+      await page.getByRole('button', { name: 'Back', exact: true }).click();
+    }
+    results.push('PASS responsive picker and reachable 44px+ controls at portrait, landscape and 320x240');
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
+    await page.getByRole('button', { name: 'Start game', exact: true }).click();
+
     // Isolated scenario setup for new mechanics; no shipped test hooks.
     await page.evaluate('startLevel(3)');
     await page.waitForFunction('pl.ground');
@@ -57,16 +106,18 @@ async function main() {
     await page.evaluate('pl.shield=true;pl.y=ROWS*T+60');
     await page.waitForFunction('lives===2');
     assert.equal(await page.evaluate('pl.shield'), false);
+    assert.equal(await page.evaluate('pl.character'), 'nova');
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Restart level', exact: true }).click();
     await page.getByRole('button', { name: 'Restart level', exact: true }).click();
     assert.equal(await page.evaluate('!pl.shield && shields.every(s=>!s.got) && lives===2'), true);
+    assert.equal(await page.evaluate('pl.character'), 'nova');
     results.push('PASS live keyboard shield pickup, protected hit, fatal pit, pause/settings/resume and restart');
 
     for (const size of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
       await page.setViewportSize(size);
       await page.waitForTimeout(30);
-      const rect = await page.locator('canvas').boundingBox();
+      const rect = await page.locator('#c').boundingBox();
       assert.ok(rect.width <= size.width + .1 && rect.height <= size.height + .1);
       assert.ok(Math.abs(rect.width / rect.height - 960 / 540) < .01);
     }
@@ -80,32 +131,40 @@ async function main() {
     await replay.addInitScript(() => { window.requestAnimationFrame = () => 1; });
     const rp = await replay.newPage();
     rp.on('pageerror', error => errors.push(error.message));
-    await rp.goto(url);
-    await rp.getByRole('button', { name: 'Play', exact: true }).click();
-    for (const [index, route] of routes.entries()) {
-      await rp.keyboard.down('ArrowRight');
-      let tick = 0;
-      for (const [next, down] of [...route.jump, [1100, false]]) {
-        if (await rp.evaluate('state') !== 'play') break;
-        await rp.evaluate(count => {
-          for (let i = 0; i < count && state === 'play'; i++) { update(); draw(); }
-        }, next - tick);
-        tick = next;
-        if (await rp.evaluate('state') !== 'play') break;
-        await rp.keyboard[down ? 'down' : 'up']('Space');
+    for (const id of ['hopper', 'minty', 'ember', 'nova', 'bolt']) {
+      await rp.goto(url);
+      await rp.getByRole('button', { name: 'Play', exact: true }).click();
+      await rp.locator('#character-' + id).click();
+      await rp.getByRole('button', { name: 'Start game', exact: true }).click();
+      let captured = false;
+      for (const [index, route] of routes.entries()) {
+        await rp.keyboard.down('ArrowRight');let tick = 0;
+        for (const [next, down] of [...route.jump, [1100, false]]) {
+          if (await rp.evaluate('state') !== 'play') break;
+          await rp.evaluate(count => {
+            for (let i = 0; i < count && state === 'play'; i++) { update();draw(); }
+          }, next - tick);
+          tick = next;
+          if (!captured && index === 0 && tick >= 100) {
+            await rp.screenshot({ path: path.join(output, `gameplay-${id}.png`) });captured = true;
+          }
+          if (await rp.evaluate('state') !== 'play') break;
+          await rp.keyboard[down ? 'down' : 'up']('Space');
+        }
+        assert.equal(await rp.evaluate('state'), 'done', route.name);
+        assert.equal(await rp.evaluate('lvl'), index);
+        assert.equal(await rp.evaluate('lives'), 3);
+        assert.equal(await rp.evaluate('pl.character'), id);
+        assert.equal(await rp.evaluate('shields.some(s=>s.got)'), false);
+        await rp.keyboard.up('ArrowRight');await rp.keyboard.up('Space');
+        if (index === 3 && id === 'nova') await rp.screenshot({ path: path.join(output, 'moonlit-complete.png') });
+        await rp.getByRole('button', { name: index === 3 ? 'Finish' : 'Next level', exact: true }).click();
+        results.push(`PASS browser route and character appearance: ${id} / ${route.name}`);
       }
-      assert.equal(await rp.evaluate('state'), 'done', route.name);
-      assert.equal(await rp.evaluate('lvl'), index);
-      assert.equal(await rp.evaluate('lives'), 3);
-      assert.equal(await rp.evaluate('shields.some(s=>s.got)'), false);
-      await rp.keyboard.up('ArrowRight');
-      await rp.keyboard.up('Space');
-      if (index === 3) await rp.screenshot({ path: path.join(output, 'moonlit-complete.png') });
-      await rp.getByRole('button', { name: index === 3 ? 'Finish' : 'Next level', exact: true }).click();
-      results.push(`PASS real-browser deterministic input route, no damage/shields: ${route.name}`);
+      assert.equal(await rp.evaluate('state'), 'win');
+      assert.equal(await rp.evaluate('score'), 2190);
     }
-    assert.equal(await rp.evaluate('state'), 'win');
-    results.push('PASS continuous four-level browser run reaches Win');
+    results.push('PASS all five characters complete four levels with identical score/lives and no shield pickup');
     await replay.close();
 
     const mobile = await browser.newContext({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
@@ -113,11 +172,15 @@ async function main() {
     mp.on('pageerror', error => errors.push(error.message));
     await mp.goto(url);
     await mp.getByRole('button', { name: 'Play', exact: true }).tap();
+    await mp.getByRole('button', { name: 'Bolt', exact: true }).tap();
+    await mp.screenshot({ path: path.join(output, 'character-select-touch-landscape.png') });
+    await mp.getByRole('button', { name: 'Start game', exact: true }).tap();
+    assert.equal(await mp.evaluate('pl.character'), 'bolt');
     await mp.evaluate('startLevel(3)');
     await mp.waitForFunction('pl.ground');
     const cdp = await mobile.newCDPSession(mp);
     async function touch(type, points) {
-      const rect = await mp.locator('canvas').boundingBox();
+      const rect = await mp.locator('#c').boundingBox();
       await cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(([id, x, y]) => ({
         id, x: rect.x + x * rect.width / 960, y: rect.y + y * rect.height / 540, radiusX: 3, radiusY: 3,
       })) });
@@ -137,8 +200,16 @@ async function main() {
     await mp.waitForTimeout(50);
     await mp.screenshot({ path: path.join(output, 'moonlit-mobile-portrait.png') });
     assert.equal(await mp.evaluate('pl.shield && !held("right") && !held("jump")'), true);
-    results.push('PASS simulated mobile pickup, multi-touch move/jump, cancellation, pause/resume and rotation');
+    results.push('PASS touch character selection and simulated mobile pickup, multi-touch move/jump, cancellation, pause/resume and rotation');
     await mobile.close();
+    const blocked = await browser.newContext();
+    await blocked.addInitScript(() => Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('Blocked by test', 'SecurityError'); } }));
+    const bp = await blocked.newPage();bp.on('pageerror', error => errors.push(error.message));
+    await bp.goto(url);await bp.getByRole('button', { name: 'Play', exact: true }).click();
+    await bp.getByRole('button', { name: 'Ember', exact: true }).click();
+    await bp.getByRole('button', { name: 'Start game', exact: true }).click();
+    assert.equal(await bp.evaluate('pl.character'), 'ember');
+    await blocked.close();results.push('PASS blocked browser storage safely permits character choice and gameplay');
     assert.deepEqual(errors, []);
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ browser: browser.version(), results, errors }, null, 2));
     console.log(results.join('\n'));

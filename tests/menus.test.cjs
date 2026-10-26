@@ -14,7 +14,7 @@ test('title presents native menu actions and controls return to the title', () =
   assert.match(game.element('menu-content').textContent, /Hold for a higher jump/);
   game.click('Back');
   assert.equal(game.eval('state'), 'title');
-  game.click('Play');
+  game.click('Play');game.click('Start game');
   assert.deepEqual(game.snapshot('({state,lvl,lives,score})'), { state: 'play', lvl: 0, lives: 3, score: 0 });
   assert.equal(game.element('menu').hidden, true);
   assert.equal(game.element('pause-button').hidden, false);
@@ -52,6 +52,8 @@ test('native Enter activation does not queue a second title-screen action', () =
   const play = game.findButton('Play');
   game.event('keydown', { code: 'Space', target: play });
   play.click();
+  assert.equal(game.eval('state'), 'characters');
+  game.click('Start game');
   game.step();
   assert.equal(game.eval('state'), 'play');
   assert.equal(game.eval('jumpEdge'), false);
@@ -60,7 +62,7 @@ test('native Enter activation does not queue a second title-screen action', () =
 
 test('P and Escape work when the native pause controls own keyboard focus', () => {
   const game = createGame();
-  game.click('Play');
+  game.click('Play');game.click('Start game');
   game.element('pause-button').focus();
   game.event('keydown', { code: 'KeyP', target: game.element('pause-button') });
   assert.equal(game.eval('state'), 'pause');
@@ -76,7 +78,7 @@ test('P and Escape work when the native pause controls own keyboard focus', () =
 
 test('held pause keys cannot toggle repeatedly after input is cleared', () => {
   const game = createGame();
-  game.click('Play');
+  game.click('Play');game.click('Start game');
   game.event('keydown', { code: 'KeyP' });
   assert.equal(game.eval('state'), 'pause');
   game.event('keydown', { code: 'KeyP', repeat: true });
@@ -89,7 +91,7 @@ test('held pause keys cannot toggle repeatedly after input is cleared', () => {
 
 test('opening controls and settings from pause freezes the run and returns to pause', () => {
   const game = createGame();
-  game.click('Play');
+  game.click('Play');game.click('Start game');
   game.step(20);
   game.click('pause-button');
   const paused = progress(game);
@@ -164,7 +166,7 @@ test('blocked browser storage does not prevent settings or gameplay', () => {
   assert.doesNotThrow(() => game.input('effects-volume', 25));
   assert.equal(game.eval('settings.effects'), .25);
   game.click('Back');
-  game.click('Play');
+  game.click('Play');game.click('Start game');
   assert.equal(game.eval('state'), 'play');
 });
 
@@ -209,7 +211,7 @@ test('confirmed restart resets only current-level points, coins, timer, and obje
 test('touch entry from the native title enables controls before the first canvas tap', () => {
   const game = createGame();
   game.domEvent('menu', 'pointerdown', { pointerType: 'touch' });
-  game.click('Play');
+  game.click('Play');game.click('Start game');
   assert.equal(game.eval('touchMode'), true);
   assert.equal(game.element('pause-button').hidden, true);
   game.canvasEvent('touchstart', { touches: [{ clientX: 190, clientY: 470 }, { clientX: 875, clientY: 465 }] });
@@ -222,7 +224,7 @@ test('touch entry from the native title enables controls before the first canvas
 
 test('pause clears active keyboard and touch input and ignores canvas menu taps', () => {
   const game = createGame();
-  game.click('Play');
+  game.click('Play');game.click('Start game');
   game.event('keydown', { code: 'KeyD' });
   game.canvasEvent('touchstart', { touches: [{ clientX: 875, clientY: 465 }] });
   game.canvasEvent('touchstart', { touches: [{ clientX: 920, clientY: 40 }] });
@@ -256,14 +258,14 @@ test('returning to the title saves the best and Play starts a fresh run', () => 
   game.click('Title screen');
   assert.equal(game.eval('state'), 'title');
   assert.equal(game.storage.get('coinhopper_best'), '170');
-  game.click('Play');
+  game.click('Play');game.click('Start game');
   assert.deepEqual(game.snapshot('({lvl,score,lives,best})'), { lvl: 0, score: 0, lives: 3, best: 170 });
 });
 
 test('stale native Play and Next clicks cannot restart or skip a level', () => {
   const game = createGame();
   const play = game.findButton('Play');
-  play.click();
+  play.click();game.click('Start game');
   game.step(20);
   const playing = progress(game);
   play.click();

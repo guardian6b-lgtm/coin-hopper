@@ -102,6 +102,7 @@ function createGame({ html, saved = {}, storageBlocked = false } = {}) {
     blur() { if (document.activeElement === this) document.activeElement = document.body; }
     click() { if (!this.disabled) dispatch(this.listeners, 'click', {}, this); }
     contains(target) { return target === this || this.children.some(child => child.contains(target)); }
+    getContext() { return context2d; }
     getBoundingClientRect() { return { left: 0, top: 0, width: 960, height: 540 }; }
   }
   function parseMarkup(markup, root) {

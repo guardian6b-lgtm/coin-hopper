@@ -22,6 +22,32 @@ button:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:4
 .setting output{color:#ffd84a;font-weight:bold}
 #pause-button{position:fixed;right:14px;top:14px;z-index:1;font:16px "Trebuchet MS",Verdana,sans-serif;padding:10px 16px}
 @media(max-height:560px){.menu-panel{padding:20px}.menu-panel h1{font-size:30px}.menu-panel p{margin-bottom:12px}#menu-actions{gap:8px;margin-top:12px}.menu-button{padding:9px 16px}}
+/* Phase-one redesign: the welcome and character picker share a soft, sunny shell. */
+#menu[data-screen="title"] .menu-panel,#menu[data-screen="characters"] .menu-panel{background:linear-gradient(150deg,#fffdf4,#edf7ff);border:3px solid #fff;color:#263956;box-shadow:0 18px 70px #1118,0 0 0 2px #afc8df}
+#menu[data-screen="title"] h1,#menu[data-screen="characters"] h1{color:#263956;letter-spacing:-1.5px}
+#menu[data-screen="title"] p,#menu[data-screen="characters"] p{color:#536882}
+#menu[data-screen="title"] .menu-button,#menu[data-screen="characters"] .menu-button{border-radius:18px;border-color:#b7cede;color:#263956;background:#fff;box-shadow:0 3px 0 #cadae8}
+#menu[data-screen="title"] .menu-button:hover,#menu[data-screen="characters"] .menu-button:hover{background:#eaf6ff}
+#menu[data-screen="title"] .menu-button.primary,#menu[data-screen="characters"] .menu-button.primary{background:#ffdc70;border-color:#efc14e;box-shadow:0 4px 0 #dba946}
+#menu[data-screen="title"] .menu-button.primary:hover,#menu[data-screen="characters"] .menu-button.primary:hover{background:#ffe794}
+#menu[data-screen="title"] button:focus-visible,#menu[data-screen="characters"] button:focus-visible{outline:3px solid #276a9a;outline-offset:3px}
+#menu[data-screen="characters"]{background:radial-gradient(ellipse at 8% 15%,#ffffffa8 0 8%,transparent 8.5%),radial-gradient(ellipse at 94% 78%,#ffffff99 0 12%,transparent 12.5%),linear-gradient(160deg,#93d7fa,#d7f1ff 60%,#e8faec)}
+#menu[data-screen="characters"] .menu-panel{width:min(980px,100%);padding:28px}
+#menu[data-screen="characters"] #menu-actions{grid-template-columns:2fr 1fr}
+#menu[data-screen="characters"] #menu-description{margin-bottom:20px}
+.character-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:18px 0}
+.character-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;min-height:235px;padding:14px 10px 12px;border:3px solid #d9e5ee;border-radius:24px;background:#fff;color:#263956;cursor:pointer;touch-action:manipulation;box-shadow:0 4px 0 #dce7ef}
+.character-card:hover{border-color:#96b5cd;background:#f8fcff}
+.character-card.selected{border-color:#278b81;background:#effff9;box-shadow:0 4px 0 #197b73}
+.character-card canvas{position:static;transform:none;width:112px;height:112px;max-width:100%;background:transparent;pointer-events:none;touch-action:auto}
+.character-name{font-size:21px;font-weight:bold;line-height:1.2}
+.character-flavor{font-size:13px;line-height:1.4;min-height:38px;color:#5b6e86}
+.character-status{font-size:12px;font-weight:bold;letter-spacing:.3px;border-radius:20px;padding:3px 12px;color:#526b86;background:#edf3f8}
+.character-card.selected .character-status{color:#fff;background:#217b71}
+#character-choice{font-size:16px;text-align:center;min-height:24px}
+@media(max-width:700px){.character-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.character-card{min-height:184px;padding:10px 8px}.character-card canvas{width:86px;height:86px}.character-name{font-size:19px}.character-flavor{min-height:36px}.character-card:last-child{grid-column:1/-1;width:calc(50% - 5px);justify-self:center;box-sizing:border-box}#menu[data-screen="characters"] .menu-panel{padding:20px}#menu[data-screen="characters"] h1{font-size:30px}}
+@media(max-height:500px) and (min-width:701px){.character-card{min-height:180px;padding:8px}.character-card canvas{width:74px;height:74px}.character-name{font-size:18px}.character-flavor{min-height:36px}#menu[data-screen="characters"] .menu-panel{padding:18px}.character-grid{margin:12px 0}}
+@media(max-height:400px) and (max-width:700px){#menu[data-screen="characters"] .menu-panel{padding:12px}.character-card{min-height:152px;padding:6px;gap:3px}.character-card canvas{width:56px;height:56px}.character-name{font-size:16px}.character-flavor{font-size:11px;line-height:1.2;min-height:28px}.character-status{font-size:11px;padding:2px 8px}}
 </style></head><body>
 <canvas id="c" width="960" height="540" tabindex="-1" aria-label="Coin Hopper game. Move with arrows or A and D. Jump with Space, W, or Up. Pause with P or Escape."></canvas>
 <button id="pause-button" type="button" hidden aria-label="Pause game">Pause</button>
@@ -114,6 +140,26 @@ function collide(e,ax){
   }return false;
 }
 
+// ---------- Cosmetic roster ----------
+// Appearance only. Simulation never reads these palettes or gives a character stats.
+const CHARACTERS=Object.freeze([
+  Object.freeze({id:'hopper',name:'Hopper',flavor:'A brave little hopper with a big heart',body:'#ff7da7',shade:'#cf4f7a',belly:'#ffe0ec',accent:'#ffdc70',tint:'#ffe6ed',cheek:'#f75f8d'}),
+  Object.freeze({id:'minty',name:'Minty',flavor:'Agile, playful, always up for a challenge',body:'#83e6af',shade:'#359d7c',belly:'#e2fff0',accent:'#42bd91',tint:'#dff8e8',cheek:'#f692a6'}),
+  Object.freeze({id:'ember',name:'Ember',flavor:'Energetic and bold with a fiery spirit',body:'#ffa16f',shade:'#cc6846',belly:'#fff0d4',accent:'#ffce63',tint:'#ffecd8',cheek:'#f47d68'}),
+  Object.freeze({id:'nova',name:'Nova',flavor:'Dreamy, curious, reaching for the stars',body:'#bca7ff',shade:'#7e64b8',belly:'#f0eaff',accent:'#ffe690',tint:'#eee6ff',cheek:'#d18cce'}),
+  Object.freeze({id:'bolt',name:'Bolt',flavor:'Always charged up and ready to go',body:'#ffe279',shade:'#d5a43e',belly:'#fff6ce',accent:'#249d9c',tint:'#fff3c9',cheek:'#f2a15f'})
+]);
+const characterById=id=>CHARACTERS.find(character=>character.id===id)||CHARACTERS[0];
+let selectedCharacter='hopper',pendingCharacter='hopper';
+try{const saved=localStorage.getItem('coinhopper_character_v1');if(CHARACTERS.some(character=>character.id===saved))selectedCharacter=saved;}catch(e){}
+function beginCharacterSelect(){pendingCharacter=selectedCharacter;showMenu('characters','title');}
+function confirmCharacter(){
+  if(state!=='characters')return;
+  selectedCharacter=pendingCharacter;
+  try{localStorage.setItem('coinhopper_character_v1',selectedCharacter);}catch(e){}
+  newGame();
+}
+
 // ---------- Sound ----------
 const settings={music:.35,effects:.65};
 try{const saved=JSON.parse(localStorage.getItem('coinhopper_settings'));
@@ -138,6 +184,7 @@ const K={left:['ArrowLeft','KeyA'],right:['ArrowRight','KeyD'],jump:['Space','Ar
 addEventListener('keydown',e=>{
   if(state!=='play'&&e.code==='Tab'){trapMenuFocus(e);return;}
   if(e.repeat)return;
+  if(state==='characters'&&characterKey(e))return;
   if(state!=='play'&&e.code==='Escape'){e.preventDefault();backFromMenu();return;}
   if((e.code==='KeyP'||e.code==='Escape')&&(state==='play'||state==='pause')){e.preventDefault();togglePause();return;}
   // Native menu buttons and range controls keep their standard keyboard behavior.
@@ -174,7 +221,7 @@ let state='title',lvl=0,score=0,lives=3,best=0,cam=0,time=0,pl,levelScore=0,time
 try{best=+localStorage.getItem('coinhopper_best')||0;}catch(e){}
 function saveBest(){if(score>best){best=score;try{localStorage.setItem('coinhopper_best',best);}catch(e){}}}
 function togglePause(){if(state==='play')showMenu('pause');else if(state==='pause')resumeGame();}
-function spawn(){pl={x:start.x,y:start.y,w:26,h:32,vx:0,vy:0,ground:false,coyote:0,buf:0,face:1,inv:1,squash:1,shield:false};cam=Math.max(0,pl.x-W/3);}
+function spawn(){pl={x:start.x,y:start.y,w:26,h:32,vx:0,vy:0,ground:false,coyote:0,buf:0,face:1,inv:1,squash:1,shield:false,character:selectedCharacter};cam=Math.max(0,pl.x-W/3);}
 function startLevel(i){lvl=i;load(i);spawn();levelScore=0;timer=0;state='play';syncMenu();}
 function newGame(){score=0;lives=3;startLevel(0);}
 function burst(x,y,col,n=10){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.5)*300,vy:-Math.random()*300,l:.6,col});}
@@ -188,7 +235,7 @@ function hurt(fall=false){if(state!=='play'||(!fall&&pl.inv>0))return false;
 function update(){
   time+=DT;
   if(state!=='play'){
-    if(anyEdge){if(state==='title'||state==='over')newGame();else if(state==='done')advanceLevel();else if(state==='win')showMenu('title');}
+    if(anyEdge){if(state==='title')beginCharacterSelect();else if(state==='over')newGame();else if(state==='done')advanceLevel();else if(state==='win')showMenu('title');}
     anyEdge=false;jumpEdge=false;return;}
   anyEdge=false;timer+=DT;
   const p=pl,acc=p.ground?2600:1700,max=260;
@@ -278,15 +325,45 @@ function drawShield(x,y){
   cx.beginPath();cx.moveTo(0,-17);cx.lineTo(15,-10);cx.lineTo(12,7);cx.quadraticCurveTo(8,14,0,19);cx.quadraticCurveTo(-8,14,-12,7);cx.lineTo(-15,-10);cx.closePath();cx.fill();cx.stroke();
   cx.strokeStyle='#368fba';cx.beginPath();cx.moveTo(-6,0);cx.lineTo(-1,5);cx.lineTo(7,-6);cx.stroke();cx.restore();
 }
+// Shared portrait/game renderer. Coordinates are visual only; pl.w/pl.h never change.
+function drawCharacter(ctx,id,x,y,w,h,face=1){
+  const skin=characterById(id);
+  ctx.save();ctx.translate(x,y);ctx.scale(w/30,h/32);ctx.lineJoin='round';ctx.lineCap='round';
+  const body=ctx.createLinearGradient(0,-32,0,0);body.addColorStop(0,skin.body);body.addColorStop(1,skin.shade);
+  ctx.fillStyle=body;ctx.strokeStyle=skin.shade;ctx.lineWidth=1.2;ctx.beginPath();
+  if(ctx.roundRect)ctx.roundRect(-15,-32,30,32,11);else ctx.rect(-15,-32,30,32);ctx.fill();ctx.stroke();
+  ctx.fillStyle=skin.belly;ctx.beginPath();ctx.ellipse(0,-8,10,6,0,0,7);ctx.fill();
+  ctx.fillStyle='#fff';const ex=face*2;ctx.beginPath();ctx.ellipse(-5+ex,-22,5,6,0,0,7);ctx.ellipse(6+ex,-22,5,6,0,0,7);ctx.fill();
+  ctx.fillStyle='#28374f';ctx.beginPath();ctx.arc(-5+ex+face,-22,2.4,0,7);ctx.arc(6+ex+face,-22,2.4,0,7);ctx.fill();
+  ctx.fillStyle=skin.cheek;ctx.beginPath();ctx.ellipse(-10,-15,3,1.8,0,0,7);ctx.ellipse(10,-15,3,1.8,0,0,7);ctx.fill();
+  ctx.strokeStyle='#4e4260';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(-3,-13);ctx.quadraticCurveTo(0,-9,4,-13);ctx.stroke();
+  ctx.fillStyle=skin.accent;ctx.strokeStyle=skin.accent;ctx.lineWidth=1.5;ctx.beginPath();
+  if(skin.id==='hopper'){
+    ctx.moveTo(-14,-30);ctx.lineTo(-12,-39);ctx.lineTo(-4,-35);ctx.lineTo(0,-42);ctx.lineTo(5,-35);ctx.lineTo(12,-39);ctx.lineTo(14,-30);ctx.closePath();
+  }else if(skin.id==='minty'){
+    ctx.moveTo(0,-30);ctx.quadraticCurveTo(-8,-45,10,-44);ctx.quadraticCurveTo(16,-31,0,-30);
+  }else if(skin.id==='ember'){
+    ctx.moveTo(-12,-30);ctx.quadraticCurveTo(-16,-38,-6,-44);ctx.quadraticCurveTo(-7,-34,2,-42);ctx.quadraticCurveTo(16,-37,12,-30);ctx.closePath();
+  }else if(skin.id==='nova'){
+    for(let i=0;i<10;i++){const angle=-Math.PI/2+i*Math.PI/5,r=i%2?4.5:9,px=Math.cos(angle)*r,py=-35+Math.sin(angle)*r;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}ctx.closePath();
+  }else{
+    ctx.moveTo(-3,-44);ctx.lineTo(8,-44);ctx.lineTo(2,-36);ctx.lineTo(11,-36);ctx.lineTo(-4,-25);ctx.lineTo(-1,-34);ctx.lineTo(-10,-34);ctx.closePath();
+  }
+  ctx.fill();ctx.stroke();
+  if(skin.id==='minty'){
+    ctx.strokeStyle=skin.shade;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,-31);ctx.lineTo(6,-40);ctx.stroke();
+  }else if(skin.id==='nova'){
+    ctx.strokeStyle='#fff6dd';ctx.lineWidth=1.2;ctx.beginPath();
+    for(const [sx,sy] of [[-12,-34],[13,-29]]){ctx.moveTo(sx-2,sy);ctx.lineTo(sx+2,sy);ctx.moveTo(sx,sy-2);ctx.lineTo(sx,sy+2);}ctx.stroke();
+  }
+  ctx.restore();
+}
 function drawPlayer(){const p=pl;
   if(p.shield){cx.strokeStyle='#96f6ff';cx.fillStyle='rgba(150,246,255,.12)';cx.lineWidth=3;cx.beginPath();cx.arc(p.x+13-cam,p.y+16,26+Math.sin(time*4),0,7);cx.fill();cx.stroke();}
   if(p.inv>0&&Math.floor(time*20)%2)return;
-  const sw=1/p.squash,sh=p.squash,w=p.w*sw+4,h=p.h*sh,x=p.x-cam+p.w/2,y=p.y+p.h;
-  cx.save();cx.translate(x,y);cx.fillStyle='#ff5d8f';rr(-w/2,-h,w,h,9);cx.fill();
-  cx.fillStyle='#ffd1e0';rr(-w/2+4,-h*.45,w-8,h*.35,6);cx.fill();
-  cx.fillStyle='#fff';const ex=p.face*4;cx.beginPath();cx.arc(-5+ex,-h*.7,5,0,7);cx.arc(6+ex,-h*.7,5,0,7);cx.fill();
-  cx.fillStyle='#222';cx.beginPath();cx.arc(-4+ex+p.face,-h*.7,2.5,0,7);cx.arc(7+ex+p.face,-h*.7,2.5,0,7);cx.fill();
-  cx.fillStyle='#ffd84a';cx.beginPath();cx.moveTo(-w/2,-h+4);cx.lineTo(0,-h-8);cx.lineTo(w/2,-h+4);cx.fill();cx.restore();}
+  const sw=1/p.squash,sh=p.squash;
+  drawCharacter(cx,p.character,p.x-cam+p.w/2,p.y+p.h,p.w*sw+4,p.h*sh,p.face);
+}
 function drawEnemy(e){const x=e.x-cam,y=e.y;cx.save();cx.translate(x+14,y+28);
   if(e.dead){cx.scale(1.3,.3);}else cx.scale(1,1+Math.sin(time*10+e.x)*.06);
   if(e.type==='hopper'){
@@ -352,11 +429,14 @@ function advanceLevel(){
 function backFromMenu(){
   if(state==='pause')resumeGame();
   else if(state==='restart')showMenu('pause');
+  else if(state==='characters')showMenu('title','title');
   else if(state==='settings'||state==='controls')showMenu(menuReturn);
 }
 function activateMenuAction(action){
   audio();
-  if(action==='play'||action==='retry')newGame();
+  if(action==='play')beginCharacterSelect();
+  else if(action==='start-character')confirmCharacter();
+  else if(action==='retry')newGame();
   else if(action==='resume')resumeGame();
   else if(action==='restart')requestRestart();
   else if(action==='confirm-restart')confirmRestart();
@@ -364,7 +444,7 @@ function activateMenuAction(action){
   else if(action==='next')advanceLevel();
   else if(action==='title'){saveBest();showMenu('title','title');}
   else if(action==='controls'||action==='settings')showMenu(action,state==='pause'?'pause':'title');
-  else if(action==='back')showMenu(menuReturn);
+  else if(action==='back')backFromMenu();
 }
 function menuButton(label,action,primary=false){
   const button=document.createElement('button');button.type='button';button.className='menu-button'+(primary?' primary':'');
@@ -381,6 +461,49 @@ function volumeControl(name,label){
   input.addEventListener('input',()=>{settings[name]=Math.max(0,Math.min(100,Number(input.value)))/100;value.textContent=Math.round(settings[name]*100)+'%';applySettings();saveSettings();});
   row.appendChild(text);row.appendChild(value);row.appendChild(input);menuContent.appendChild(row);menuItems.push(input);
 }
+function chooseCharacter(id,focus=false){
+  if(state!=='characters'||!CHARACTERS.some(character=>character.id===id))return;
+  pendingCharacter=id;
+  for(const button of menuContent.querySelectorAll('[data-character]')){
+    const chosen=button.dataset.character===id;
+    button.setAttribute('aria-pressed',String(chosen));button.classList.toggle('selected',chosen);
+    button.querySelector('[data-status]').textContent=chosen?'Selected':'Select';
+    if(chosen&&focus)button.focus();
+  }
+  document.getElementById('character-choice').textContent=characterById(id).name+' selected. Same moves, a fresh look.';
+}
+function characterKey(e){
+  if(!e.target?.closest?.('[data-character]'))return false;
+  const index=CHARACTERS.findIndex(character=>character.id===e.target.closest('[data-character]').dataset.character);
+  let next;
+  if(e.code==='ArrowLeft')next=(index+CHARACTERS.length-1)%CHARACTERS.length;
+  else if(e.code==='ArrowRight')next=(index+1)%CHARACTERS.length;
+  else if(e.code==='Home')next=0;
+  else if(e.code==='End')next=CHARACTERS.length-1;
+  else return false;
+  e.preventDefault();chooseCharacter(CHARACTERS[next].id,true);return true;
+}
+function characterCards(){
+  const grid=document.createElement('div');grid.className='character-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label','Playable characters');
+  for(const character of CHARACTERS){
+    const button=document.createElement('button');button.type='button';button.id='character-'+character.id;
+    button.className='character-card';button.setAttribute('data-character',character.id);button.setAttribute('aria-label',character.name);
+    button.setAttribute('aria-describedby',character.id+'-flavor');
+    const badge=document.createElement('span');badge.className='character-status';badge.setAttribute('data-status','');
+    const portrait=document.createElement('canvas');portrait.width=120;portrait.height=120;portrait.setAttribute('aria-hidden','true');
+    const context=portrait.getContext('2d');context.fillStyle=character.tint;context.beginPath();context.arc(60,59,48,0,7);context.fill();
+    context.fillStyle='#bd9c81';context.beginPath();context.moveTo(27,105);context.quadraticCurveTo(34,117,42,118);context.lineTo(78,118);context.quadraticCurveTo(86,116,93,105);context.fill();
+    context.fillStyle='#86d6a2';context.beginPath();context.ellipse(60,104,33,6,0,0,7);context.fill();
+    drawCharacter(context,character.id,60,103,61,65);
+    const name=document.createElement('span');name.className='character-name';name.textContent=character.name;
+    const flavor=document.createElement('span');flavor.className='character-flavor';flavor.id=character.id+'-flavor';flavor.textContent=character.flavor;
+    button.append(badge,portrait,name,flavor);button.addEventListener('click',()=>{audio();chooseCharacter(character.id);});
+    grid.appendChild(button);menuItems.push(button);
+  }
+  menuContent.appendChild(grid);
+  const status=document.createElement('p');status.id='character-choice';status.setAttribute('role','status');status.setAttribute('aria-live','polite');menuContent.appendChild(status);
+  chooseCharacter(pendingCharacter);
+}
 function trapMenuFocus(e){
   if(!menuItems.length)return;
   e.preventDefault();const index=menuItems.indexOf(document.activeElement);
@@ -388,13 +511,14 @@ function trapMenuFocus(e){
   menuItems[next].focus();
 }
 function syncMenu(){
-  clearInput();const playing=state==='play';menu.hidden=playing;pauseButton.hidden=playing?touchMode:true;
+  clearInput();menu.setAttribute('data-screen',state);const playing=state==='play';menu.hidden=playing;pauseButton.hidden=playing?touchMode:true;
   cv.tabIndex=playing?0:-1;cv.setAttribute('aria-hidden',playing?'false':'true');
   if(playing){cv.focus();return;}
   menuContent.replaceChildren();menuActions.replaceChildren();menuItems=[];
-  const titles={title:'COIN HOPPER',pause:'Paused',controls:'How to play',settings:'Sound settings',restart:'Restart this level?',done:'Level complete!',over:'Game over',win:'You win!'};
+  const titles={title:'COIN HOPPER',characters:'Choose Your Hopper',pause:'Paused',controls:'How to play',settings:'Sound settings',restart:'Restart this level?',done:'Level complete!',over:'Game over',win:'You win!'};
   const descriptions={
     title:'Jump, stomp, and grab every coin!',
+    characters:'Five fresh looks. Identical gameplay. Choose with a tap or Left / Right; use Tab to reach Start game.',
     pause:'Take a breather. Your run is paused.',
     controls:'A short hop or a big leap. You choose.',
     settings:'Adjust the sound to suit you.',
@@ -405,8 +529,10 @@ function syncMenu(){
   };
   menuTitle.textContent=titles[state]||'Coin Hopper';menuDescription.textContent=descriptions[state]||'';
   if(state==='title'){
-    menuParagraph('Best score: '+best);
+    menuParagraph('Best score: '+best);menuParagraph('Your hopper: '+characterById(selectedCharacter).name);
     menuButton('Play','play',true);menuButton('Controls','controls');menuButton('Settings','settings');
+  }else if(state==='characters'){
+    characterCards();menuButton('Start game','start-character',true);menuButton('Back','back');
   }else if(state==='pause'){
     menuButton('Resume','resume',true);menuButton('Restart level','restart');menuButton('Controls','controls');menuButton('Settings','settings');menuButton('Title screen','title');
   }else if(state==='controls'){
@@ -435,7 +561,8 @@ function syncMenu(){
     menuParagraph('Final score: '+score+'   Best: '+best);
     menuButton('Title screen','title',true);
   }
-  menuItems[0]?.focus();
+  const focusIndex=state==='characters'?CHARACTERS.findIndex(character=>character.id===pendingCharacter):0;
+  menuItems[focusIndex]?.focus();
 }
 pauseButton.addEventListener('click',()=>{audio();if(state==='play')showMenu('pause','pause');});
 menu.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')touchMode=true;});

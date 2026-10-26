@@ -138,6 +138,12 @@ async function main() {
     }
     await app.page.getByRole('button', { name: 'Back', exact: true }).click();
     await app.page.getByRole('button', { name: 'Play', exact: true }).click();
+    assert.equal(await app.page.locator('.character-card').count(), 5);
+    await app.page.getByRole('button', { name: 'Nova', exact: true }).click();
+    await app.page.screenshot({ path: path.join(output, `${values.label}-character-select.png`) });
+    await app.page.getByRole('button', { name: 'Start game', exact: true }).click();
+    assert.equal(await app.page.evaluate('pl.character'), 'nova');
+    pass('character-select', 'Five cosmetic choices, Nova chosen and used by the actual offline executable');
     await app.page.waitForFunction('pl.ground');
     const x = await app.page.evaluate('pl.x');
     await app.page.keyboard.down('ArrowRight');
@@ -171,7 +177,7 @@ async function main() {
       await app.main.evaluate('ciWindow.setSize(1120,720);true');
       await until(async () => (await app.main.evaluate('ciWindow.getSize()')).join(',') === '1120,720');
       await app.page.waitForFunction('innerWidth>1000 && innerHeight>600');
-      const canvas = await app.page.locator('canvas').boundingBox();
+      const canvas = await app.page.locator('#c').boundingBox();
       const viewport = await app.page.evaluate('({width:innerWidth,height:innerHeight})');
       assert.ok(canvas.width <= viewport.width + 1 && canvas.height <= viewport.height + 1);
       assert.ok(Math.abs(canvas.width / canvas.height - 960 / 540) < .01);
@@ -189,10 +195,23 @@ async function main() {
     assert.equal(await app.page.evaluate('lives===3 && shields[0].got'), true);
     await app.page.waitForFunction('pl.inv<=0');
     await app.page.screenshot({ path: path.join(output, `${values.label}-moonlit.png`) });
+    assert.equal(await app.page.evaluate('pl.character'), 'nova');
+    await app.page.evaluate('pl.y=ROWS*T+60');
+    await app.page.waitForFunction('lives===2');
+    assert.equal(await app.page.evaluate('pl.character'), 'nova');
+    await app.page.keyboard.press('Escape');
+    await app.page.getByRole('button', { name: 'Restart level', exact: true }).click();
+    await app.page.getByRole('button', { name: 'Restart level', exact: true }).click();
+    assert.equal(await app.page.evaluate('pl.character'), 'nova');
+    pass('character-lifecycle', 'Nova appearance survives level setup, pit death and native restart flow');
     pass('moonlit-shield', 'Actual fourth-level page renders and keyboard movement collects its shield');
     await app.close(); app = null;
     app = await launch();
     assert.deepEqual(await app.page.evaluate('({effects:settings.effects,music:settings.music})'), { effects: .25, music: .8 });
+    assert.equal(await app.page.evaluate('selectedCharacter'), 'nova');
+    await app.page.getByRole('button', { name: 'Play', exact: true }).click();
+    assert.equal(await app.page.locator('#character-nova').getAttribute('aria-pressed'), 'true');
+    pass('saved-character', 'Nova preference restores after a full executable restart');
     pass('saved-settings', 'Effects 25% and music preference 80% survive a complete executable restart');
     assert.deepEqual(report.errors, []);
     report.status = 'PASS';

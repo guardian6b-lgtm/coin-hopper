@@ -35,3 +35,37 @@ jobs:
             docs/preview.md
           if-no-files-found: error
           retention-days: 7
+
+  browser:
+    name: Character selection browser checks
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COIN_HOPPER_TEST_OUTPUT: ${{ runner.temp }}/coin-hopper-character-preview
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install isolated browser-test tools
+        run: |
+          npm install --prefix "$RUNNER_TEMP/coin-hopper-browser-tools" --no-save --package-lock=false playwright@1.62.0
+          echo "NODE_PATH=$RUNNER_TEMP/coin-hopper-browser-tools/node_modules" >> "$GITHUB_ENV"
+          "$RUNNER_TEMP/coin-hopper-browser-tools/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Verify character selection and all five four-level routes
+        run: node scripts/verify-browser.cjs
+      - name: Include the standalone playable page
+        if: always()
+        run: |
+          mkdir -p "$COIN_HOPPER_TEST_OUTPUT"
+          cp index.html "$COIN_HOPPER_TEST_OUTPUT/index.html"
+          cp docs/preview.md "$COIN_HOPPER_TEST_OUTPUT/README.md"
+      - name: Upload character screenshots, results and playable preview
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: character-select-browser-evidence
+          path: ${{ env.COIN_HOPPER_TEST_OUTPUT }}/
+          if-no-files-found: error
+          retention-days: 7
