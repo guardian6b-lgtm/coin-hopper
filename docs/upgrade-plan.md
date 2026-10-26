@@ -43,3 +43,10 @@ manual checks. A green automated run is separate from visual, audio, touch, and
 packaged Windows playtesting.
 
 See [testing.md](testing.md) for the baseline verification checklist.
+
+## Separately approved character phase
+
+Issue #4 adds the isolated cosmetic character-selection foundation (draft PR #8).
+Issue #5 adds [five optional powers](abilities.md) in a separate stacked draft PR.
+The [verification report](abilities-verification.md) records regressions and human
+acceptance gates. Neither change starts Levels 5/6 or the world-art overhaul.

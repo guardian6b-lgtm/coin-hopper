@@ -142,9 +142,9 @@ function createGame({ html, saved = {}, storageBlocked = false } = {}) {
   });
   class AudioContext {
     constructor() { this.currentTime = 0; this.state = 'running'; this.destination = {}; }
-    createGain() { const gain = { gain: audioParam(1), connect: target => target, disconnect: noop }; audio.gains.push(gain); return gain; }
+    createGain() { const gain = { gain: audioParam(1), connections: [], connect(target) { this.connections.push(target); return target; }, disconnect: noop }; audio.gains.push(gain); return gain; }
     createOscillator() {
-      const oscillator = { frequency: audioParam(0), connect: target => target, start: noop, stop: noop, disconnect: noop };
+      const oscillator = { frequency: audioParam(0), connections: [], connect(target) { this.connections.push(target); return target; }, start: noop, stops: [], stop(time) { this.stops.push(time); }, disconnect: noop };
       audio.oscillators.push(oscillator); return oscillator;
     }
     resume() { this.state = 'running'; return Promise.resolve(); }

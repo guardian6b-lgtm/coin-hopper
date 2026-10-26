@@ -48,9 +48,22 @@ button:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:4
 @media(max-width:700px){.character-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.character-card{min-height:184px;padding:10px 8px}.character-card canvas{width:86px;height:86px}.character-name{font-size:19px}.character-flavor{min-height:36px}.character-card:last-child{grid-column:1/-1;width:calc(50% - 5px);justify-self:center;box-sizing:border-box}#menu[data-screen="characters"] .menu-panel{padding:20px}#menu[data-screen="characters"] h1{font-size:30px}}
 @media(max-height:500px) and (min-width:701px){.character-card{min-height:180px;padding:8px}.character-card canvas{width:74px;height:74px}.character-name{font-size:18px}.character-flavor{min-height:36px}#menu[data-screen="characters"] .menu-panel{padding:18px}.character-grid{margin:12px 0}}
 @media(max-height:400px) and (max-width:700px){#menu[data-screen="characters"] .menu-panel{padding:12px}.character-card{min-height:152px;padding:6px;gap:3px}.character-card canvas{width:56px;height:56px}.character-name{font-size:16px}.character-flavor{font-size:11px;line-height:1.2;min-height:28px}.character-status{font-size:11px;padding:2px 8px}}
+.character-power{font-size:12px;font-weight:bold;line-height:1.3;color:#326784}
+#ability-hud{position:fixed;left:50%;transform:translateX(-50%);z-index:1;box-sizing:border-box;width:min(280px,calc(100vw - 32px));height:44px;display:grid;grid-template-columns:28px 1fr auto;grid-template-rows:23px 5px;gap:2px 7px;padding:5px 9px;border:2px solid #b7cede;border-radius:14px;background:#f7fbfff2;box-shadow:0 3px 0 #21314e55;color:#263956;font:12px "Trebuchet MS",Verdana,sans-serif;pointer-events:none}
+#ability-icon{position:static;transform:none;grid-row:1/3;width:28px;height:28px;background:transparent}
+#ability-name{font-weight:bold;align-self:center;white-space:nowrap}#ability-readiness{align-self:center;font-weight:bold;font-size:11px}
+#ability-meter{grid-column:2/4;height:5px;border-radius:5px;overflow:hidden;background:#cad9e7}#ability-fill{height:100%;width:100%;background:#ffd66b}
+#ability-button{position:fixed;z-index:1;box-sizing:border-box;width:104px;height:56px;display:grid;place-content:center;gap:3px;border:2px solid #fff3bf;border-radius:18px;background:#ffda72;color:#263956;box-shadow:0 4px 0 #9d793d;font:bold 15px "Trebuchet MS",Verdana,sans-serif;touch-action:none;cursor:pointer}
+#ability-button small{font-size:11px}#ability-button:disabled{background:#dae4ee;border-color:#afc1d4;color:#526a83;box-shadow:0 3px 0 #7e91a7;cursor:default}#ability-button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 </style></head><body>
-<canvas id="c" width="960" height="540" tabindex="-1" aria-label="Coin Hopper game. Move with arrows or A and D. Jump with Space, W, or Up. Pause with P or Escape."></canvas>
+<canvas id="c" width="960" height="540" tabindex="-1" aria-label="Coin Hopper game. Move with arrows or A and D. Jump with Space, W, or Up. Pause with P or Escape. Use your character ability with E."></canvas>
 <button id="pause-button" type="button" hidden aria-label="Pause game">Pause</button>
+<div id="ability-hud" hidden>
+  <canvas id="ability-icon" width="32" height="32" aria-hidden="true"></canvas>
+  <span id="ability-name"></span><span id="ability-readiness"></span>
+  <div id="ability-meter" role="progressbar" aria-label="Ability readiness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div id="ability-fill"></div></div>
+</div>
+<button id="ability-button" type="button" hidden><span>Ability</span><small id="ability-button-state">E · Ready</small></button>
 <div id="menu" role="dialog" aria-modal="true" aria-labelledby="menu-title" aria-describedby="menu-description">
   <section class="menu-panel">
     <h1 id="menu-title"></h1>
@@ -63,8 +76,19 @@ button:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:4
 "use strict";
 const cv=document.getElementById('c'),cx=cv.getContext('2d');
 const W=960,H=540,T=36,ROWS=15,DT=1/60;
+const abilityButton=document.getElementById('ability-button'),abilityHud=document.getElementById('ability-hud'),
+  abilityName=document.getElementById('ability-name'),abilityReadiness=document.getElementById('ability-readiness'),
+  abilityMeter=document.getElementById('ability-meter'),abilityFill=document.getElementById('ability-fill'),
+  abilityIcon=document.getElementById('ability-icon'),abilityButtonState=document.getElementById('ability-button-state');
+let abilityHudInside=false;
 window.onerror=(m)=>{cx.fillStyle='#000';cx.fillRect(0,0,W,40);cx.fillStyle='#f55';cx.font='16px sans-serif';cx.fillText('ERR: '+m,10,25);};
-function fit(){const s=Math.min(innerWidth/W,innerHeight/H);cv.style.width=W*s+'px';cv.style.height=H*s+'px';}
+function fit(){const s=Math.min(innerWidth/W,innerHeight/H),left=(innerWidth-W*s)/2,top=(innerHeight-H*s)/2;
+  cv.style.width=W*s+'px';cv.style.height=H*s+'px';abilityHudInside=top<58;
+  abilityHud.style.top=(abilityHudInside?top+82*s:top-54)+'px';
+  abilityButton.style.left=Math.max(8,Math.min(innerWidth-112,left+800*s-52))+'px';
+  const buttonTop=abilityHudInside?top+300*s-28:top+H*s+12;
+  abilityButton.style.top=Math.max(8,Math.min(innerHeight-64,buttonTop))+'px';
+}
 addEventListener('resize',fit);fit();
 
 // ---------- Levels ----------
@@ -172,14 +196,14 @@ function audio(){if(!ac){try{ac=new (window.AudioContext||window.webkitAudioCont
   if(ac&&ac.state==='suspended'){const result=ac.resume();if(result&&result.catch)result.catch(()=>{});}}
 function snd(f,d,type='square',f2=null,vol=.12){if(!ac)return;const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;
   o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
-  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(effectsGain);o.start(t);o.stop(t+d);}
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(effectsGain);o.start(t);o.stop(t+d);return o;}
 const SFX={jump:()=>snd(330,.18,'square',660,.08),coin:()=>{snd(988,.08);setTimeout(()=>snd(1319,.15),70);},
  stomp:()=>snd(400,.15,'triangle',120,.2),hurt:()=>snd(300,.5,'sawtooth',60,.12),
  win:()=>[523,659,784,1047].forEach((f,i)=>setTimeout(()=>snd(f,.2,'triangle',null,.15),i*130)),
  over:()=>[392,330,262,196].forEach((f,i)=>setTimeout(()=>snd(f,.3,'triangle',null,.15),i*200))};
 
 // ---------- Input ----------
-const keys={};let jumpEdge=false,anyEdge=false;
+const keys={};let jumpEdge=false,anyEdge=false,abilityEdge=false;
 const K={left:['ArrowLeft','KeyA'],right:['ArrowRight','KeyD'],jump:['Space','ArrowUp','KeyW']};
 addEventListener('keydown',e=>{
   if(state!=='play'&&e.code==='Tab'){trapMenuFocus(e);return;}
@@ -187,6 +211,7 @@ addEventListener('keydown',e=>{
   if(state==='characters'&&characterKey(e))return;
   if(state!=='play'&&e.code==='Escape'){e.preventDefault();backFromMenu();return;}
   if((e.code==='KeyP'||e.code==='Escape')&&(state==='play'||state==='pause')){e.preventDefault();togglePause();return;}
+  if(state==='play'&&e.code==='KeyE'){audio();if(!keys.KeyE)abilityEdge=true;keys.KeyE=true;e.preventDefault();return;}
   // Native menu buttons and range controls keep their standard keyboard behavior.
   if(e.target&&e.target.closest&&e.target.closest('button,input,select,textarea,a'))return;
   audio();
@@ -201,11 +226,11 @@ addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{clearInput();if(state==='play')showMenu('pause');});
 let touchMode=false;const tb={left:false,right:false,jump:false,pause:false};
 const BTN={left:{x:70,y:H-70,r:48},right:{x:190,y:H-70,r:48},jump:{x:W-85,y:H-75,r:58},pause:{x:W-40,y:40,r:26}};
-function clearInput(){for(const k in keys)keys[k]=false;for(const b in tb)tb[b]=false;jumpEdge=false;anyEdge=false;}
+function clearInput(){for(const k in keys)keys[k]=false;for(const b in tb)tb[b]=false;jumpEdge=false;anyEdge=false;abilityEdge=false;}
 function onTouch(e){e.preventDefault();audio();touchMode=true;pauseButton.hidden=true;
   if(state!=='play'){clearInput();return;}
   const r=cv.getBoundingClientRect(),now={left:false,right:false,jump:false,pause:false};
-  for(const t of e.touches){const x=(t.clientX-r.left)*W/r.width,y=(t.clientY-r.top)*H/r.height;
+  for(const t of e.targetTouches||e.touches){const x=(t.clientX-r.left)*W/r.width,y=(t.clientY-r.top)*H/r.height;
     for(const b in BTN){const B=BTN[b];if(Math.hypot(x-B.x,y-B.y)<B.r*1.35)now[b]=true;}
   }
   if(now.pause&&!tb.pause){showMenu('pause');return;}
@@ -216,12 +241,145 @@ function onTouch(e){e.preventDefault();audio();touchMode=true;pauseButton.hidden
 cv.addEventListener('mousedown',()=>{audio();if(state==='play')cv.focus();});
 const held=a=>K[a].some(k=>keys[k])||tb[a];
 
+// ---------- Abilities: explicit input only; all durations use fixed simulation DT ----------
+const ABILITIES=Object.freeze({
+  hopper:Object.freeze({name:'Crown Slam',cooldown:4,color:'#ffd66b',radius:84,downSpeed:720,duration:.6,activate:castSlam}),
+  minty:Object.freeze({name:'Vine Snare',cooldown:4,color:'#77e5a4',range:180,duration:2,activate:castSnare}),
+  ember:Object.freeze({name:'Fireball',cooldown:3,color:'#ff9b58',range:420,speed:420,radius:7,activate:castFireball}),
+  nova:Object.freeze({name:'Star Glide',cooldown:5,color:'#cfb3ff',duration:1.5,fallSpeed:140,activate:castGlide}),
+  bolt:Object.freeze({name:'Chain Lightning',cooldown:6,color:'#83e8ff',range:240,chainRange:110,activate:castLightning})
+});
+function freshAbility(){return {cooldown:0,active:'',remaining:0,cast:0,clock:0,projectiles:[],effects:[]};}
+let ability=freshAbility();
+const abilitySounds=new Set();
+function stopAbilitySounds(){for(const node of abilitySounds){try{node.stop();}catch(e){}}abilitySounds.clear();}
+function powerSound(...args){const node=snd(...args);if(node){abilitySounds.add(node);node.onended=()=>abilitySounds.delete(node);}}
+function powerBurst(x,y,color,count){const first=parts.length;burst(x,y,color,count);for(let i=first;i<parts.length;i++)parts[i].power=true;}
+const tickDown=value=>value-DT>1e-7?value-DT:0;
+function abilitySpec(){const id=pl?.character||selectedCharacter;return Object.hasOwn(ABILITIES,id)?ABILITIES[id]:ABILITIES.hopper;}
+function resetAbility(){
+  stopAbilitySounds();ability=freshAbility();abilityEdge=false;
+  if(parts)parts=parts.filter(part=>!part.power);
+  for(const enemy of enemies||[])delete enemy.root;
+}
+function abilityEffect(kind,data={},life=.25){
+  ability.effects.push({kind,age:0,life,total:life,...data});
+  if(ability.effects.length>64)ability.effects.shift();
+}
+function tickAbility(){
+  ability.clock+=DT;ability.cooldown=tickDown(ability.cooldown);ability.cast=tickDown(ability.cast);
+  if(ability.remaining>0){ability.remaining=tickDown(ability.remaining);if(!ability.remaining)ability.active='';}
+  for(const fx of ability.effects){fx.age+=DT;fx.life=tickDown(fx.life);}
+  ability.effects=ability.effects.filter(fx=>fx.life>0);
+}
+const targetAlive=enemy=>enemy.dead===0&&enemy.y<=ROWS*T+50;
+function abilityDefeat(enemy,color){
+  if(!targetAlive(enemy))return false;
+  enemy.dead=.4;delete enemy.root;score+=50;levelScore+=50;
+  powerBurst(enemy.x+14,enemy.y+14,color,12);return true;
+}
+// Continuous segment/AABB intersection avoids tunneling and makes wall ties win.
+function segmentEntry(x,y,tx,ty,left,top,right,bottom){
+  let near=0,far=1;
+  for(const [origin,delta,min,max]of [[x,tx-x,left,right],[y,ty-y,top,bottom]]){
+    if(Math.abs(delta)<1e-9){if(origin<min||origin>max)return Infinity;continue;}
+    const a=(min-origin)/delta,b=(max-origin)/delta;
+    near=Math.max(near,Math.min(a,b));far=Math.min(far,Math.max(a,b));
+    if(near>far)return Infinity;
+  }
+  return near;
+}
+function abilityTrace(x,y,tx,ty,radius=0,includeEnemies=true){
+  let result={kind:'end',t:1,x:tx,y:ty};
+  const x0=Math.floor((Math.min(x,tx)-radius)/T),x1=Math.floor((Math.max(x,tx)+radius)/T);
+  const y0=Math.floor((Math.min(y,ty)-radius)/T),y1=Math.floor((Math.max(y,ty)+radius)/T);
+  for(let row=y0;row<=y1;row++)for(let col=x0;col<=x1;col++)if(isSolid(col,row)){
+    const t=segmentEntry(x,y,tx,ty,col*T-radius,row*T-radius,(col+1)*T+radius,(row+1)*T+radius);
+    if(t<=result.t)result={kind:'wall',t,x:x+(tx-x)*t,y:y+(ty-y)*t};
+  }
+  if(includeEnemies)for(const enemy of enemies)if(targetAlive(enemy)){
+    const t=segmentEntry(x,y,tx,ty,enemy.x-radius,enemy.y-radius,enemy.x+enemy.w+radius,enemy.y+enemy.h+radius);
+    if(t<result.t-1e-9||(result.kind==='end'&&t<=result.t))result={kind:'enemy',enemy,t,x:x+(tx-x)*t,y:y+(ty-y)*t};
+  }
+  return result;
+}
+const clearAbilityLine=(x,y,tx,ty)=>abilityTrace(x,y,tx,ty,0,false).kind!=='wall';
+function castSlam(spec){
+  if(pl.ground)return false;
+  ability.active='slam';ability.remaining=spec.duration;pl.vy=Math.max(pl.vy,spec.downSpeed);
+  powerSound(170,.22,'triangle',55,.17);return true;
+}
+function castSnare(spec){
+  const x=pl.x+pl.w/2,y=pl.y+pl.h/2,hit=abilityTrace(x,y,x+pl.face*spec.range,y);
+  abilityEffect('vine',{x,y,tx:hit.x,ty:hit.y,color:spec.color},.24);
+  if(hit.kind!=='enemy')return false;
+  hit.enemy.root=spec.duration;powerSound(560,.24,'sine',240,.13);return true;
+}
+function castFireball(spec){
+  ability.projectiles.push({kind:'fire',x:pl.x+pl.w/2,y:pl.y+pl.h/2,vx:pl.face*spec.speed,life:spec.range/spec.speed,radius:spec.radius});
+  powerSound(300,.18,'sawtooth',95,.1);return true;
+}
+function castGlide(spec){
+  if(pl.ground)return false;
+  ability.active='glide';ability.remaining=spec.duration;powerSound(740,.32,'sine',1047,.09);return true;
+}
+function castLightning(spec){
+  const x=pl.x+pl.w/2,y=pl.y+pl.h/2,hit=abilityTrace(x,y,x+pl.face*spec.range,y);
+  abilityEffect('lightning',{x,y,tx:hit.x,ty:hit.y,color:spec.color},.2);
+  powerSound(1400,.14,'sawtooth',160,.12);
+  if(hit.kind==='enemy'){
+    const first=hit.enemy,cx=first.x+first.w/2,cy=first.y+first.h/2;
+    abilityDefeat(first,spec.color);
+    const candidates=enemies.filter(enemy=>targetAlive(enemy)&&enemy!==first)
+      .map((enemy,index)=>({enemy,index,d:Math.hypot(enemy.x+enemy.w/2-cx,enemy.y+enemy.h/2-cy)}))
+      .filter(candidate=>candidate.d<=spec.chainRange&&clearAbilityLine(cx,cy,candidate.enemy.x+candidate.enemy.w/2,candidate.enemy.y+candidate.enemy.h/2))
+      .sort((a,b)=>a.d-b.d||a.index-b.index);
+    if(candidates.length){const second=candidates[0].enemy;
+      abilityEffect('lightning',{x:cx,y:cy,tx:second.x+second.w/2,ty:second.y+second.h/2,color:spec.color},.24);
+      abilityDefeat(second,spec.color);
+    }
+    abilityEffect('impact',{x:hit.x,y:hit.y,color:spec.color},.24);
+  }
+  return true;
+}
+function useAbility(){
+  if(state!=='play'||!pl||ability.cooldown>0||ability.active)return false;
+  const spec=abilitySpec();
+  if(!spec.activate(spec))return false;
+  ability.cooldown=spec.cooldown;ability.cast=.22;return true;
+}
+function updateAbilityWorld(){
+  if(ability.active==='glide'&&pl.ground){ability.active='';ability.remaining=0;}
+  if(ability.active==='slam'&&pl.ground){
+    const spec=ABILITIES.hopper,x=pl.x+pl.w/2,y=pl.y+pl.h-4;
+    ability.active='';ability.remaining=0;
+    abilityEffect('shockwave',{x,y,radius:spec.radius,color:spec.color},.32);
+    powerSound(95,.2,'triangle',35,.2);
+    for(const enemy of enemies)if(targetAlive(enemy)&&Math.hypot(enemy.x+enemy.w/2-x,enemy.y+enemy.h/2-y)<=spec.radius&&clearAbilityLine(x,y,enemy.x+enemy.w/2,enemy.y+enemy.h/2))abilityDefeat(enemy,spec.color);
+  }
+  for(const shot of ability.projectiles){
+    const hit=abilityTrace(shot.x,shot.y,shot.x+shot.vx*DT,shot.y,shot.radius);
+    shot.x=hit.x;shot.y=hit.y;shot.life=tickDown(shot.life);
+    if(hit.kind!=='end'){
+      if(hit.kind==='enemy')abilityDefeat(hit.enemy,ABILITIES.ember.color);
+      abilityEffect('impact',{x:hit.x,y:hit.y,color:ABILITIES.ember.color},.28);powerSound(180,.13,'triangle',65,.13);shot.life=0;
+    }
+  }
+  ability.projectiles=ability.projectiles.filter(shot=>shot.life>0);
+}
+function requestAbility(e){
+  if(state!=='play'||(e?.button!=null&&e.button!==0))return;
+  e?.preventDefault();audio();abilityEdge=true;cv.focus();
+}
+abilityButton.addEventListener('pointerdown',requestAbility);
+abilityButton.addEventListener('click',e=>{if(e.detail===0)requestAbility(e);});
+
 // ---------- Game state ----------
 let state='title',lvl=0,score=0,lives=3,best=0,cam=0,time=0,pl,levelScore=0,timer=0;
 try{best=+localStorage.getItem('coinhopper_best')||0;}catch(e){}
 function saveBest(){if(score>best){best=score;try{localStorage.setItem('coinhopper_best',best);}catch(e){}}}
 function togglePause(){if(state==='play')showMenu('pause');else if(state==='pause')resumeGame();}
-function spawn(){pl={x:start.x,y:start.y,w:26,h:32,vx:0,vy:0,ground:false,coyote:0,buf:0,face:1,inv:1,squash:1,shield:false,character:selectedCharacter};cam=Math.max(0,pl.x-W/3);}
+function spawn(){resetAbility();pl={x:start.x,y:start.y,w:26,h:32,vx:0,vy:0,ground:false,coyote:0,buf:0,face:1,inv:1,squash:1,shield:false,character:selectedCharacter};cam=Math.max(0,pl.x-W/3);}
 function startLevel(i){lvl=i;load(i);spawn();levelScore=0;timer=0;state='play';syncMenu();}
 function newGame(){score=0;lives=3;startLevel(0);}
 function burst(x,y,col,n=10){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.5)*300,vy:-Math.random()*300,l:.6,col});}
@@ -230,14 +388,14 @@ function burst(x,y,col,n=10){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random
 function hurt(fall=false){if(state!=='play'||(!fall&&pl.inv>0))return false;
   if(!fall&&pl.shield){pl.shield=false;pl.inv=1;SFX.stomp();burst(pl.x+13,pl.y+16,'#96f6ff',16);return true;}
   pl.shield=false;SFX.hurt();lives--;burst(pl.x+13,pl.y+16,'#ff6b6b',16);
-  if(lives<=0){saveBest();state='over';SFX.over();syncMenu();}else spawn();return true;}
+  if(lives<=0){resetAbility();saveBest();state='over';SFX.over();syncMenu();}else spawn();return true;}
 
 function update(){
   time+=DT;
   if(state!=='play'){
     if(anyEdge){if(state==='title')beginCharacterSelect();else if(state==='over')newGame();else if(state==='done')advanceLevel();else if(state==='win')showMenu('title');}
-    anyEdge=false;jumpEdge=false;return;}
-  anyEdge=false;timer+=DT;
+    anyEdge=false;jumpEdge=false;abilityEdge=false;return;}
+  anyEdge=false;timer+=DT;tickAbility();
   const p=pl,acc=p.ground?2600:1700,max=260;
   const dir=(held('right')?1:0)-(held('left')?1:0);
   if(dir){p.vx+=dir*acc*DT;p.face=dir;}else{const f=(p.ground?2200:900)*DT;p.vx=Math.abs(p.vx)<f?0:p.vx-Math.sign(p.vx)*f;}
@@ -245,10 +403,13 @@ function update(){
   if(jumpEdge)p.buf=.13;jumpEdge=false;
   p.coyote=p.ground?.1:p.coyote-DT;p.buf-=DT;
   if(p.buf>0&&p.coyote>0){p.vy=-640;p.buf=0;p.coyote=0;p.ground=false;p.squash=.7;SFX.jump();}
+  if(abilityEdge){abilityEdge=false;useAbility();}
   const g=(p.vy<0&&!held('jump'))?3800:1800;
   p.vy=Math.min(p.vy+g*DT,900);
+  if(ability.active==='glide'&&p.vy>ABILITIES.nova.fallSpeed)p.vy=ABILITIES.nova.fallSpeed;
   p.x+=p.vx*DT;if(collide(p,'x'))p.vx=0;
   const wasG=p.ground;p.ground=false;p.y+=p.vy*DT;collide(p,'y');
+  if(p.ground&&ability.active==='glide'){ability.active='';ability.remaining=0;}
   if(p.ground&&!wasG)p.squash=1.25;p.squash+=(1-p.squash)*.2;
   if(p.inv>0)p.inv-=DT;
   if(p.y>ROWS*T+50){hurt(true);return;}
@@ -261,9 +422,12 @@ function update(){
   for(let y=sy0;y<=sy1;y++)for(let x=sx0;x<=sx1;x++)if(y>=0&&y<ROWS&&x>=0&&x<LW&&grid[y][x]==='^'&&p.y+p.h>y*T+T*.45){if(hurt())return;}
   // coins
   for(const c of coins)if(!c.got&&Math.abs(p.x+13-c.x)<24&&Math.abs(p.y+16-c.y)<28){c.got=1;score+=10;levelScore+=10;SFX.coin();burst(c.x,c.y,'#ffd84a',8);}
+  updateAbilityWorld();
   // enemies
   for(const e of enemies){
     if(e.dead){e.dead-=DT;if(e.dead<=0)e.dead=-1;continue;}
+    if(e.root>0)e.root=tickDown(e.root);
+    else{
     e.vy=Math.min(e.vy+1800*DT,900);e.x+=e.vx*DT;if(collide(e,'x'))e.vx*=-1;
     e.ground=false;e.y+=e.vy*DT;collide(e,'y');
     if(e.ground){const fx=Math.floor((e.vx>0?e.x+e.w+1:e.x-1)/T),fy=Math.floor((e.y+e.h+2)/T);if(!isSolid(fx,fy))e.vx*=-1;}
@@ -271,15 +435,16 @@ function update(){
       e.hop-=DT;
       if(e.ground&&e.hop<=0){e.vy=-420;e.ground=false;e.hop=.95;}
     }
+    }
     if(e.y>ROWS*T+50){e.dead=-1;continue;}
     if(p.x<e.x+e.w&&p.x+p.w>e.x&&p.y<e.y+e.h&&p.y+p.h>e.y){
-      if(p.vy>0&&p.y+p.h-e.y<20){e.dead=.4;p.vy=held('jump')?-560:-380;score+=50;levelScore+=50;SFX.stomp();burst(e.x+14,e.y+14,'#9b5de5',12);}
+      if(p.vy>0&&p.y+p.h-e.y<20){e.dead=.4;delete e.root;if(ability.active==='slam'){ability.active='';ability.remaining=0;}p.vy=held('jump')?-560:-380;score+=50;levelScore+=50;SFX.stomp();burst(e.x+14,e.y+14,'#9b5de5',12);}
       else if(hurt())return;}
   }
   enemies=enemies.filter(e=>e.dead>=0);
   for(const q of parts){q.vy+=900*DT;q.x+=q.vx*DT;q.y+=q.vy*DT;q.l-=DT;}parts=parts.filter(q=>q.l>0);
   // flag
-  if(p.x+p.w>flag.x+10){const bonus=Math.max(0,300-Math.floor(timer)*5);score+=100+bonus;levelScore+=100+bonus;pl.shield=false;saveBest();state='done';SFX.win();syncMenu();}
+  if(p.x+p.w>flag.x+10){const bonus=Math.max(0,300-Math.floor(timer)*5);score+=100+bonus;levelScore+=100+bonus;pl.shield=false;resetAbility();saveBest();state='done';SFX.win();syncMenu();}
   const target=Math.max(0,Math.min(p.x-W/3,LW*T-W));cam+=(target-cam)*.12;
 }
 
@@ -385,7 +550,7 @@ function drawWorld(){
   for(const c of coins)if(!c.got){const w=Math.abs(Math.cos(time*4+c.t))*11+2,y=c.y+Math.sin(time*3+c.t)*3;
     cx.fillStyle='#ffd84a';cx.strokeStyle='#e0a800';cx.lineWidth=2;cx.beginPath();cx.ellipse(c.x-cam,y,w,12,0,0,7);cx.fill();cx.stroke();}
   for(const e of enemies)if(e.dead>=0)drawEnemy(e);
-  drawPlayer();
+  drawPlayer();drawAbilityEffects();
   for(const q of parts){cx.globalAlpha=Math.max(0,q.l/.6);cx.fillStyle=q.col;cx.fillRect(q.x-cam-3,q.y-3,6,6);}cx.globalAlpha=1;
 }
 function txt(s,x,y,size,col='#fff',al='center'){cx.font=`bold ${size}px "Trebuchet MS",Verdana,sans-serif`;cx.textAlign=al;cx.lineJoin="round";cx.miterLimit=2;cx.lineWidth=Math.max(3,size/7);
@@ -393,7 +558,7 @@ function txt(s,x,y,size,col='#fff',al='center'){cx.font=`bold ${size}px "Trebuch
 function hud(){txt('Score '+score,20,38,26,'#fff','left');txt('Best '+best,20,70,18,'#ffe38a','left');
   for(let i=0;i<lives;i++){const x=W/2-((lives-1)*18)+i*36;cx.fillStyle='#ff5d8f';cx.beginPath();cx.arc(x-6,24,8,0,7);cx.arc(x+6,24,8,0,7);cx.moveTo(x-14,27);cx.lineTo(x,42);cx.lineTo(x+14,27);cx.fill();}
   if(pl.shield)txt('SHIELD',20,98,16,'#96f6ff','left');
-  if(lvl===3&&timer<6)txt('Mint hoppers leap. Shields block one hit, but never a pit fall.',W/2,110,16,'#d0fff1');
+  if(lvl===3&&timer<6)txt('Mint hoppers leap. Shields block one hit, but never a pit fall.',W/2,abilityHudInside?98+56/(parseFloat(cv.style.width)/W):110,16,'#d0fff1');
   txt('Level '+(lvl+1)+': '+LEVELS[lvl].name,touchMode?W-80:W/2,touchMode?38:76,20,'#fff',touchMode?'right':'center');}
 function touchUI(){if(!touchMode)return;cx.globalAlpha=.45;
   for(const b in BTN){const B=BTN[b];cx.fillStyle=tb[b]?'#fff':'#000';cx.beginPath();cx.arc(B.x,B.y,B.r,0,7);cx.fill();}
@@ -403,10 +568,89 @@ function touchUI(){if(!touchMode)return;cx.globalAlpha=.45;
   cx.beginPath();cx.moveTo(j.x,j.y-24);cx.lineTo(j.x+24,j.y+14);cx.lineTo(j.x-24,j.y+14);cx.fill();
   cx.fillRect(p.x-9,p.y-11,6,22);cx.fillRect(p.x+3,p.y-11,6,22);cx.globalAlpha=1;}
 function draw(){
+  syncAbilityUI();
   if(!pl||['title'].includes(state)||(['controls','settings'].includes(state)&&menuReturn==='title')){
     lvl=0;if(!grid)load(0);cam=(Math.sin(time*.2)*.5+.5)*(LW*T-W);drawBG();drawTiles();return;
   }
   drawWorld();hud();if(state==='play')touchUI();
+}
+
+// ---------- Ability art: animation uses simulation time, never wall-clock time ----------
+function drawPowerSymbol(ctx,id,x,y,size){
+  ctx.save();ctx.translate(x,y);ctx.scale(size/24,size/24);ctx.lineJoin='round';ctx.lineCap='round';ctx.lineWidth=2;
+  ctx.fillStyle=ABILITIES[id].color;ctx.strokeStyle='#36516c';ctx.beginPath();
+  if(id==='hopper'){ctx.moveTo(-10,5);ctx.lineTo(-11,-6);ctx.lineTo(-4,-2);ctx.lineTo(0,-10);ctx.lineTo(5,-2);ctx.lineTo(11,-6);ctx.lineTo(10,5);ctx.closePath();}
+  else if(id==='minty'){ctx.moveTo(-7,9);ctx.quadraticCurveTo(-15,-13,10,-10);ctx.quadraticCurveTo(15,9,-7,9);}
+  else if(id==='ember'){ctx.moveTo(0,10);ctx.quadraticCurveTo(-16,5,-6,-10);ctx.quadraticCurveTo(-5,0,1,-12);ctx.quadraticCurveTo(19,7,0,10);}
+  else if(id==='nova'){for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?5:11;i?ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r):ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.closePath();}
+  else{ctx.moveTo(-3,-11);ctx.lineTo(9,-11);ctx.lineTo(3,-2);ctx.lineTo(11,-2);ctx.lineTo(-7,12);ctx.lineTo(-3,2);ctx.lineTo(-11,2);ctx.closePath();}
+  ctx.fill();ctx.stroke();ctx.restore();
+}
+function syncAbilityUI(){
+  const playing=state==='play'&&!!pl,spec=abilitySpec();
+  abilityHud.hidden=!playing;abilityButton.hidden=!playing;abilityButton.disabled=!playing||ability.cooldown>0;
+  if(!playing)return;
+  const ready=ability.cooldown<=0,airborne=ready&&pl.ground&&['hopper','nova'].includes(pl.character);
+  const status=ready?(airborne?'Jump first · E':'Ready · E'):ability.cooldown.toFixed(1)+'s';
+  abilityName.textContent=characterById(pl.character).name+' · '+spec.name;
+  abilityReadiness.textContent=status;abilityButtonState.textContent=ready?(airborne?'Jump + E':'E · Ready'):ability.cooldown.toFixed(1)+'s';
+  abilityButton.setAttribute('aria-label','Use '+spec.name+(['hopper','nova'].includes(pl.character)?' while airborne. ':'. ')+(ready?'Ready.':'Cooldown '+ability.cooldown.toFixed(1)+' seconds.'));
+  abilityButton.title=spec.name+' (E)'+(['hopper','nova'].includes(pl.character)?' — use while airborne':'');
+  const percent=Math.round(100*(1-ability.cooldown/spec.cooldown));
+  abilityMeter.setAttribute('aria-valuenow',String(percent));abilityMeter.setAttribute('aria-valuetext',status);
+  abilityFill.style.width=percent+'%';abilityFill.style.background=spec.color;
+  if(abilityIcon.dataset.character!==pl.character){
+    abilityIcon.dataset.character=pl.character;
+    const context=abilityIcon.getContext('2d');context.clearRect(0,0,32,32);drawPowerSymbol(context,pl.character,16,16,25);
+  }
+}
+function drawAbilityEffects(){
+  cx.save();cx.lineCap='round';cx.lineJoin='round';
+  for(const enemy of enemies)if(targetAlive(enemy)&&enemy.root>0){
+    const x=enemy.x+enemy.w/2-cam,y=enemy.y+enemy.h;
+    cx.strokeStyle='#70d99a';cx.lineWidth=4;
+    for(let i=0;i<2;i++){cx.beginPath();cx.ellipse(x,y-7-i*12,20,5,Math.sin(ability.clock*3)*.1,0,7);cx.stroke();}
+    cx.fillStyle='#b8f29d';cx.beginPath();cx.ellipse(x-20,y-10,7,3,-.6,0,7);cx.ellipse(x+19,y-22,7,3,.6,0,7);cx.fill();
+  }
+  for(const shot of ability.projectiles){
+    const x=shot.x-cam,y=shot.y,face=Math.sign(shot.vx);
+    cx.fillStyle='#ffbd57';cx.beginPath();cx.moveTo(x-face*25,y-7);cx.quadraticCurveTo(x-face*12,y,x-face*25,y+7);cx.lineTo(x,y);cx.fill();
+    cx.fillStyle='#f97543';cx.beginPath();cx.arc(x,y,10+Math.sin(ability.clock*24),0,7);cx.fill();
+    cx.fillStyle='#fff0a4';cx.beginPath();cx.arc(x+face*2,y-2,5,0,7);cx.fill();
+  }
+  for(const fx of ability.effects){
+    const t=fx.age/fx.total,x=fx.x-cam,y=fx.y;cx.globalAlpha=Math.min(1,fx.life/fx.total*2);
+    if(fx.kind==='lightning'){
+      for(const [width,color]of [[7,'#3688bd'],[3,fx.color]]){
+        cx.lineWidth=width;cx.strokeStyle=color;cx.beginPath();cx.moveTo(x,y);
+        for(let i=1;i<=8;i++){const k=i/8;cx.lineTo(x+(fx.tx-fx.x)*k,y+(fx.ty-fx.y)*k+(i===8?0:(i%2?1:-1)*7));}cx.stroke();
+      }
+    }else if(fx.kind==='vine'){
+      const k=Math.min(1,t*4),tx=x+(fx.tx-fx.x)*k,ty=y+(fx.ty-fx.y)*k;
+      cx.strokeStyle=fx.color;cx.lineWidth=5;cx.beginPath();cx.moveTo(x,y);cx.quadraticCurveTo((x+tx)/2,y-24,tx,ty);cx.stroke();
+      cx.fillStyle='#c5f6a7';cx.beginPath();cx.ellipse(tx,ty,7,4,-.5,0,7);cx.fill();
+    }else if(fx.kind==='shockwave'){
+      cx.strokeStyle=fx.color;cx.lineWidth=5*(1-t)+1;cx.beginPath();cx.ellipse(x,y,Math.max(1,fx.radius*t),9+12*t,0,0,7);cx.stroke();
+      for(let i=0;i<7;i++){const a=Math.PI+i*Math.PI/6;cx.fillStyle='#fff0ad';cx.fillRect(x+Math.cos(a)*fx.radius*t,y+Math.sin(a)*35*t,4,4);}
+    }else{
+      cx.strokeStyle=fx.color;cx.lineWidth=4;cx.beginPath();cx.arc(x,y,5+23*t,0,7);cx.stroke();
+      for(let i=0;i<6;i++){const a=i*Math.PI/3;cx.fillStyle=fx.color;cx.fillRect(x+Math.cos(a)*28*t-2,y+Math.sin(a)*28*t-2,4,4);}
+    }
+  }
+  cx.globalAlpha=1;
+  if(pl){const x=pl.x+pl.w/2-cam,y=pl.y+pl.h/2;
+    if(ability.active==='slam'){
+      cx.strokeStyle='#ffe17b';cx.lineWidth=3;
+      for(const dx of [-17,0,17]){cx.beginPath();cx.moveTo(x+dx,y-50);cx.lineTo(x+dx,y-27);cx.stroke();}
+      drawPowerSymbol(cx,'hopper',x,y+23,18);
+    }else if(ability.active==='glide'){
+      const flap=Math.sin(ability.clock*9)*3;cx.fillStyle='rgba(207,179,255,.45)';cx.strokeStyle='#f3deff';cx.lineWidth=2;
+      for(const face of [-1,1]){cx.beginPath();cx.moveTo(x+face*9,y);cx.quadraticCurveTo(x+face*49,y-35+flap,x+face*34,y+4);cx.quadraticCurveTo(x+face*22,y+10,x+face*9,y);cx.fill();cx.stroke();}
+      drawPowerSymbol(cx,'nova',x,y-35,13);
+    }
+    if(ability.cast>0){cx.strokeStyle=abilitySpec().color;cx.lineWidth=3;cx.beginPath();cx.arc(x+pl.face*20,y,8+ability.cast*24,0,7);cx.stroke();}
+  }
+  cx.restore();
 }
 
 // ---------- Menus ----------
@@ -414,7 +658,7 @@ const menu=document.getElementById('menu'),menuTitle=document.getElementById('me
   menuDescription=document.getElementById('menu-description'),menuContent=document.getElementById('menu-content'),
   menuActions=document.getElementById('menu-actions'),pauseButton=document.getElementById('pause-button');
 let menuReturn='title',menuItems=[];
-function showMenu(screen,returnTo=menuReturn){if(screen==='title'){lvl=0;load(0);pl=null;cam=0;}state=screen;menuReturn=returnTo;syncMenu();}
+function showMenu(screen,returnTo=menuReturn){if(screen==='title'){lvl=0;load(0);pl=null;cam=0;resetAbility();}state=screen;menuReturn=returnTo;syncMenu();}
 function resumeGame(){state='play';syncMenu();}
 function requestRestart(){showMenu('restart','pause');}
 function confirmRestart(){
@@ -470,7 +714,7 @@ function chooseCharacter(id,focus=false){
     button.querySelector('[data-status]').textContent=chosen?'Selected':'Select';
     if(chosen&&focus)button.focus();
   }
-  document.getElementById('character-choice').textContent=characterById(id).name+' selected. Same moves, a fresh look.';
+  document.getElementById('character-choice').textContent=characterById(id).name+' selected. Ability: '+ABILITIES[id].name+' (E).';
 }
 function characterKey(e){
   if(!e.target?.closest?.('[data-character]'))return false;
@@ -488,7 +732,7 @@ function characterCards(){
   for(const character of CHARACTERS){
     const button=document.createElement('button');button.type='button';button.id='character-'+character.id;
     button.className='character-card';button.setAttribute('data-character',character.id);button.setAttribute('aria-label',character.name);
-    button.setAttribute('aria-describedby',character.id+'-flavor');
+    button.setAttribute('aria-describedby',character.id+'-flavor '+character.id+'-power');
     const badge=document.createElement('span');badge.className='character-status';badge.setAttribute('data-status','');
     const portrait=document.createElement('canvas');portrait.width=120;portrait.height=120;portrait.setAttribute('aria-hidden','true');
     const context=portrait.getContext('2d');context.fillStyle=character.tint;context.beginPath();context.arc(60,59,48,0,7);context.fill();
@@ -497,7 +741,8 @@ function characterCards(){
     drawCharacter(context,character.id,60,103,61,65);
     const name=document.createElement('span');name.className='character-name';name.textContent=character.name;
     const flavor=document.createElement('span');flavor.className='character-flavor';flavor.id=character.id+'-flavor';flavor.textContent=character.flavor;
-    button.append(badge,portrait,name,flavor);button.addEventListener('click',()=>{audio();chooseCharacter(character.id);});
+    const power=document.createElement('span');power.id=character.id+'-power';power.className='character-power';power.textContent=ABILITIES[character.id].name+' · E';
+    button.append(badge,portrait,name,flavor,power);button.addEventListener('click',()=>{audio();chooseCharacter(character.id);});
     grid.appendChild(button);menuItems.push(button);
   }
   menuContent.appendChild(grid);
@@ -513,12 +758,13 @@ function trapMenuFocus(e){
 function syncMenu(){
   clearInput();menu.setAttribute('data-screen',state);const playing=state==='play';menu.hidden=playing;pauseButton.hidden=playing?touchMode:true;
   cv.tabIndex=playing?0:-1;cv.setAttribute('aria-hidden',playing?'false':'true');
+  syncAbilityUI();if(!playing)stopAbilitySounds();
   if(playing){cv.focus();return;}
   menuContent.replaceChildren();menuActions.replaceChildren();menuItems=[];
   const titles={title:'COIN HOPPER',characters:'Choose Your Hopper',pause:'Paused',controls:'How to play',settings:'Sound settings',restart:'Restart this level?',done:'Level complete!',over:'Game over',win:'You win!'};
   const descriptions={
     title:'Jump, stomp, and grab every coin!',
-    characters:'Five fresh looks. Identical gameplay. Choose with a tap or Left / Right; use Tab to reach Start game.',
+    characters:'Shared moves. Five special powers. Choose with a tap or Left / Right; use Tab to reach Start game.',
     pause:'Take a breather. Your run is paused.',
     controls:'A short hop or a big leap. You choose.',
     settings:'Adjust the sound to suit you.',
@@ -529,7 +775,7 @@ function syncMenu(){
   };
   menuTitle.textContent=titles[state]||'Coin Hopper';menuDescription.textContent=descriptions[state]||'';
   if(state==='title'){
-    menuParagraph('Best score: '+best);menuParagraph('Your hopper: '+characterById(selectedCharacter).name);
+    menuParagraph('Best score: '+best);menuParagraph('Your hopper: '+characterById(selectedCharacter).name+' · '+ABILITIES[selectedCharacter].name);
     menuButton('Play','play',true);menuButton('Controls','controls');menuButton('Settings','settings');
   }else if(state==='characters'){
     characterCards();menuButton('Start game','start-character',true);menuButton('Back','back');
@@ -538,6 +784,7 @@ function syncMenu(){
   }else if(state==='controls'){
     menuParagraph('Move: Arrow keys or A / D.');
     menuParagraph('Jump: Space, W, or Up. Hold for a higher jump. Land on enemies to stomp them.');
+    menuParagraph('Ability: E or the Ability button. Hopper slams in the air; Minty snares a facing enemy; Ember fires; Nova glides in the air; Bolt chains lightning. Cooldowns pause with the game.');
     menuParagraph('Mint leaf-eared hoppers leap on a steady beat. Stomp them for 50 points, like other enemies.');
     menuParagraph('Cyan shields absorb one enemy or spike hit, then give a moment to escape. They do not stack or protect against pits. Protection resets on death or when a level starts.');
     menuParagraph('Pause: P or Escape, or use Pause on screen. On phones, use the arrow and jump buttons.');

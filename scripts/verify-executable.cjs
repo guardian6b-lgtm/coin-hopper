@@ -9,6 +9,7 @@ const path = require('node:path');
 const { spawn, execFileSync } = require('node:child_process');
 const { parseArgs } = require('node:util');
 const { chromium } = require('playwright');
+const verifyExecutableAbilities = require('./ability-executable-checks.cjs');
 const { values } = parseArgs({ options: {
   executable: { type: 'string' }, label: { type: 'string', default: 'packaged' },
   output: { type: 'string' }, profile: { type: 'string' },
@@ -143,7 +144,7 @@ async function main() {
     await app.page.screenshot({ path: path.join(output, `${values.label}-character-select.png`) });
     await app.page.getByRole('button', { name: 'Start game', exact: true }).click();
     assert.equal(await app.page.evaluate('pl.character'), 'nova');
-    pass('character-select', 'Five cosmetic choices, Nova chosen and used by the actual offline executable');
+    pass('character-select', 'Five character choices, Nova chosen and used by the actual offline executable');
     await app.page.waitForFunction('pl.ground');
     const x = await app.page.evaluate('pl.x');
     await app.page.keyboard.down('ArrowRight');
@@ -185,6 +186,8 @@ async function main() {
     } else {
       report.checks.push({ name: 'f11-fullscreen-and-native-resize', status: 'NOT TESTED', detail: 'Local Linux headless validation only; Windows CI must execute these checks' });
     }
+    report.abilities=await verifyExecutableAbilities(app,output,values.label);
+    pass('all-five-abilities','All five powers activate and resolve in the actual offline executable, with cooldown/pause checks');
     // Show the new level in the packaged binary; this is a runtime fixture, not
     // a natural completion route (all four routes run in the Node suite).
     await app.page.evaluate('startLevel(3)');
