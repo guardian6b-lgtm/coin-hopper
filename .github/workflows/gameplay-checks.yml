@@ -41,8 +41,6 @@ jobs:
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      COIN_HOPPER_TEST_OUTPUT: ${{ runner.temp }}/coin-hopper-character-preview
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -50,6 +48,7 @@ jobs:
           node-version: "22"
       - name: Install isolated browser-test tools
         run: |
+          echo "COIN_HOPPER_TEST_OUTPUT=$RUNNER_TEMP/coin-hopper-character-preview" >> "$GITHUB_ENV"
           npm install --prefix "$RUNNER_TEMP/coin-hopper-browser-tools" --no-save --package-lock=false playwright@1.62.0
           echo "NODE_PATH=$RUNNER_TEMP/coin-hopper-browser-tools/node_modules" >> "$GITHUB_ENV"
           "$RUNNER_TEMP/coin-hopper-browser-tools/node_modules/.bin/playwright" install --with-deps chromium
