@@ -41,6 +41,16 @@ Walkers in the first three levels retain their original behavior.
 
 ## Verification
 
+Application commit verified: `4874424179af95f6222bbd1ab8ec5784b2d9c5f8`.
+The follow-up verification-record commit changes documentation only.
+
+Draft PR: [#3](https://github.com/guardian6b-lgtm/coin-hopper/pull/3), targeting
+`codex/gameplay-menus` and referencing Issue #2.
+
+[Download the hosted playable preview](https://github.com/guardian6b-lgtm/coin-hopper/actions/runs/40408802660/artifacts/12692431533)
+(available according to the workflow's seven-day retention). Extract and open
+`index.html`; no release or deployment is involved.
+
 Use Node.js 22 or newer from the repository root:
 
 ```sh
@@ -81,7 +91,7 @@ Performed checks:
 | Linux Electron package | PASS | Unpacked build and offline packaged launch; Windows config/app files remain compatible and unchanged. See commands below. |
 | Windows build/execution | NOT TESTED | Requires Windows; no Windows runtime or Wine available here. |
 | Physical phones, speaker listening, human balancing | NOT TESTED | Automation and signal routing do not establish physical-device comfort, audible quality, or perceived difficulty. |
-| Hosted CI/artifact upload | NOT TESTED | Local tests passed; inspect the branch's GitHub Actions run separately. |
+| Hosted CI/artifact upload | PASS | [Run 40408802660](https://github.com/guardian6b-lgtm/coin-hopper/actions/runs/40408802660): Node 22 gameplay checks passed on Ubuntu and Windows. The playable HTML/instructions artifact is uploaded. Its metadata was verified; downloading hosted bytes from this environment is blocked by the artifact-storage proxy. |
 
 Desktop package verification uses the existing copy/build configuration with no
 release publishing. In `desktop/`, after the normal lockfile dependency install:
