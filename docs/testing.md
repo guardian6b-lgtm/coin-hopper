@@ -26,8 +26,11 @@ to review the branch without publishing changes to the live game.
 The automated checks also exercise native menu actions and keyboard focus, nested
 pause/settings/control screens, live effects gain and persisted settings, restart
 confirmation and score rollback, touch input cleanup, completion coin counts,
-blocked storage, and duplicate-click protection. Recorded input routes still
-complete all three original levels without damage.
+blocked storage, and duplicate-click protection. Recorded input routes complete
+all four levels without damage or collecting shields, including a continuous run
+using the real menu actions. Stage 3 tests cover hopping timing/patrol/stomps,
+shield collection and non-stacking, enemy/spike absorption, pit deaths, recovery,
+pause freezing, restart, and completion resets. See [the Stage 3 guide](moonlit-gardens.md).
 
 A restart rebuilds the current level and removes only its earned points from the
 run score. It preserves points from earlier levels and the remaining lives. Cancel
@@ -40,13 +43,20 @@ Record the branch commit, browser/device, result, and any issue for each item.
 
 - Start a new run: score 0, three lives, Sunny Meadow. Test arrows and A/D; jump with
   Space, W, and Up. Compare short taps and held jumps.
-- Finish Sunny Meadow, Brick Hills, and Starry Night in order. Confirm each flag
+- Finish Sunny Meadow, Brick Hills, Starry Night, and Moonlit Gardens in order. Confirm each flag
   grants its completion award once, and the final level leads to the win screen.
   Collecting every coin remains optional.
 - Collect a coin, move away and return: score increases by 10 only once. After a
   death, collected coins stay collected and earned score stays earned.
 - Stomp an enemy: earn 50 once, bounce, and see the squash animation disappear
   after about 0.4 seconds. Compare bounce height with jump held and released.
+- In Moonlit Gardens, watch mint leaf-eared hoppers rest and jump on a steady beat.
+  Stomp one both rising and falling, and approach its side without a shield.
+- Collect a cyan shield: see the bubble and SHIELD label with no score change.
+  Touch a hopper, walker, or spikes: protection absorbs one hit without losing a
+  life or respawning. Leave during recovery; a later hit costs a life. Fall into a
+  pit with protection: lose a life anyway. Verify death/completion/restart clear
+  protection, consumed pickups stay used after death, and restart restores them.
 - Take side damage and hit spikes: lose one life, respawn at the level start with
   brief invulnerability. Confirm falling in a pit still costs a life during that
   invulnerability. On the last life, remain on Game Over.

@@ -13,9 +13,10 @@ are the baseline; introduce expansion mechanics in new maps first.
 | 4: More variety | Crystal Caverns, Skyline Summit, flying patrol enemy, timed coin magnet | Reachable routes; fair combinations; predictable power-up expiration and reset |
 | 5: Animation and music | Idle/run/jump/fall/hurt/victory poses, original looping music, pickup feedback, reduced motion | Collision sizes stable; pause/mute respected; offline Windows compatibility |
 
-Stages 1–2 are implemented for review. Their manual browser, audio, touch,
-and packaged Windows checks remain pending.
-Stages 3–5 are planned and need a scope review before implementation. Checkpoints in
+Stages 1–2 have a [technical verification report](verification-pr-1.md).
+Stage 3 is implemented for review on `codex/moonlit-gardens`, based on the validated
+`codex/gameplay-menus` branch; see [its guide and checks](moonlit-gardens.md).
+Stages 4–5 remain planned and need a scope review before implementation. Checkpoints in
 longer new levels remain a balancing decision after the first expansion is playable.
 Keep the current cheerful illustrated style.
 
@@ -35,7 +36,8 @@ Keep the current cheerful illustrated style.
 
 ## Delivery
 
-Use feature branches and reviewable PRs targeting main. Never push changes directly
+Use feature branches and reviewable PRs. Stage 3 targets `codex/gameplay-menus` for
+review; later integration into main is a separate decision. Never push changes directly
 to main. Each stage should state the behavior changed, test results, and remaining
 manual checks. A green automated run is separate from visual, audio, touch, and
 packaged Windows playtesting.

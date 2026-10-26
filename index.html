@@ -42,7 +42,7 @@ function fit(){const s=Math.min(innerWidth/W,innerHeight/H);cv.style.width=W*s+'
 addEventListener('resize',fit);fit();
 
 // ---------- Levels ----------
-// # ground  = brick  o coin  e enemy  ^ spikes  F flag  P start
+// # ground  = brick  o coin  e walker  h hopper  S shield  ^ spikes  F flag  P start
 const LEVELS=[
 {name:"Sunny Meadow",sky:['#7ec8ff','#d8f1ff'],map:[
 "",
@@ -75,18 +75,32 @@ const LEVELS=[
 "  o o                     =====       =====          ^^                  =====",
 " P       e     ==                 e           e    ====       e     ^^           F",
 "############   ####   ####   ##########   #######   #########   ########   ##########",
-"############   ####   ####   ##########   #######   #########   ########   ##########"]}
+"############   ####   ####   ##########   #######   #########   ########   ##########"]},
+{name:"Moonlit Gardens",sky:['#18264f','#775d9d'],map:[
+"",
+"",
+"",
+"",
+"                                                      o o",
+"                                        o o o        =====                  o o o",
+"                    o o        o o     =======     o o           o o o     =======     o o",
+"                   =====       ====                ====          ======                =====",
+"  P   S   o o   h     ^^     o     h =    ^^    e         S   h    ^^^     =h      ^^         e    o o  F",
+"##########################  #########  ################  ###############   ###############   ###############",
+"##########################  #########  ################  ###############   ###############   ###############"]}
 ];
-let L,grid,LW,coins,enemies,flag,start,parts;
+let L,grid,LW,coins,enemies,shields,flag,start,parts;
 function load(i){
   const src=LEVELS[i].map; const rows=Array(ROWS-src.length).fill('').concat(src);
   LW=Math.max(...rows.map(r=>r.length))+1;
   grid=rows.map(r=>r.padEnd(LW,' ').split(''));
-  coins=[];enemies=[];parts=[];
+  coins=[];enemies=[];shields=[];parts=[];
   for(let y=0;y<ROWS-1;y++)for(let x=0;x<LW;x++)if(grid[y][x]==='^'&&!'#='.includes(grid[y+1][x]))grid[y][x]=' ';
   for(let y=0;y<ROWS;y++)for(let x=0;x<LW;x++){const c=grid[y][x];
     if(c==='o'){coins.push({x:x*T+T/2,y:y*T+T/2,t:Math.random()*6});grid[y][x]=' ';}
     else if(c==='e'){enemies.push({x:x*T+4,y:y*T+8,w:28,h:28,vx:-55,vy:0,dead:0,ground:false});grid[y][x]=' ';}
+    else if(c==='h'){enemies.push({x:x*T+4,y:y*T+8,w:28,h:28,vx:-55,vy:0,dead:0,ground:false,type:'hopper',hop:.7});grid[y][x]=' ';}
+    else if(c==='S'){shields.push({x:x*T+T/2,y:y*T+T/2,got:false});grid[y][x]=' ';}
     else if(c==='F'){flag={x:x*T,y:y*T};grid[y][x]=' ';for(let k=y+1;k<ROWS;k++)grid[k][x]='#';}
     else if(c==='P'){start={x:x*T+5,y:y*T};grid[y][x]=' ';}
   }
@@ -160,12 +174,15 @@ let state='title',lvl=0,score=0,lives=3,best=0,cam=0,time=0,pl,levelScore=0,time
 try{best=+localStorage.getItem('coinhopper_best')||0;}catch(e){}
 function saveBest(){if(score>best){best=score;try{localStorage.setItem('coinhopper_best',best);}catch(e){}}}
 function togglePause(){if(state==='play')showMenu('pause');else if(state==='pause')resumeGame();}
-function spawn(){pl={x:start.x,y:start.y,w:26,h:32,vx:0,vy:0,ground:false,coyote:0,buf:0,face:1,inv:1,squash:1};cam=Math.max(0,pl.x-W/3);}
+function spawn(){pl={x:start.x,y:start.y,w:26,h:32,vx:0,vy:0,ground:false,coyote:0,buf:0,face:1,inv:1,squash:1,shield:false};cam=Math.max(0,pl.x-W/3);}
 function startLevel(i){lvl=i;load(i);spawn();levelScore=0;timer=0;state='play';syncMenu();}
 function newGame(){score=0;lives=3;startLevel(0);}
 function burst(x,y,col,n=10){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.5)*300,vy:-Math.random()*300,l:.6,col});}
-// Stop the current update after damage: spawn() replaces the player object.
-function hurt(){if(state!=='play'||pl.inv>0)return false;SFX.hurt();lives--;burst(pl.x+13,pl.y+16,'#ff6b6b',16);
+// A handled hit ends this update; respawning replaces the player object.
+// Pit falls bypass protection, including spawn/shield recovery invulnerability.
+function hurt(fall=false){if(state!=='play'||(!fall&&pl.inv>0))return false;
+  if(!fall&&pl.shield){pl.shield=false;pl.inv=1;SFX.stomp();burst(pl.x+13,pl.y+16,'#96f6ff',16);return true;}
+  pl.shield=false;SFX.hurt();lives--;burst(pl.x+13,pl.y+16,'#ff6b6b',16);
   if(lives<=0){saveBest();state='over';SFX.over();syncMenu();}else spawn();return true;}
 
 function update(){
@@ -187,7 +204,11 @@ function update(){
   const wasG=p.ground;p.ground=false;p.y+=p.vy*DT;collide(p,'y');
   if(p.ground&&!wasG)p.squash=1.25;p.squash+=(1-p.squash)*.2;
   if(p.inv>0)p.inv-=DT;
-  if(p.y>ROWS*T+50){pl.inv=0;hurt();return;}
+  if(p.y>ROWS*T+50){hurt(true);return;}
+  // A shield is optional, grants no points, and never stacks.
+  for(const item of shields)if(!item.got&&!p.shield&&Math.abs(p.x+13-item.x)<26&&Math.abs(p.y+16-item.y)<30){
+    item.got=true;p.shield=true;SFX.coin();burst(item.x,item.y,'#96f6ff',10);
+  }
   // spikes
   const sx0=Math.floor((p.x+4)/T),sx1=Math.floor((p.x+p.w-4)/T),sy0=Math.floor((p.y+8)/T),sy1=Math.floor((p.y+p.h-1)/T);
   for(let y=sy0;y<=sy1;y++)for(let x=sx0;x<=sx1;x++)if(y>=0&&y<ROWS&&x>=0&&x<LW&&grid[y][x]==='^'&&p.y+p.h>y*T+T*.45){if(hurt())return;}
@@ -199,6 +220,10 @@ function update(){
     e.vy=Math.min(e.vy+1800*DT,900);e.x+=e.vx*DT;if(collide(e,'x'))e.vx*=-1;
     e.ground=false;e.y+=e.vy*DT;collide(e,'y');
     if(e.ground){const fx=Math.floor((e.vx>0?e.x+e.w+1:e.x-1)/T),fy=Math.floor((e.y+e.h+2)/T);if(!isSolid(fx,fy))e.vx*=-1;}
+    if(e.type==='hopper'){
+      e.hop-=DT;
+      if(e.ground&&e.hop<=0){e.vy=-420;e.ground=false;e.hop=.95;}
+    }
     if(e.y>ROWS*T+50){e.dead=-1;continue;}
     if(p.x<e.x+e.w&&p.x+p.w>e.x&&p.y<e.y+e.h&&p.y+p.h>e.y){
       if(p.vy>0&&p.y+p.h-e.y<20){e.dead=.4;p.vy=held('jump')?-560:-380;score+=50;levelScore+=50;SFX.stomp();burst(e.x+14,e.y+14,'#9b5de5',12);}
@@ -207,7 +232,7 @@ function update(){
   enemies=enemies.filter(e=>e.dead>=0);
   for(const q of parts){q.vy+=900*DT;q.x+=q.vx*DT;q.y+=q.vy*DT;q.l-=DT;}parts=parts.filter(q=>q.l>0);
   // flag
-  if(p.x+p.w>flag.x+10){const bonus=Math.max(0,300-Math.floor(timer)*5);score+=100+bonus;levelScore+=100+bonus;saveBest();state='done';SFX.win();syncMenu();}
+  if(p.x+p.w>flag.x+10){const bonus=Math.max(0,300-Math.floor(timer)*5);score+=100+bonus;levelScore+=100+bonus;pl.shield=false;saveBest();state='done';SFX.win();syncMenu();}
   const target=Math.max(0,Math.min(p.x-W/3,LW*T-W));cam+=(target-cam)*.12;
 }
 
@@ -215,27 +240,47 @@ function update(){
 function rr(x,y,w,h,r){cx.beginPath();cx.roundRect?cx.roundRect(x,y,w,h,r):cx.rect(x,y,w,h);}
 function drawBG(){
   const s=LEVELS[lvl].sky,gr=cx.createLinearGradient(0,0,0,H);gr.addColorStop(0,s[0]);gr.addColorStop(1,s[1]);cx.fillStyle=gr;cx.fillRect(0,0,W,H);
-  if(lvl===2){cx.fillStyle='#fff';for(let i=0;i<60;i++){const x=((i*137-cam*.1)%W+W)%W,y=(i*73)%300;cx.globalAlpha=.4+.6*Math.abs(Math.sin(time*2+i));cx.fillRect(x,y,2,2);}cx.globalAlpha=1;
+  if(lvl===3){
+    // A crescent, fireflies and rounded garden trees keep the arcade palette.
+    const moonX=790-cam*.04;
+    cx.fillStyle='#fff2ba';cx.beginPath();cx.arc(moonX,85,43,-1.1,1.1,true);
+    cx.quadraticCurveTo(moonX-35,85,moonX+Math.cos(1.1)*43,85-Math.sin(1.1)*43);cx.fill();
+    for(let i=0;i<36;i++){cx.globalAlpha=.35+.5*Math.abs(Math.sin(time*1.5+i));cx.fillStyle=i%2?'#b4ffe1':'#fff2ba';
+      cx.beginPath();cx.arc(((i*137-cam*.18)%W+W)%W,100+(i*71)%260+Math.sin(time+i)*5,i%3?2:3,0,7);cx.fill();}cx.globalAlpha=1;
+  }else if(lvl===2){cx.fillStyle='#fff';for(let i=0;i<60;i++){const x=((i*137-cam*.1)%W+W)%W,y=(i*73)%300;cx.globalAlpha=.4+.6*Math.abs(Math.sin(time*2+i));cx.fillRect(x,y,2,2);}cx.globalAlpha=1;
     cx.fillStyle='#fff8d0';cx.beginPath();cx.arc(780-cam*.05,90,40,0,7);cx.fill();}
   else{cx.fillStyle='#fff6a8';cx.beginPath();cx.arc(820-cam*.05,90,42,0,7);cx.fill();
     cx.fillStyle='rgba(255,255,255,.9)';for(let i=0;i<6;i++){const x=((i*260-cam*.2-time*8)%(W+300)+W+300)%(W+300)-150,y=60+(i%3)*45;
       cx.beginPath();cx.arc(x,y,24,0,7);cx.arc(x+28,y-10,30,0,7);cx.arc(x+58,y,22,0,7);cx.fill();}}
-  const hc=lvl===2?['#2c2f6e','#3b3f8a']:lvl===1?['#d98b5f','#c97a4f']:['#8fd694','#6cc075'];
+  const hc=lvl===3?['#354873','#365b6b']:lvl===2?['#2c2f6e','#3b3f8a']:lvl===1?['#d98b5f','#c97a4f']:['#8fd694','#6cc075'];
   [[.25,320,hc[0],140],[.5,380,hc[1],100]].forEach(([k,base,c,a])=>{cx.fillStyle=c;cx.beginPath();cx.moveTo(0,H);
     for(let x=0;x<=W;x+=20)cx.lineTo(x,base-Math.sin((x+cam*k)/a)*40-Math.sin((x+cam*k)/(a*.37))*15);cx.lineTo(W,H);cx.fill();});
+  if(lvl===3)for(let i=0;i<8;i++){
+    const x=((i*180-cam*.4)%(W+200)+W+200)%(W+200)-100;
+    cx.fillStyle='#293e60';cx.fillRect(x-5,260,10,210);cx.fillStyle=i%2?'#416e78':'#4b6482';
+    cx.beginPath();cx.ellipse(x,270,46,75,0,0,7);cx.fill();
+  }
 }
 function drawTiles(){
   const x0=Math.floor(cam/T),x1=x0+Math.ceil(W/T)+1;
   for(let y=0;y<ROWS;y++)for(let x=x0;x<=x1&&x<LW;x++){const c=grid[y][x],px=Math.round(x*T-cam),py=y*T;
-    if(c==='#'){const top=y===0||!isSolid(x,y-1);cx.fillStyle=lvl===2?'#5b4a7a':'#9c6b3f';cx.fillRect(px,py,T,T);
-      cx.fillStyle=lvl===2?'#4a3b66':'#87592f';cx.fillRect(px+6,py+14,6,6);cx.fillRect(px+22,py+24,5,5);
-      if(top){cx.fillStyle=lvl===2?'#7fd1c8':'#5ccf5c';cx.fillRect(px,py,T,10);cx.fillStyle=lvl===2?'#62b3aa':'#43b043';cx.fillRect(px,py+10,T,3);}}
-    else if(c==='='){cx.fillStyle='#e07a3f';cx.fillRect(px,py,T,T);cx.strokeStyle='#a8512a';cx.lineWidth=2;
+    if(c==='#'){const top=y===0||!isSolid(x,y-1);cx.fillStyle=lvl===3?'#665a89':lvl===2?'#5b4a7a':'#9c6b3f';cx.fillRect(px,py,T,T);
+      cx.fillStyle=lvl===3?'#514971':lvl===2?'#4a3b66':'#87592f';cx.fillRect(px+6,py+14,6,6);cx.fillRect(px+22,py+24,5,5);
+      if(top){cx.fillStyle=lvl===3?'#8be3ba':lvl===2?'#7fd1c8':'#5ccf5c';cx.fillRect(px,py,T,10);cx.fillStyle=lvl===3?'#59ad9e':lvl===2?'#62b3aa':'#43b043';cx.fillRect(px,py+10,T,3);
+        if(lvl===3&&x%3===0){cx.fillStyle='#ffd1ed';cx.beginPath();cx.arc(px+18,py+3,4,0,7);cx.fill();}}}
+    else if(c==='='){cx.fillStyle=lvl===3?'#9b87b9':'#e07a3f';cx.fillRect(px,py,T,T);cx.strokeStyle=lvl===3?'#675286':'#a8512a';cx.lineWidth=2;
       cx.strokeRect(px+1,py+1,T-2,T-2);cx.beginPath();cx.moveTo(px,py+T/2);cx.lineTo(px+T,py+T/2);cx.moveTo(px+T/2,py);cx.lineTo(px+T/2,py+T/2);cx.stroke();}
     else if(c==='^'){cx.fillStyle='#d9dde6';cx.strokeStyle='#8a90a0';cx.lineWidth=2;for(let k=0;k<3;k++){cx.beginPath();cx.moveTo(px+k*12,py+T);cx.lineTo(px+k*12+6,py+T*.45);cx.lineTo(px+k*12+12,py+T);cx.closePath();cx.fill();cx.stroke();}}
   }
 }
-function drawPlayer(){const p=pl;if(p.inv>0&&Math.floor(time*20)%2)return;
+function drawShield(x,y){
+  cx.save();cx.translate(x,y);cx.fillStyle='#a0f5ff';cx.strokeStyle='#efffff';cx.lineWidth=2;
+  cx.beginPath();cx.moveTo(0,-17);cx.lineTo(15,-10);cx.lineTo(12,7);cx.quadraticCurveTo(8,14,0,19);cx.quadraticCurveTo(-8,14,-12,7);cx.lineTo(-15,-10);cx.closePath();cx.fill();cx.stroke();
+  cx.strokeStyle='#368fba';cx.beginPath();cx.moveTo(-6,0);cx.lineTo(-1,5);cx.lineTo(7,-6);cx.stroke();cx.restore();
+}
+function drawPlayer(){const p=pl;
+  if(p.shield){cx.strokeStyle='#96f6ff';cx.fillStyle='rgba(150,246,255,.12)';cx.lineWidth=3;cx.beginPath();cx.arc(p.x+13-cam,p.y+16,26+Math.sin(time*4),0,7);cx.fill();cx.stroke();}
+  if(p.inv>0&&Math.floor(time*20)%2)return;
   const sw=1/p.squash,sh=p.squash,w=p.w*sw+4,h=p.h*sh,x=p.x-cam+p.w/2,y=p.y+p.h;
   cx.save();cx.translate(x,y);cx.fillStyle='#ff5d8f';rr(-w/2,-h,w,h,9);cx.fill();
   cx.fillStyle='#ffd1e0';rr(-w/2+4,-h*.45,w-8,h*.35,6);cx.fill();
@@ -244,6 +289,14 @@ function drawPlayer(){const p=pl;if(p.inv>0&&Math.floor(time*20)%2)return;
   cx.fillStyle='#ffd84a';cx.beginPath();cx.moveTo(-w/2,-h+4);cx.lineTo(0,-h-8);cx.lineTo(w/2,-h+4);cx.fill();cx.restore();}
 function drawEnemy(e){const x=e.x-cam,y=e.y;cx.save();cx.translate(x+14,y+28);
   if(e.dead){cx.scale(1.3,.3);}else cx.scale(1,1+Math.sin(time*10+e.x)*.06);
+  if(e.type==='hopper'){
+    cx.fillStyle='#62e3c4';rr(-15,-27,30,27,10);cx.fill();
+    // Leaf ears and broad feet distinguish hoppers from purple walkers.
+    cx.beginPath();cx.moveTo(-9,-22);cx.quadraticCurveTo(-22,-43,-5,-34);cx.lineTo(0,-23);cx.moveTo(4,-23);cx.quadraticCurveTo(10,-44,18,-34);cx.lineTo(12,-21);cx.fill();
+    cx.fillStyle='#2ba99e';cx.fillRect(-19,-3,13,5);cx.fillRect(6,-3,13,5);
+    cx.fillStyle='#fff1a6';cx.beginPath();cx.arc(-6,-17,5,0,7);cx.arc(6,-17,5,0,7);cx.fill();
+    cx.fillStyle='#203c58';cx.beginPath();cx.arc(-6+Math.sign(e.vx),-17,2,0,7);cx.arc(6+Math.sign(e.vx),-17,2,0,7);cx.fill();cx.restore();return;
+  }
   cx.fillStyle='#9b5de5';cx.beginPath();cx.moveTo(-15,0);cx.quadraticCurveTo(-16,-30,0,-30);cx.quadraticCurveTo(16,-30,15,0);cx.fill();
   cx.fillStyle='#fff';const d=e.vx>0?3:-3;cx.beginPath();cx.arc(-5+d,-17,5,0,7);cx.arc(5+d,-17,5,0,7);cx.fill();
   cx.fillStyle='#222';cx.beginPath();cx.arc(-5+d*1.5,-17,2.3,0,7);cx.arc(5+d*1.5,-17,2.3,0,7);cx.fill();cx.restore();}
@@ -251,6 +304,7 @@ function drawWorld(){
   drawBG();drawTiles();
   const fx=flag.x-cam+T/2;cx.fillStyle='#eee';cx.fillRect(fx-2,flag.y-T*3+T,4,T*3);cx.fillStyle='#ffd84a';cx.beginPath();cx.arc(fx,flag.y-T*2+T-4,6,0,7);cx.fill();
   cx.fillStyle='#ff5d5d';cx.beginPath();const wv=Math.sin(time*5)*4;cx.moveTo(fx+2,flag.y-T*2+T+4);cx.quadraticCurveTo(fx+22,flag.y-T*2+T+10+wv,fx+42,flag.y-T*2+T+16);cx.lineTo(fx+2,flag.y-T*2+T+30);cx.fill();
+  for(const item of shields)if(!item.got)drawShield(item.x-cam,item.y+Math.sin(time*3)*3);
   for(const c of coins)if(!c.got){const w=Math.abs(Math.cos(time*4+c.t))*11+2,y=c.y+Math.sin(time*3+c.t)*3;
     cx.fillStyle='#ffd84a';cx.strokeStyle='#e0a800';cx.lineWidth=2;cx.beginPath();cx.ellipse(c.x-cam,y,w,12,0,0,7);cx.fill();cx.stroke();}
   for(const e of enemies)if(e.dead>=0)drawEnemy(e);
@@ -261,6 +315,8 @@ function txt(s,x,y,size,col='#fff',al='center'){cx.font=`bold ${size}px "Trebuch
   cx.strokeStyle='rgba(0,0,0,.55)';cx.strokeText(s,x,y);cx.fillStyle=col;cx.fillText(s,x,y);}
 function hud(){txt('Score '+score,20,38,26,'#fff','left');txt('Best '+best,20,70,18,'#ffe38a','left');
   for(let i=0;i<lives;i++){const x=W/2-((lives-1)*18)+i*36;cx.fillStyle='#ff5d8f';cx.beginPath();cx.arc(x-6,24,8,0,7);cx.arc(x+6,24,8,0,7);cx.moveTo(x-14,27);cx.lineTo(x,42);cx.lineTo(x+14,27);cx.fill();}
+  if(pl.shield)txt('SHIELD',20,98,16,'#96f6ff','left');
+  if(lvl===3&&timer<6)txt('Mint hoppers leap. Shields block one hit, but never a pit fall.',W/2,110,16,'#d0fff1');
   txt('Level '+(lvl+1)+': '+LEVELS[lvl].name,touchMode?W-80:W/2,touchMode?38:76,20,'#fff',touchMode?'right':'center');}
 function touchUI(){if(!touchMode)return;cx.globalAlpha=.45;
   for(const b in BTN){const B=BTN[b];cx.fillStyle=tb[b]?'#fff':'#000';cx.beginPath();cx.arc(B.x,B.y,B.r,0,7);cx.fill();}
@@ -356,6 +412,8 @@ function syncMenu(){
   }else if(state==='controls'){
     menuParagraph('Move: Arrow keys or A / D.');
     menuParagraph('Jump: Space, W, or Up. Hold for a higher jump. Land on enemies to stomp them.');
+    menuParagraph('Mint leaf-eared hoppers leap on a steady beat. Stomp them for 50 points, like other enemies.');
+    menuParagraph('Cyan shields absorb one enemy or spike hit, then give a moment to escape. They do not stack or protect against pits. Protection resets on death or when a level starts.');
     menuParagraph('Pause: P or Escape, or use Pause on screen. On phones, use the arrow and jump buttons.');
     menuParagraph('Use Tab to move between menu controls, Enter or Space to choose, and Escape to go back.');
     menuButton('Back','back',true);
