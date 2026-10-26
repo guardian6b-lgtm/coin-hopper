@@ -1,5 +1,10 @@
 # Stage 3: Moonlit Gardens
 
+The subsequent [final technical verification](stage-3-final-verification.md)
+records Windows x64 builds/executable smoke tests, platform reachability review,
+temporary artifact links, and the remaining human acceptance gates. The results
+below describe the initial Stage 3 implementation pass.
+
 Implements GitHub Issue #2 on `codex/moonlit-gardens`, starting from validated base
 `2edca54aafa5b0bf5d4afa9d9981bb429fc33126` (`codex/gameplay-menus`). The draft PR
 targets that branch. No Levels 5/6, music, movement changes, or release work are included.

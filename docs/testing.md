@@ -3,6 +3,9 @@
 For the completed PR #1 technical verification, results, and remaining manual checks,
 see [the verification report](verification-pr-1.md).
 
+For the four-level Stage 3 Windows builds and final technical/human acceptance
+matrix, see [Stage 3 final verification](stage-3-final-verification.md).
+
 ## Automated checks
 
 Use Node.js 22 or later from the repository root:
