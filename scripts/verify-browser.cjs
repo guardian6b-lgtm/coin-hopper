@@ -202,9 +202,8 @@ async function main() {
     assert.equal(await mp.evaluate('held("right") && held("jump") && pl.shield'), true);
     await touch('touchCancel', []);
     assert.equal(await mp.evaluate('!held("right") && !held("jump")'), true);
-    await touch('touchStart', [[0, 920, 40]]);
+    await mp.locator('#pause-button').tap();
     await mp.waitForFunction('state==="pause"');
-    await touch('touchEnd', []);
     await mp.getByRole('button', { name: 'Resume', exact: true }).tap();
     await mp.setViewportSize({ width: 390, height: 844 });
     await mp.waitForTimeout(50);

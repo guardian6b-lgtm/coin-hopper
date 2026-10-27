@@ -26,7 +26,7 @@ test('boss HUD hides attack commands, state, phase and countdown in ordinary bui
 });
 test('native touch supports simultaneous movement, jump, ability and cancellation without stuck keys',()=>{
   const g=onFlatGround(createGame({saved:{coinhopper_character_v1:'ember'}}));
-  g.domEvent('touch-right','pointerdown',{pointerId:1,button:0});g.domEvent('touch-jump','pointerdown',{pointerId:2,button:0});g.domEvent('ability-button','pointerdown',{pointerId:3,button:0,pointerType:'touch'});g.step();
+  g.domEvent('touch-right','pointerdown',{pointerId:1,button:0});g.domEvent('touch-jump','pointerdown',{pointerId:2,button:0});g.domEvent('ability-button','pointerdown',{pointerId:3,button:0,pointerType:'touch'});g.domEvent('ability-button','pointerup',{pointerId:3,button:0,pointerType:'touch'});g.step();
   assert.equal(g.eval('tb.right&&tb.jump&&pl.vx>0&&pl.vy<0&&ability.cooldown>0'),true);assert.equal(g.eval('ability.projectiles.length'),1);
   g.domEvent('touch-jump','pointercancel',{pointerId:2});assert.equal(g.eval('tb.right&&!tb.jump'),true);g.event('blur');assert.equal(g.eval('tb.right||tb.jump'),false);
 });

@@ -39,7 +39,7 @@ module.exports=async function verifyCampaign(browser,url,output){
       await mp.evaluate('startLevel(4);for(let i=0;i<10;i++)update();draw()');await mp.locator('#ability-button').tap();await mp.evaluate('update();draw()');
       assert.equal(await mp.evaluate('ability.projectiles.length'),1);
       for(const size of [{width:390,height:844},{width:844,height:390},{width:320,height:240}]){
-        await mp.setViewportSize(size);await mp.waitForFunction('Math.abs(parseFloat(cv.style.width)-Math.min(innerWidth/960,(innerHeight-(touchMode?96:0))/540)*960)<.1',null,{polling:50});await mp.evaluate('draw()');
+        await mp.setViewportSize(size);await mp.waitForFunction('Math.abs(parseFloat(cv.style.width)-(touchMode&&innerWidth>innerHeight&&innerWidth>=480?innerWidth/960:Math.min(innerWidth/960,innerHeight/540))*960)<.1',null,{polling:50});await mp.evaluate('draw()');
         const button=await mp.locator('#ability-button').boundingBox();assert.ok(button.width>=44&&button.height>=44&&button.x>=0&&button.y>=0&&button.x+button.width<=size.width&&button.y+button.height<=size.height);
         await mp.screenshot({path:path.join(output,`crystal-caverns-${size.width}x${size.height}.png`)});
       }

@@ -155,7 +155,7 @@ function fit(){
   const mobile=typeof touchMode!=='undefined'&&touchMode,landscape=mobile&&innerWidth>innerHeight&&innerWidth>=480;
   // Android landscape fills the width. Only decorative sky/lower soil is cropped;
   // the row13 walking surface remains above the compact overlay controls.
-  const s=landscape?innerWidth/W:Math.min(innerWidth/W,innerHeight/H),left=(innerWidth-W*s)/2,top=landscape?Math.min(0,innerHeight-H*s):(innerHeight-H*s)/2;
+  const s=landscape?innerWidth/W:Math.min(innerWidth/W,innerHeight/H),left=(innerWidth-W*s)/2,top=mobile?Math.min(landscape?Math.min(0,innerHeight-H*s):(innerHeight-H*s)/2,innerHeight-62-468*s):(innerHeight-H*s)/2;
   cv.style.width=W*s+'px';cv.style.height=H*s+'px';cv.style.left=(left+W*s/2)+'px';cv.style.top=(top+H*s/2)+'px';
   document.body.dataset.touch=mobile?'1':'0';document.body.dataset.landscape=landscape?'1':'0';abilityHudInside=false;
   abilityHud.style.top='36px';abilityButton.style.left=Math.max(8,innerWidth-112)+'px';abilityButton.style.top=Math.max(60,innerHeight-76)+'px';
@@ -485,7 +485,7 @@ addEventListener('keydown',e=>{
   if(state==='characters'&&characterKey(e))return;
   if(state!=='play'&&e.code==='Escape'){e.preventDefault();backFromMenu();return;}
   if((e.code==='KeyP'||e.code==='Escape')&&(state==='play'||state==='pause')){e.preventDefault();togglePause();return;}
-  if(state==='play'&&e.code==='KeyE'){audio();if(!keys.KeyE)abilityEdge=true;keys.KeyE=true;e.preventDefault();return;}
+  if(state==='play'&&e.code==='KeyE'){if(!keys.KeyE)beginCharge('keyboard',e);keys.KeyE=true;e.preventDefault();return;}
   // Native menu buttons and range controls keep their standard keyboard behavior.
   if(e.target&&e.target.closest&&e.target.closest('button,input,select,textarea,a'))return;
   audio();
@@ -496,12 +496,12 @@ addEventListener('keydown',e=>{
   }else if(['title','done','over','win'].includes(state)&&['Enter','Space'].includes(e.code))anyEdge=true;
   if(e.code.startsWith('Arrow')||e.code==='Space')e.preventDefault();
 });
-addEventListener('keyup',e=>{keys[e.code]=false;});
+addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyE')releaseCharge('keyboard',e);});
 addEventListener('blur',()=>{clearInput();if(state==='play')showMenu('pause');});
 var touchMode=window.matchMedia?.('(pointer: coarse)')?.matches||false;fit();const tb={left:false,right:false,jump:false,pause:false};
 const BTN={left:{x:70,y:H-70,r:48},right:{x:190,y:H-70,r:48},jump:{x:W-85,y:H-75,r:58},pause:{x:W-40,y:40,r:26}};
 const canvasTouches={left:false,right:false,jump:false,pause:false};
-function clearInput(){for(const b in canvasTouches)canvasTouches[b]=false;if(typeof touchOwners!=='undefined')for(const owners of Object.values(touchOwners))owners.clear();for(const k in keys)keys[k]=false;for(const b in tb)tb[b]=false;jumpEdge=false;anyEdge=false;abilityEdge=false;}
+function clearInput(){if(typeof ability!=='undefined')cancelCharge();for(const b in canvasTouches)canvasTouches[b]=false;if(typeof touchOwners!=='undefined')for(const owners of Object.values(touchOwners))owners.clear();for(const k in keys)keys[k]=false;for(const b in tb)tb[b]=false;jumpEdge=false;anyEdge=false;abilityEdge=false;}
 function onTouch(e){e.preventDefault();audio();if(!touchMode){touchMode=true;fit();}pauseButton.hidden=false;
   if(state!=='play'){clearInput();return;}
   const r=cv.getBoundingClientRect(),now={left:false,right:false,jump:false,pause:false};
@@ -532,14 +532,14 @@ const ABILITIES=Object.freeze({
   nova:Object.freeze({name:'Star Glide',cooldown:5,color:'#cfb3ff',duration:1.5,fallSpeed:140,activate:castGlide}),
   bolt:Object.freeze({name:'Chain Lightning',cooldown:6,color:'#83e8ff',range:240,chainRange:110,activate:castLightning})
 });
-function freshAbility(){return {cooldown:0,active:'',remaining:0,cast:0,clock:0,projectiles:[],effects:[]};}
+function freshAbility(){return {cooldown:0,active:'',remaining:0,cast:0,clock:0,projectiles:[],effects:[],charging:false,charge:0,owner:null,releaseTier:0,power:null};}
 let ability=freshAbility();
 const abilitySounds=new Set();
 function stopAbilitySounds(){for(const node of abilitySounds){try{node.stop();}catch(e){}}abilitySounds.clear();}
 function powerSound(...args){const node=snd(...args);if(node){abilitySounds.add(node);node.onended=()=>abilitySounds.delete(node);}}
 function powerBurst(x,y,color,count){const first=parts.length;burst(x,y,color,count);for(let i=first;i<parts.length;i++)parts[i].power=true;}
 const tickDown=value=>value-DT>1e-7?value-DT:0;
-const GUARDIAN_ENCOUNTER=Object.freeze({phaseTwoHP:3,phaseThreeHP:1,windups:Object.freeze([1.15,1,.9]),recovery:Object.freeze([1.8,1.8,1.6]),rest:Object.freeze([.95,.95,.75]),patterns:Object.freeze(['slam','boulder','debris']),rockSpeed:135,rockGravity:650,debrisGravity:360});
+const GUARDIAN_ENCOUNTER=Object.freeze({phaseTwoHP:3,phaseThreeHP:1,windups:Object.freeze([1.15,1.1,1,.9]),recovery:2.8,rest:Object.freeze([1,.95,.85,.7]),rocks:Object.freeze([1,2,3,3]),patterns:Object.freeze(['slam','boulder','debris']),rockSpeed:125,rockGravity:650,debrisGravity:300});
 // ---------- Shared enemy combat (new types have no placements in Levels 1–4) ----------
 const ENEMY_TYPES=Object.freeze({
   walker:Object.freeze({health:1,points:50,width:28,height:28,speed:55}),
@@ -573,7 +573,7 @@ function resetNightwing(enemy){
   enemy.attackPhase='patrol';enemy.attackTimer=ENEMY_TYPES.nightwing.firstDive;enemy.flyTime=0;enemy.aim=null;
   if(!enemy.dead){enemy.x=enemy.homeX;enemy.y=enemy.homeY;enemy.vx=0;enemy.vy=0;}
 }
-function resetGuardian(enemy){enemy.attackPhase='idle';enemy.attackTimer=ENEMY_TYPES.guardian.firstAttack;enemy.slamTime=0;enemy.cycle=0;enemy.pattern='slam';enemy.targets=[];enemy.aim=null;}
+function resetGuardian(enemy){enemy.attackPhase='idle';enemy.attackTimer=ENEMY_TYPES.guardian.firstAttack;enemy.slamTime=0;enemy.cycle=0;enemy.pattern='slam';enemy.targets=[];enemy.aim=null;enemy.openingHit=false;}
 function resetEnemyCombat(){
   stopEnemySounds();enemyCombat={clock:0,projectiles:[],effects:[]};
   if(parts)parts=parts.filter(part=>!part.enemy);
@@ -586,17 +586,17 @@ function tickEnemyCombat(){
   enemyCombat.effects=enemyCombat.effects.filter(effect=>effect.life>0);
 }
 // Stomps and every damaging power enter here. Legacy fixture actors lazily gain HP.
-function damageEnemy(enemy,source,color='#9b5de5'){
+function damageEnemy(enemy,source,color='#9b5de5',strength=1){
   if(state!=='play'||!Object.hasOwn(ENEMY_DAMAGE,source)||!targetAlive(enemy)||enemy.hitTime>0)return false;
-  if(enemy.type==='guardian'&&enemy.attackPhase!=='recover')return false;
+  if(enemy.type==='guardian'&&!guardianOpen(enemy))return false;
   const spec=enemySpec(enemy);enemy.maxHealth??=spec.health;enemy.health??=enemy.maxHealth;
   if(enemy.health<=0)return false;
-  enemy.health=Math.max(0,enemy.health-ENEMY_DAMAGE[source]);
+  enemy.health=Math.max(0,enemy.health-(enemy.type==='guardian'?1:Math.max(1,Math.min(3,strength))));
   if(enemy.health>0){
     enemy.hitTime=ENEMY_COMBAT.hitGuard;enemy.hitFlash=ENEMY_COMBAT.hitFlash;
     enemyBurst(enemy.x+enemy.w/2,enemy.y+enemy.h/2,'#fff2ba',7);enemySound(520,.09,'triangle',260,.08);
     // One HP per visible opening; armor visibly closes after a valid boss hit.
-    if(enemy.type==='guardian'){enemy.attackPhase='idle';enemy.attackTimer=enemy.health<=ENEMY_TYPES.guardian.phaseTwoHealth?ENEMY_TYPES.guardian.phaseTwoRest:ENEMY_TYPES.guardian.rest;}
+    if(enemy.type==='guardian'){enemy.openingHit=true;enemySound(880,.15,'triangle',440,.1);}
   }else{
     enemy.dead=.4;delete enemy.root;resetSentinel(enemy);
     enemyCombat.projectiles=enemyCombat.projectiles.filter(shot=>shot.owner!==enemy);
@@ -640,33 +640,41 @@ function updateNightwing(enemy){
   }
 }
 function guardianPhase(enemy){return enemy.health<=GUARDIAN_ENCOUNTER.phaseThreeHP?3:enemy.health<=GUARDIAN_ENCOUNTER.phaseTwoHP?2:1;}
+// Five HP is retained:100/80%,60%,40%,20% map to four explicit pressure bands.
+function guardianBand(enemy){const hp=enemy.health/enemy.maxHealth;return hp>.75?0:hp>.5?1:hp>.25?2:3;}
+function guardianOpen(enemy){return enemy.attackPhase==='recover'&&!enemy.openingHit;}
 function updateGuardian(enemy){
   const spec=ENEMY_TYPES.guardian,arena=(LEVELS[lvl].arenaStart??0)*T;
   if(pl.x+pl.w<arena||enemy.x+enemy.w<cam-T||enemy.x>cam+W+T){resetGuardian(enemy);return;}
+  bossState.engaged=true;
+  const band=guardianBand(enemy),config=GUARDIAN_ENCOUNTER;
+  if(band===3&&enemy.attackPhase==='idle'){
+    enemy.homeX??=enemy.x;const direction=enemy.cycle%2?1:-1;
+    const min=Math.max(arena+T,enemy.homeX-40),max=Math.min(flag.x-3*T,enemy.homeX+40);
+    enemy.vx=direction*48;enemy.x=Math.max(min,Math.min(max,enemy.x+enemy.vx*DT));collide(enemy,'x');enemy.vx=0;
+  }
   enemy.attackTimer=tickDown(enemy.attackTimer);if(enemy.attackTimer)return;
-  const phase=guardianPhase(enemy);
   if(enemy.attackPhase==='idle'){
-    enemy.pattern=GUARDIAN_ENCOUNTER.patterns[enemy.cycle%Math.min(phase+1,3)];
-    enemy.attackPhase='windup';enemy.attackTimer=GUARDIAN_ENCOUNTER.windups[phase-1];
-    enemy.aim={x:pl.x+pl.w/2,y:pl.y+pl.h/2};
+    enemy.pattern=config.patterns[enemy.cycle%3];enemy.openingHit=false;
+    enemy.attackPhase='windup';enemy.attackTimer=config.windups[band];enemy.aim={x:pl.x+pl.w/2,y:pl.y+pl.h/2};
     const target=Math.max(arena+T,Math.min(flag.x-T,enemy.aim.x));
-    enemy.targets=enemy.pattern==='debris'?[target,...(phase===3?[target+(target<enemy.x?90:-90)]:[])]:[];
+    enemy.targets=Array.from({length:config.rocks[band]},(_,n)=>Math.max(arena+T,Math.min(flag.x-T,target+(n-(config.rocks[band]-1)/2)*92)));
     enemySound(110,.24,'triangle',65,.08);
   }else if(enemy.attackPhase==='windup'){
     const shot=data=>{if(enemyCombat.projectiles.length<ENEMY_COMBAT.shotLimit)enemyCombat.projectiles.push({owner:enemy,life:3,...data});};
     const x=enemy.x+enemy.w/2,y=enemy.y+enemy.h;
     if(enemy.pattern==='slam'){
       enemy.slamTime=.28;enemyCombat.effects.push({kind:'impact',x,y,age:0,life:.5});
-      for(const dir of [-1,1])shot({kind:'wave',x,y:y-8,vx:dir*spec.waveSpeed,vy:0,radius:7,life:spec.waveLife});
+      for(const dir of [-1,1])shot({kind:'wave',x,y:y-8,vx:dir*(band===3?165:spec.waveSpeed),vy:0,radius:7,life:spec.waveLife});
     }else if(enemy.pattern==='boulder'){
-      const dir=enemy.aim.x<x?-1:1;shot({kind:'boulder',x:x+dir*42,y:y-48,vx:dir*GUARDIAN_ENCOUNTER.rockSpeed,vy:-210,radius:10,gravity:GUARDIAN_ENCOUNTER.rockGravity});
-      if(phase===3)shot({kind:'boulder',x:x-dir*42,y:y-48,vx:-dir*110,vy:-180,radius:9,gravity:GUARDIAN_ENCOUNTER.rockGravity});
-    }else{
-      for(const target of enemy.targets)shot({kind:'debris',x:target,y:Math.max(32,y-190),vx:0,vy:90,radius:9,gravity:GUARDIAN_ENCOUNTER.debrisGravity});
-    }
-    enemySound(90,.28,'triangle',32,.15);enemy.cycle++;
-    enemy.attackPhase='recover';enemy.attackTimer=GUARDIAN_ENCOUNTER.recovery[phase-1];
-  }else{enemy.attackPhase='idle';enemy.attackTimer=GUARDIAN_ENCOUNTER.rest[phase-1];}
+      const dir=enemy.aim.x<x?-1:1;
+      // Different arcs, not a stacked unavoidable point burst. All are terrain-safe.
+      for(let n=0;n<config.rocks[band];n++)shot({kind:'boulder',x:x+dir*42,y:y-48-n*8,vx:dir*(config.rockSpeed+n*32+(band===3?15:0)),vy:-210-n*65,radius:9,gravity:config.rockGravity});
+    }else for(const target of enemy.targets)shot({kind:'debris',x:target,y:Math.max(32,y-190),vx:0,vy:70,radius:9,gravity:config.debrisGravity});
+    enemySound(90,.28,'triangle',32,.15);enemy.cycle++;enemy.openingHit=false;
+    enemy.attackPhase='recover';enemy.attackTimer=config.recovery;
+    enemySound(660,.25,'sine',990,.09);
+  }else{enemy.attackPhase='idle';enemy.attackTimer=config.rest[band];}
 }
 function updateSentinel(enemy){
   const spec=ENEMY_TYPES.sentinel;
@@ -720,6 +728,7 @@ function abilityEffect(kind,data={},life=.25){
   if(ability.effects.length>64)ability.effects.shift();
 }
 function tickAbility(){
+  if(ability.charging)ability.charge=Math.min(CHARGE.full,ability.charge+DT);
   ability.clock+=DT;ability.cooldown=tickDown(ability.cooldown);ability.cast=tickDown(ability.cast);
   if(ability.remaining>0){ability.remaining=tickDown(ability.remaining);if(!ability.remaining)ability.active='';}
   for(const fx of ability.effects){fx.age+=DT;fx.life=tickDown(fx.life);}
@@ -761,10 +770,12 @@ function castSnare(spec){
   const x=pl.x+pl.w/2,y=pl.y+pl.h/2,hit=abilityTrace(x,y,x+pl.face*spec.range,y);
   abilityEffect('vine',{x,y,tx:hit.x,ty:hit.y,color:spec.color},.24);
   if(hit.kind!=='enemy')return false;
-  hit.enemy.root=spec.duration;powerSound(560,.24,'sine',240,.13);return true;
+  hit.enemy.root=hit.enemy.type==='guardian'?Math.min(2,spec.duration):spec.duration;
+  let count=1;for(const e of enemies)if(count<(spec.targets||1)&&e!==hit.enemy&&targetAlive(e)&&Math.hypot(e.x-hit.enemy.x,e.y-hit.enemy.y)<100&&clearAbilityLine(hit.x,hit.y,e.x+e.w/2,e.y+e.h/2)){e.root=e.type==='guardian'?Math.min(2,spec.duration):spec.duration;count++;}
+  powerSound(560,.24,'sine',240,.13);return true;
 }
 function castFireball(spec){
-  ability.projectiles.push({kind:'fire',x:pl.x+pl.w/2,y:pl.y+pl.h/2,vx:pl.face*spec.speed,life:spec.range/spec.speed,radius:spec.radius});
+  ability.projectiles.push({kind:'fire',x:pl.x+pl.w/2,y:pl.y+pl.h/2,vx:pl.face*spec.speed,life:spec.range/spec.speed,radius:spec.radius,damage:spec.damage,splash:spec.tier>=2?spec.tier===3?42:28:0});
   powerSound(300,.18,'sawtooth',95,.1);return true;
 }
 function castGlide(spec){
@@ -776,15 +787,11 @@ function castLightning(spec){
   abilityEffect('lightning',{x,y,tx:hit.x,ty:hit.y,color:spec.color},.2);
   powerSound(1400,.14,'sawtooth',160,.12);
   if(hit.kind==='enemy'){
-    const first=hit.enemy,cx=first.x+first.w/2,cy=first.y+first.h/2;
-    damageEnemy(first,'lightning',spec.color);
-    const candidates=enemies.filter(enemy=>targetAlive(enemy)&&enemy!==first)
-      .map((enemy,index)=>({enemy,index,d:Math.hypot(enemy.x+enemy.w/2-cx,enemy.y+enemy.h/2-cy)}))
-      .filter(candidate=>candidate.d<=spec.chainRange&&clearAbilityLine(cx,cy,candidate.enemy.x+candidate.enemy.w/2,candidate.enemy.y+candidate.enemy.h/2))
-      .sort((a,b)=>a.d-b.d||a.index-b.index);
-    if(candidates.length){const second=candidates[0].enemy;
-      abilityEffect('lightning',{x:cx,y:cy,tx:second.x+second.w/2,ty:second.y+second.h/2,color:spec.color},.24);
-      damageEnemy(second,'lightning',spec.color);
+    const visited=new Set();let current=hit.enemy;
+    for(let n=0;current&&n<(spec.chains||2);n++){
+      const x=current.x+current.w/2,y=current.y+current.h/2;visited.add(current);damageEnemy(current,'lightning',spec.color,spec.lightningDamage||1);
+      const next=n+1>=(spec.chains||2)?null:enemies.filter(e=>!visited.has(e)&&targetAlive(e)&&Math.hypot(e.x+e.w/2-x,e.y+e.h/2-y)<=spec.chainRange&&clearAbilityLine(x,y,e.x+e.w/2,e.y+e.h/2)).sort((a,b)=>Math.hypot(a.x+a.w/2-x,a.y+a.h/2-y)-Math.hypot(b.x+b.w/2-x,b.y+b.h/2-y))[0];
+      if(next)abilityEffect('lightning',{x,y,tx:next.x+next.w/2,ty:next.y+next.h/2,color:spec.color},.24);current=next;
     }
     abilityEffect('impact',{x:hit.x,y:hit.y,color:spec.color},.24);
   }
@@ -792,35 +799,58 @@ function castLightning(spec){
 }
 function useAbility(){
   if(state!=='play'||!pl||ability.cooldown>0||ability.active)return false;
-  const spec=abilitySpec();
+  const spec=chargedSpec(ability.releaseTier||0);ability.releaseTier=0;
   if(!spec.activate(spec))return false;
-  ability.cooldown=spec.cooldown;ability.cast=.22;return true;
+  ability.power=spec;ability.cooldown=spec.cooldown;ability.cast=.22;return true;
 }
 function updateAbilityWorld(){
   if(ability.active==='glide'&&pl.ground){ability.active='';ability.remaining=0;}
   if(ability.active==='slam'&&pl.ground){
-    const spec=ABILITIES.hopper,x=pl.x+pl.w/2,y=pl.y+pl.h-4;
+    const spec=ability.power||ABILITIES.hopper,x=pl.x+pl.w/2,y=pl.y+pl.h-4;
     ability.active='';ability.remaining=0;
     abilityEffect('shockwave',{x,y,radius:spec.radius,color:spec.color},.32);
     powerSound(95,.2,'triangle',35,.2);
-    for(const enemy of enemies)if(targetAlive(enemy)&&Math.hypot(enemy.x+enemy.w/2-x,enemy.y+enemy.h/2-y)<=spec.radius&&clearAbilityLine(x,y,enemy.x+enemy.w/2,enemy.y+enemy.h/2))damageEnemy(enemy,'slam',spec.color);
+    for(const enemy of enemies)if(targetAlive(enemy)&&Math.hypot(Math.max(enemy.x-x,0,x-enemy.x-enemy.w),Math.max(enemy.y-y,0,y-enemy.y-enemy.h))<=spec.radius&&clearAbilityLine(x,y,Math.max(enemy.x+1,Math.min(enemy.x+enemy.w-1,x)),Math.max(enemy.y+1,Math.min(enemy.y+enemy.h-1,y))))damageEnemy(enemy,'slam',spec.color,spec.damage||1);
   }
   for(const shot of ability.projectiles){
     const hit=abilityTrace(shot.x,shot.y,shot.x+shot.vx*DT,shot.y,shot.radius);
     shot.x=hit.x;shot.y=hit.y;shot.life=tickDown(shot.life);
     if(hit.kind!=='end'){
-      if(hit.kind==='enemy')damageEnemy(hit.enemy,'fireball',ABILITIES.ember.color);
+      if(hit.kind==='enemy')damageEnemy(hit.enemy,'fireball',ABILITIES.ember.color,shot.damage||1);
+      if(shot.splash&&hit.kind==='enemy')for(const e of enemies)if(e!==hit.enemy&&targetAlive(e)&&Math.hypot(e.x+e.w/2-hit.x,e.y+e.h/2-hit.y)<=shot.splash&&clearAbilityLine(hit.x,hit.y,e.x+e.w/2,e.y+e.h/2))damageEnemy(e,'fireball',ABILITIES.ember.color,shot.damage||1);
       abilityEffect('impact',{x:hit.x,y:hit.y,color:ABILITIES.ember.color},.28);powerSound(180,.13,'triangle',65,.13);shot.life=0;
     }
   }
   ability.projectiles=ability.projectiles.filter(shot=>shot.life>0);
 }
+// Approved provisional tiers scale combined effect, not every raw damage value.
+const CHARGE=Object.freeze({full:1.2,thresholds:Object.freeze([0,.4,.8,1.2]),strength:Object.freeze([1,1.5,2,3])});
+function chargeTier(seconds){return seconds>=1.2-1e-7?3:seconds>=.8-1e-7?2:seconds>=.4-1e-7?1:0;}
+function chargedSpec(tier=0){
+  const base=abilitySpec(),strength=CHARGE.strength[tier]||1,scale=Math.sqrt(strength);
+  return {...base,tier,strength,damage:[1,1,2,3][tier],radius:base.radius*scale,range:base.range*scale,chainRange:base.chainRange*scale,
+    targets:[1,1,2,3][tier],chains:[2,2,3,4][tier],lightningDamage:tier===3?2:1,
+    duration:pl.character==='nova'?base.duration*strength:pl.character==='minty'?Math.min(3.2,base.duration+tier*.4):base.duration};
+}
+function beginCharge(owner='keyboard',e){
+  if(state!=='play'||!pl||ability.cooldown>0||ability.active||ability.charging)return false;
+  e?.preventDefault();audio();ability.charging=true;ability.charge=0;ability.owner=owner;if(owner==='keyboard')cv.focus();
+  if(e?.pointerType==='touch'){touchMode=true;fit();}return true;
+}
+function releaseCharge(owner='keyboard',e){
+  if(!ability.charging||ability.owner!==owner)return false;e?.preventDefault();
+  const tier=chargeTier(ability.charge);ability.charging=false;ability.owner=null;ability.charge=0;
+  if(state==='play'){ability.releaseTier=tier;abilityEdge=true;return true;}return false;
+}
+function cancelCharge(){if(ability.charging){ability.charging=false;ability.charge=0;ability.owner=null;ability.releaseTier=0;abilityEdge=false;}}
 function requestAbility(e){
   if(state!=='play'||(e?.button!=null&&e.button!==0))return;
-  e?.preventDefault();audio();abilityEdge=true;if(e?.pointerType==='touch'){touchMode=true;fit();}else cv.focus();
+  const owner='pointer:'+(e?.pointerId??0);if(beginCharge(owner,e)&&e?.isTrusted)abilityButton.setPointerCapture?.(e.pointerId);
 }
 abilityButton.addEventListener('pointerdown',requestAbility);
-abilityButton.addEventListener('click',e=>{if(e.detail===0)requestAbility(e);});
+abilityButton.addEventListener('pointerup',e=>releaseCharge('pointer:'+(e.pointerId??0),e));
+for(const type of ['pointercancel','lostpointercapture'])abilityButton.addEventListener(type,e=>{if(ability.owner==='pointer:'+(e.pointerId??0))cancelCharge();});
+abilityButton.addEventListener('click',e=>{if(e.detail===0&&state==='play'){audio();cv.focus();ability.releaseTier=0;abilityEdge=true;}});
 
 // ---------- Game state ----------
 let state='title',lvl=0,score=0,lives=3,best=0,cam=0,time=0,pl,levelScore=0,timer=0;
@@ -1271,8 +1301,8 @@ function drawNightwing(e){
   cx.restore();
 }
 function drawGuardian(e){
-  const open=e.attackPhase==='recover',warning=e.attackPhase==='windup',phase=guardianPhase(e),w=e.w;
-  const wind=warning?1-e.attackTimer/(phase===3?.9:phase===2?1:1.15):0;
+  const open=guardianOpen(e),warning=e.attackPhase==='windup',phase=guardianPhase(e),w=e.w;
+  const wind=warning?1-e.attackTimer/GUARDIAN_ENCOUNTER.windups[guardianBand(e)]:0;
   cx.save();cx.translate(e.x+w/2-cam,e.y+e.h);cx.lineJoin='round';cx.lineCap='round';
   if(e.dead){cx.globalAlpha=Math.max(0,e.dead/.4);cx.translate(0,(.4-e.dead)*15);cx.rotate((.4-e.dead)*.2);}
   // Grounded weight, separated joints and a beveled ancient-stone silhouette.
@@ -1298,7 +1328,7 @@ function drawGuardian(e){
   cx.strokeStyle='#546e73';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(-16,-29);cx.lineTo(-8,-24);cx.lineTo(-13,-18);cx.moveTo(17,-56);cx.lineTo(12,-51);cx.lineTo(16,-45);if(phase>=2){cx.moveTo(-20,-61);cx.lineTo(-15,-54);cx.lineTo(-18,-49);cx.moveTo(13,-28);cx.lineTo(7,-22);cx.lineTo(15,-16);}cx.stroke();
   // Crown plates open physically during recovery, revealing the weak stone seam.
   for(const side of [-1,1]){cx.save();cx.translate(side*15,-63);cx.rotate(open?side*.35:0);artStone(cx,-13,-6,25,10,'#e5d4a4','#8c9d8b',3);cx.restore();}
-  if(open){cx.strokeStyle='#edfac0';cx.lineWidth=3;cx.beginPath();cx.moveTo(-12,-66);cx.lineTo(11,-66);cx.stroke();}
+  if(open){artEllipse(cx,0,-25,11,10,'#f4ffd4','#51d69b','#ceffbe');cx.strokeStyle='#bcffbd';cx.lineWidth=3;cx.beginPath();cx.ellipse(0,-39,32,33,0,0,7);cx.stroke();cx.strokeStyle='#edfac0';cx.lineWidth=3;cx.beginPath();cx.moveTo(-12,-66);cx.lineTo(11,-66);cx.stroke();}
   if(warning){
     cx.strokeStyle='#d1af78';cx.lineWidth=2;cx.beginPath();cx.ellipse(0,2,39+wind*8,5,0,0,7);cx.stroke();
     if(e.pattern==='boulder'){artStone(cx,-9,-86,18,17,'#c6b99a','#6b7e83',5);}
@@ -1377,10 +1407,11 @@ function syncAbilityUI(){
   const playing=state==='play'&&!!pl,spec=abilitySpec();document.getElementById('touch-controls').hidden=!playing||!touchMode;abilityButton.dataset.touch=touchMode?'1':'0';
   document.getElementById('compact-hud').hidden=!playing||!touchMode;document.getElementById('compact-hud').textContent=playing?'L'+(lvl+1)+' · '+LEVELS[lvl].name+'  ·  '+score+' pts  ·  ♥ '+lives+(pl.highJump>0||pl.boostToast>0?' · Jump '+pl.highJump+'/2':'')+(pl.shield?' · Shield':''):'';abilityHud.hidden=true;abilityButton.hidden=!playing;abilityButton.disabled=!playing||ability.cooldown>0;
   if(!playing)return;
-  const ready=ability.cooldown<=0,airborne=ready&&pl.ground&&['hopper','nova'].includes(pl.character);
+  const ready=ability.cooldown<=0,charging=ability.charging,airborne=ready&&pl.ground&&['hopper','nova'].includes(pl.character);
   const status=ready?(airborne?(touchMode?'Jump first':'Jump first · E'):(touchMode?'Ready · tap':'Ready · E')):ability.cooldown.toFixed(1)+'s';
   abilityName.textContent=characterById(pl.character).name+' · '+spec.name;
-  abilityReadiness.textContent=status;document.getElementById('ability-button-label').textContent=touchMode?'✦ Ability':'Ability';abilityButtonState.textContent=ready?(airborne?(touchMode?'Jump, then tap':'Jump + E'):(touchMode?'Tap · '+spec.name:'E · Ready')):ability.cooldown.toFixed(1)+'s';
+  const arc=charging?Math.round(ability.charge/CHARGE.full*100):Math.round((1-ability.cooldown/spec.cooldown)*100);abilityButton.style.background='linear-gradient(#fff1ad,#e3b965) padding-box,conic-gradient('+spec.color+' '+arc+'%,#34476055 0) border-box';abilityButton.style.border='3px solid transparent';
+  abilityReadiness.textContent=status;document.getElementById('ability-button-label').textContent=touchMode?'✦ Ability':'Ability';abilityButtonState.textContent=charging?'Charge '+Math.round(ability.charge/CHARGE.full*100)+'%':ready?(airborne?(touchMode?'Jump, then tap':'Jump + E'):(touchMode?'Tap · '+spec.name:'E · Ready')):ability.cooldown.toFixed(1)+'s';
   abilityButton.setAttribute('aria-label','Use '+spec.name+(['hopper','nova'].includes(pl.character)?' while airborne. ':'. ')+(ready?'Ready.':'Cooldown '+ability.cooldown.toFixed(1)+' seconds.'));
   abilityButton.title=spec.name+' (E)'+(['hopper','nova'].includes(pl.character)?' — use while airborne':'');
   const percent=Math.round(100*(1-ability.cooldown/spec.cooldown));

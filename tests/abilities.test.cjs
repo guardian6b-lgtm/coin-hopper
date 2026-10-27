@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { createGame, onFlatGround } = require('./harness.cjs');
 const roster = ['hopper', 'minty', 'ember', 'nova', 'bolt'];
 function gameFor(id) { return onFlatGround(createGame({ saved: { coinhopper_character_v1: id } })); }
-function cast(game) { game.event('keydown', { code: 'KeyE' });game.step();game.event('keyup', { code: 'KeyE' }); }
+function cast(game) { game.event('keydown', { code: 'KeyE' });game.event('keyup', { code: 'KeyE' });game.step(); }
 function enemy(x = 'pl.x+90', extras = '') { return `{x:${x},y:440,w:28,h:28,vx:0,vy:0,dead:0,ground:true${extras}}`; }
 function prepare(game, id) {
   if (id === 'hopper' || id === 'nova') game.eval('pl.y=330;pl.ground=false;pl.vy=80');
@@ -72,7 +72,7 @@ test('menus, hidden buttons and held E across pause never queue a surprise cast'
 
 test('E works on in-game native controls, while the dedicated button does not queue jump', () => {
   const game = gameFor('ember');game.element('pause-button').focus();
-  game.event('keydown', { code: 'KeyE', target: game.element('pause-button') });game.step();
+  game.event('keydown', { code: 'KeyE', target: game.element('pause-button') });game.event('keyup',{code:'KeyE'});game.step();
   assert.equal(game.eval('ability.projectiles.length'), 1);
   game.eval('resetAbility()');game.domEvent('ability-button', 'click', { detail: 0 });game.step();
   assert.equal(game.eval('ability.projectiles.length'), 1);
@@ -84,7 +84,7 @@ test('a touch on the DOM Ability button is excluded from canvas movement/jump to
   const game = gameFor('ember');
   game.canvasEvent('touchstart', { touches: [{ clientX: 190, clientY: 470 }, { clientX: 875, clientY: 465 }], targetTouches: [{ clientX: 190, clientY: 470 }] });
   assert.equal(game.eval('held("right")'), true);assert.equal(game.eval('held("jump")'), false);
-  game.domEvent('ability-button', 'pointerdown', { pointerType: 'touch', button: 0 });game.step();
+  game.domEvent('ability-button', 'pointerdown', { pointerType: 'touch', button: 0 });game.domEvent('ability-button','pointerup',{pointerType:'touch'});game.step();
   assert.equal(game.eval('ability.projectiles.length'), 1);
   assert.equal(game.eval('held("right") && !held("jump")'), true);
 });
@@ -297,7 +297,7 @@ test('holding E through cooldown never auto-fires; releasing and pressing again 
   const game=gameFor('ember');game.event('keydown',{code:'KeyE'});game.step();game.step(181);
   assert.equal(game.eval('ability.cooldown'),0);assert.equal(game.eval('ability.projectiles.length'),0);
   game.event('keydown',{code:'KeyE',repeat:true});game.step();assert.equal(game.eval('ability.projectiles.length'),0);
-  game.event('keyup',{code:'KeyE'});game.event('keydown',{code:'KeyE'});game.step();
+  game.event('keyup',{code:'KeyE'});game.step();
   assert.equal(game.eval('ability.projectiles.length'),1);
 });
 
