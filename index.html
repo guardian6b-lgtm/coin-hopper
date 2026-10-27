@@ -265,12 +265,101 @@ const settings={music:.35,effects:.65};
 try{const saved=JSON.parse(localStorage.getItem('coinhopper_settings'));
   for(const name of ['music','effects'])if(saved&&typeof saved[name]==='number'&&Number.isFinite(saved[name]))settings[name]=Math.max(0,Math.min(1,saved[name]));
 }catch(e){}
+// Original procedural score, authored for this game. No recordings or borrowed tunes.
+// Eight bars, four beats/bar. Motifs and arrangements are explicit and deterministic.
+const MUSIC=Object.freeze({
+  title:Object.freeze({bpm:108,root:60,minor:false,melody:[0,4,7,9,7,4,2,4,5,9,12,9,7,4,2,0],bass:[0,9,5,7],tone:.18}),
+  meadow:Object.freeze({bpm:116,root:60,minor:false,melody:[7,4,2,0,4,7,9,7,5,2,4,5,7,9,4,2],bass:[0,5,9,7],tone:.16}),
+  hills:Object.freeze({bpm:120,root:62,minor:false,melody:[0,7,4,2,4,9,7,4,5,12,9,7,4,2,7,0],bass:[0,9,5,7],tone:.16}),
+  night:Object.freeze({bpm:100,root:64,minor:false,melody:[7,12,11,7,4,9,7,2,5,9,12,7,4,2,4,0],bass:[0,5,9,7],tone:.13}),
+  garden:Object.freeze({bpm:104,root:62,minor:true,melody:[0,3,7,10,7,5,3,2,5,8,12,10,7,3,2,0],bass:[0,8,5,7],tone:.14}),
+  cavern:Object.freeze({bpm:92,root:57,minor:true,melody:[0,7,10,12,10,7,3,2,5,8,7,3,2,7,3,0],bass:[0,5,8,7],tone:.13}),
+  summit:Object.freeze({bpm:124,root:65,minor:false,melody:[0,4,9,7,12,9,7,4,5,9,12,14,12,7,4,0],bass:[0,9,5,7],tone:.17}),
+  boss:Object.freeze({bpm:132,root:50,minor:true,melody:[0,3,2,7,0,5,3,10,7,3,2,5,8,7,3,0],bass:[0,0,8,7],tone:.18})
+});
+const audioPrefs={muted:false};
+try{audioPrefs.muted=localStorage.getItem('coinhopper_audio_v1')==='muted';}catch(e){}
+let musicGain=null,masterGain=null,audioLimiter=null,audioBlurred=false;
+let musicState={theme:'',source:null,offset:0,started:0};
+const musicBuffers=new Map();
+const gainValues=new WeakMap();
+function setAudioGain(node,value){if(gainValues.get(node)!==value){node.gain.setValueAtTime(value,ac.currentTime);gainValues.set(node,value);}}
+function musicTheme(){
+  if(state==='pause'||state==='restart'||((state==='settings'||state==='controls')&&menuReturn==='pause'))return musicState.theme||'title';
+  if(state!=='play')return 'title';
+  if(lvl===5&&bossState.required&&!bossState.defeated&&pl?.x+pl?.w>=(LEVELS[lvl].arenaStart??0)*T)return 'boss';
+  return ['meadow','hills','night','garden','cavern','summit'][lvl]||'meadow';
+}
+function audioPaused(){return audioBlurred||!!document.hidden||state==='pause'||state==='restart'||((state==='settings'||state==='controls')&&menuReturn==='pause');}
+function musicAllowed(){return !audioPaused()&&!audioPrefs.muted&&settings.music>0&&!['done','over','win'].includes(state);}
+function createAudioGraph(context){
+  const effects=context.createGain(),music=context.createGain(),master=context.createGain(),limiter=context.createDynamicsCompressor();
+  limiter.threshold.value=-12;limiter.knee.value=8;limiter.ratio.value=20;limiter.attack.value=.001;limiter.release.value=.12;
+  effects.connect(limiter);music.connect(limiter);limiter.connect(master);master.connect(context.destination);
+  master.gain.value=.7;return {effects,music,master,limiter};
+}
+function composeMusic(theme,sampleRate=22050){
+  const floor=Math.floor,min=Math.min,max=Math.max,abs=Math.abs;
+  const score=MUSIC[theme]||MUSIC.title,beat=60/score.bpm,length=Math.round(32*beat*sampleRate),samples=new Float32Array(length);
+  const table=Float32Array.from({length:1024},(_,i)=>Math.sin(i*Math.PI*2/1024));
+  const note=(midi,at,beats,gain,bright=false)=>{
+    const start=Math.round(at*beat*sampleRate),count=Math.min(Math.round(beats*beat*sampleRate),length-start),increment=440*Math.pow(2,(midi-69)/12)*1024/sampleRate;
+    let phase=0;for(let i=0;i<count;i++){
+      const envelope=min(1,i/(sampleRate*.012),(count-i-1)/(sampleRate*.055));
+      const fundamental=table[floor(phase)%1024],harmonic=bright?table[floor(phase*2)%1024]*.18:0;
+      samples[start+i]+=(fundamental+harmonic)*max(0,envelope)*gain;phase+=increment;
+    }
+  };
+  for(let bar=0;bar<8;bar++){
+    const chord=score.bass[bar%4],third=score.minor?3:4;
+    for(const pitch of [0,third,7])note(score.root+chord+pitch,bar*4,3.8,.022);
+    for(let pulse=0;pulse<4;pulse++)note(score.root-24+chord,bar*4+pulse,.7,theme==='boss'?.075:.045);
+    for(let pulse=0;pulse<4;pulse++){
+      const melody=score.melody[(bar*2+pulse)%score.melody.length]+(bar>=4&&pulse===3?12:0);
+      note(score.root+12+melody,bar*4+pulse,.62,score.tone*.42,theme!=='cavern'&&theme!=='night');
+    }
+  }
+  // Soft bounded headroom; first/last samples are zero for a sample-continuous loop.
+  for(let i=0;i<length;i++)samples[i]=samples[i]/(1+abs(samples[i]))*.72;
+  samples[0]=0;samples[length-1]=0;return {samples,sampleRate,duration:length/sampleRate};
+}
+function musicBuffer(theme){
+  if(!musicBuffers.has(theme)){
+    const score=composeMusic(theme),buffer=ac.createBuffer(1,score.samples.length,score.sampleRate);buffer.getChannelData(0).set(score.samples);musicBuffers.set(theme,buffer);
+  }return musicBuffers.get(theme);
+}
+function stopMusic(reset=false){
+  if(musicState.source){
+    const buffer=musicBuffers.get(musicState.theme);musicState.offset=buffer?(musicState.offset+Math.max(0,ac.currentTime-musicState.started))%buffer.duration:0;
+    try{musicState.source.stop();musicState.source.disconnect();}catch(e){}musicState.source=null;
+  }
+  if(reset)musicState.offset=0;
+}
+function syncMusic(){
+  if(!ac||!musicGain||musicGain.context!==ac)return;
+  const theme=musicTheme();
+  if(theme!==musicState.theme){stopMusic(true);musicState.theme=theme;}
+  setAudioGain(masterGain,audioPrefs.muted||audioPaused()?0:.7);
+  setAudioGain(musicGain,settings.music);
+  if(!musicAllowed()){stopMusic();return;}
+  if(!musicState.source){
+    try{
+      const source=ac.createBufferSource();source.buffer=musicBuffer(theme);source.loop=true;source.connect(musicGain);
+      source.start(0,musicState.offset%source.buffer.duration);musicState.source=source;musicState.started=ac.currentTime;
+    }catch(e){musicState.source=null;} // An unavailable audio device never blocks play.
+  }
+}
+function setMuted(muted){audioPrefs.muted=muted;try{localStorage.setItem('coinhopper_audio_v1',muted?'muted':'on');}catch(e){}applySettings();}
+addEventListener('blur',()=>{audioBlurred=true;syncMusic();});
+addEventListener('focus',()=>{audioBlurred=false;syncMusic();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInput();if(state==='play')showMenu('pause','pause');}syncMusic();});
+
 let ac=null,effectsGain=null;
 function saveSettings(){try{localStorage.setItem('coinhopper_settings',JSON.stringify(settings));}catch(e){}}
-function applySettings(){if(effectsGain)effectsGain.gain.setValueAtTime(settings.effects,ac.currentTime);}
-function audio(){if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();effectsGain=ac.createGain();effectsGain.connect(ac.destination);applySettings();}catch(e){ac=null;effectsGain=null;}}
+function applySettings(){if(effectsGain)setAudioGain(effectsGain,settings.effects);syncMusic();}
+function audio(){if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();const graph=createAudioGraph(ac);effectsGain=graph.effects;musicGain=graph.music;masterGain=graph.master;audioLimiter=graph.limiter;applySettings();}catch(e){ac=null;effectsGain=null;musicGain=null;masterGain=null;}}
   if(ac&&ac.state==='suspended'){const result=ac.resume();if(result&&result.catch)result.catch(()=>{});}}
-function snd(f,d,type='square',f2=null,vol=.12){if(!ac)return;const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;
+function snd(f,d,type='square',f2=null,vol=.12){if(!ac||audioPrefs.muted||audioPaused())return;const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;
   o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
   g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(effectsGain);o.start(t);o.stop(t+d);return o;}
 const SFX={jump:()=>snd(330,.18,'square',660,.08),coin:()=>{snd(988,.08);setTimeout(()=>snd(1319,.15),70);},
@@ -603,7 +692,7 @@ function saveBest(){if(score>best){best=score;try{localStorage.setItem('coinhopp
 function togglePause(){if(state==='play')showMenu('pause');else if(state==='pause')resumeGame();}
 function spawn(){resetAbility();resetEnemyCombat();pl={x:start.x,y:start.y,w:26,h:32,vx:0,vy:0,ground:false,coyote:0,buf:0,face:1,inv:1,squash:1,shield:false,character:selectedCharacter};cam=Math.max(0,pl.x-W/3);}
 function startLevel(i){lvl=i;load(i);spawn();levelScore=0;timer=0;state='play';syncMenu();}
-function newGame(){score=0;lives=3;startLevel(0);}
+function newGame(){stopMusic(true);score=0;lives=3;startLevel(0);}
 function burst(x,y,col,n=10){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.5)*300,vy:-Math.random()*300,l:.6,col});}
 // A handled hit ends this update; respawning replaces the player object.
 // Pit falls bypass protection, including spawn/shield recovery invulnerability.
@@ -1058,10 +1147,11 @@ const menu=document.getElementById('menu'),menuTitle=document.getElementById('me
   menuActions=document.getElementById('menu-actions'),pauseButton=document.getElementById('pause-button');
 let menuReturn='title',menuItems=[];
 function showMenu(screen,returnTo=menuReturn){if(screen==='title'){lvl=0;load(0);pl=null;cam=0;resetAbility();resetEnemyCombat();}state=screen;menuReturn=returnTo;syncMenu();}
-function resumeGame(){state='play';syncMenu();}
+function resumeGame(){audio();state='play';syncMenu();}
 function requestRestart(){showMenu('restart','pause');}
 function confirmRestart(){
   if(state!=='restart')return;
+  stopMusic(true);
   const keptScore=score-levelScore,remainingLives=lives;
   startLevel(lvl);score=keptScore;lives=remainingLives;
 }
@@ -1161,7 +1251,7 @@ function trapMenuFocus(e){
 function syncMenu(){
   clearInput();menu.setAttribute('data-screen',state);const playing=state==='play';menu.hidden=playing;pauseButton.hidden=playing?touchMode:true;
   cv.tabIndex=playing?0:-1;cv.setAttribute('aria-hidden',playing?'false':'true');
-  syncAbilityUI();syncBossUI();if(!playing){stopAbilitySounds();stopEnemySounds();}
+  syncAbilityUI();syncBossUI();syncMusic();if(!playing){stopAbilitySounds();stopEnemySounds();}
   if(playing){cv.focus();return;}
   drawMenuArt();
   menuContent.replaceChildren();menuActions.replaceChildren();menuItems=[];
@@ -1197,7 +1287,8 @@ function syncMenu(){
   }else if(state==='settings'){
     volumeControl('effects','Sound effects');
     volumeControl('music','Music volume');
-    menuParagraph('Music is coming soon. Your volume choice is saved.');
+    menuParagraph('Original music loops offline. Music and effects have separate volumes. Pausing or hiding the game pauses music.');
+    const muteLabel=document.createElement('label');muteLabel.className='motion-setting';const mute=document.createElement('input');mute.type='checkbox';mute.id='audio-mute';mute.checked=audioPrefs.muted;mute.setAttribute('aria-label','Mute all audio');mute.addEventListener('change',()=>setMuted(mute.checked));muteLabel.append(mute,'Mute all audio');menuContent.appendChild(muteLabel);menuItems.push(mute);
     const label=document.createElement('label');label.className='motion-setting';
     const toggle=document.createElement('input');toggle.id='motion-toggle';toggle.type='checkbox';toggle.checked=visualSettings.reduced;toggle.setAttribute('aria-label','Reduce decorative motion');
     toggle.addEventListener('change',()=>{visualSettings.reduced=toggle.checked;try{localStorage.setItem('coinhopper_motion_v1',toggle.checked?'reduce':'system');}catch(e){}});
@@ -1226,7 +1317,7 @@ menu.addEventListener('touchstart',()=>{touchMode=true;},{passive:true});
 // ---------- Loop: fixed 60 Hz step ----------
 let last=performance.now(),accum=0;
 function frame(now){accum+=Math.min(.25,(now-last)/1000);last=now;
-  while(accum>=DT){update();accum-=DT;}draw();requestAnimationFrame(frame);}
+  while(accum>=DT){update();accum-=DT;}draw();syncMusic();requestAnimationFrame(frame);}
 syncMenu();
 requestAnimationFrame(frame);
 </script></body></html>

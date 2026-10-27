@@ -36,6 +36,8 @@ test('Tab and Shift+Tab wrap through visible native menu controls', () => {
   game.event('keydown', { code: 'Tab', target: game.element('effects-volume') });
   assert.equal(game.document.activeElement, game.element('music-volume'));
   game.event('keydown', { code: 'Tab', target: game.element('music-volume') });
+  assert.equal(game.document.activeElement, game.element('audio-mute'));
+  game.event('keydown', { code: 'Tab', target: game.element('audio-mute') });
   assert.equal(game.document.activeElement, game.element('motion-toggle'));
   game.event('keydown', { code: 'Tab', target: game.element('motion-toggle') });
   assert.equal(game.document.activeElement, game.findButton('Back'));
@@ -126,7 +128,7 @@ test('audio range changes update the live effects bus and survive reloading', ()
   game.click('Settings');
   assert.equal(game.element('effects-volume').value, '65');
   assert.equal(game.element('music-volume').value, '35');
-  assert.match(game.element('menu-content').textContent, /Music is coming soon/);
+  assert.match(game.element('menu-content').textContent, /Original music loops offline/);
   game.input('effects-volume', 0);
   game.input('music-volume', 80);
   assert.deepEqual(game.snapshot('settings'), { effects: 0, music: .8 });

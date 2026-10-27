@@ -112,3 +112,14 @@ NSIS/portable artifacts for after captures and smoke checks. Neither is publishe
 Exact-head hosted results, links and remaining human checks live in the draft PR
 and [visual guide](visual-redesign.md). Device, audible and formal art acceptance
 remain separate human gates.
+
+## Stage E audio verification
+
+Stage E retains all 251 prior cases and adds 17 score/routing/lifecycle/autoplay
+cases: **268 Node tests**. **88 Chromium groups** add native music/effects/mute
+controls, persistence, retained pause position, eight real two-loop renders,
+zero-output mute and overlapping-power/enemy/music signal measurements. Actual
+offline Linux and Windows executables run the same audio checks before existing
+menu/control/route checks. WAV previews and signal JSON are temporary artifacts.
+Audible quality and physical speaker/headphone/device acceptance remain
+**NOT TESTED**. See [the audio guide](music-audio.md) and the exact-head draft PR.

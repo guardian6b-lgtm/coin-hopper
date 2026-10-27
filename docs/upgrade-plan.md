@@ -70,5 +70,9 @@ Issue #13 / Stage D now implements the reference-driven visual layer; see
 [the visual guide](visual-redesign.md). The exact original reference is archived,
 and generated runtime characters are separately identified. No gameplay rebalance.
 
-Next: #15 music, #16 progression and #14 final
+Issue #15 / Stage E implements original procedural title/scene/boss loops, actual
+music volume, mute, pause/visibility and bounded mixing. Human listening is open;
+see [music verification](music-audio.md).
+
+Next: #16 progression and #14 final
 technical/human release-readiness records. No release is authorized by this plan.
