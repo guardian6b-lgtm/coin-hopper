@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');
 const path=require('node:path');
 const replay=require('./replay-browser-route.cjs');
-const cavern=require('../tests/fixtures/crystal-caverns.cjs');
+const cavern={bonus:require('../tests/fixtures/stage-h-cavern-bonus.json')};
 module.exports=async function verifyCampaign(browser,url,output){
   const results=[],errors=[];
   const context=await browser.newContext({viewport:{width:960,height:540}});
@@ -10,12 +10,12 @@ module.exports=async function verifyCampaign(browser,url,output){
   try{
     await page.goto(url);await page.getByRole('button',{name:'Play',exact:true}).click();await page.getByRole('button',{name:'Nova',exact:true}).click();await page.getByRole('button',{name:'Start game',exact:true}).click();
     await page.evaluate('startLevel(4);for(let i=0;i<7;i++)update();draw()');
-    assert.equal(await page.evaluate('enemies.filter(e=>e.type==="shellback").length===3&&enemies.filter(e=>e.type==="sentinel").length===3'),true);
+    assert.equal(await page.evaluate('enemies.filter(e=>e.type==="shellback").length===6&&enemies.filter(e=>e.type==="sentinel").length===4'),true);
     await page.screenshot({path:path.join(output,'crystal-caverns-intro.png')});
     results.push('PASS Crystal Caverns distinct scenery, safe intro, two-HP placements and optional shield');
 
     await page.evaluate('startLevel(4)');await replay(page,cavern.bonus);
-    assert.equal(await page.evaluate('state==="done"&&lives===3&&levelScore===600&&ability.cooldown===0'),true);
+    assert.equal(await page.evaluate('state==="done"&&lives===3&&levelScore===645&&ability.cooldown===0'),true);
     const raised=await page.evaluate('coins.filter(c=>c.y<400&&c.got).map(c=>Math.floor(c.x/T))');
     for(const x of [9,10,11,40,42,136,137,138,139])assert.ok(raised.includes(x));
     results.push('PASS Crystal Caverns optional legal-input route reaches all raised bonus groups and shield');
@@ -39,7 +39,7 @@ module.exports=async function verifyCampaign(browser,url,output){
       await mp.evaluate('startLevel(4);for(let i=0;i<10;i++)update();draw()');await mp.locator('#ability-button').tap();await mp.evaluate('update();draw()');
       assert.equal(await mp.evaluate('ability.projectiles.length'),1);
       for(const size of [{width:390,height:844},{width:844,height:390},{width:320,height:240}]){
-        await mp.setViewportSize(size);await mp.waitForFunction('Math.abs(parseFloat(cv.style.width)-Math.min(innerWidth/960,innerHeight/540)*960)<.1',null,{polling:50});await mp.evaluate('draw()');
+        await mp.setViewportSize(size);await mp.waitForFunction('Math.abs(parseFloat(cv.style.width)-Math.min(innerWidth/960,(innerHeight-(touchMode?96:0))/540)*960)<.1',null,{polling:50});await mp.evaluate('draw()');
         const button=await mp.locator('#ability-button').boundingBox();assert.ok(button.width>=44&&button.height>=44&&button.x>=0&&button.y>=0&&button.x+button.width<=size.width&&button.y+button.height<=size.height);
         await mp.screenshot({path:path.join(output,`crystal-caverns-${size.width}x${size.height}.png`)});
       }

@@ -35,7 +35,7 @@ test('an interrupted first-level attempt enables Continue at its beginning with 
   assert.equal(g.findButton('Continue').disabled,false);g.click('Continue');g.click('Start game');assert.deepEqual(g.snapshot('({lvl,score,lives})'),{lvl:0,score:0,lives:3});assert.equal(g.eval('pl.shield'),false);
 });
 test('a legal no-power first-level route unlocks Level 2 and saves Continue before Next is clicked',()=>{
-  const g=createGame();g.click('Play');g.click('Start game');playRoute(g,routes[0]);assert.equal(g.eval('state'),'done');assert.equal(g.eval('score'),500);assert.equal(g.eval('lives'),3);
+  const g=createGame();g.click('Play');g.click('Start game');playRoute(g,routes[0]);assert.equal(g.eval('state'),'done');assert.equal(g.eval('score'),routes[0].score);assert.equal(g.eval('lives'),3);
   assert.equal(g.eval('unlockedCount()'),2);assert.equal(JSON.parse(g.storage.get(key)).lastLevel,1);
   g.click('Title screen');g.click('Continue');assert.match(g.element('menu-description').textContent,/Brick Hills/);g.click('Start game');assert.deepEqual(g.snapshot('({lvl,score,lives})'),{lvl:1,score:0,lives:3});
 });

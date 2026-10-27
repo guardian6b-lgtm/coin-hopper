@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const crypto=require('node:crypto');
 const {createGame}=require('./harness.cjs');
 const routes=require('./fixtures/campaign-routes.cjs');
-const cavern=require('./fixtures/crystal-caverns.cjs');
+const cavern={bonus:require('./fixtures/stage-h-cavern-bonus.json')};
 const heroes=['hopper','minty','ember','nova','bolt'];
 function select(game,id){game.click('Play');game.click('character-'+id);game.click('Start game');}
 function replay(game,route,noShield=true){
@@ -25,17 +25,17 @@ function replay(game,route,noShield=true){
   return frames;
 }
 
-test('all four original full level definitions match the verified pre-expansion hashes',()=>{
+test('archived foundation definitions retain the four verified pre-expansion hashes',()=>{
   const hashes=['2a98625b6ff56cbb64596eb57f15be3419c2c7de0e2a92182cee30e541bc3dcf','2088933dba2eaf2392f8287391c824919877a1d0a35a5d23ce9f5649c55654a3','2dee0b8187afb49bb9c8078fc3e9dd23501ce1698c840aa206174aa5f73c3307','3b022ef3ad520b80a6fa3c51af9f11f1a0a01ad45e26e066568b1e7df347ccfe'];
   const game=createGame();
-  for(let i=0;i<4;i++)assert.equal(crypto.createHash('sha256').update(JSON.stringify(game.snapshot(`LEVELS[${i}]`))).digest('hex'),hashes[i]);
+  for(let i=0;i<4;i++)assert.equal(crypto.createHash('sha256').update(JSON.stringify(game.snapshot(`FOUNDATION_LEVELS[${i}]`))).digest('hex'),hashes[i]);
 });
 
 test('Crystal Caverns loads its own cave geometry, two-HP types, optional shield and safe flag',()=>{
   const game=createGame();game.eval('newGame();startLevel(4)');
   assert.equal(game.eval('LEVELS[4].name'),'Crystal Caverns');assert.equal(game.eval('LEVELS[4].theme'),'cavern');
-  assert.equal(game.eval('LW'),149);assert.equal(game.eval('coins.length'),37);assert.equal(game.eval('shields.length'),1);
-  assert.equal(game.eval('enemies.filter(e=>e.type==="shellback").length'),3);assert.equal(game.eval('enemies.filter(e=>e.type==="sentinel").length'),3);
+  assert.equal(game.eval('LW'),245);assert.equal(game.eval('coins.length'),54);assert.equal(game.eval('shields.length'),1);
+  assert.equal(game.eval('enemies.filter(e=>e.type==="shellback").length'),6);assert.equal(game.eval('enemies.filter(e=>e.type==="sentinel").length'),4);
   assert.equal(game.eval('enemies.every(e=>e.health===2&&e.maxHealth===2&&e.y+e.h===13*T)'),true);
   assert.equal(game.eval('grid.flat().some(c=>"bsPFSoeh".includes(c))'),false);
   assert.equal(game.eval('isSolid(Math.floor(start.x/T),13)&&isSolid(flag.x/T,flag.y/T+1)'),true);

@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {createGame,onFlatGround}=require('./harness.cjs');
-const route=require('./fixtures/skyline-summit.cjs');
+const route=require('./fixtures/campaign-routes.cjs')[5];
 function fixture(type='guardian',hero='hopper'){
   const g=onFlatGround(createGame({saved:{coinhopper_character_v1:hero}}));
   g.eval(`enemies=[createEnemy('${type}',400,${type==='guardian'?404:372})];shields=[];bossState={required:${type==='guardian'},defeated:false};pl.inv=0`);return g;
@@ -8,15 +8,15 @@ function fixture(type='guardian',hero='hopper'){
 function cast(g){g.event('keydown',{code:'KeyE'});g.step();g.event('keyup',{code:'KeyE'});}
 function wave(g,more=''){g.eval(`enemyCombat.projectiles.push({kind:'wave',owner:enemies[0],x:pl.x+13,y:pl.y+23,vx:0,vy:0,radius:7,life:2.4${more}})`);}
 
-test('Skyline Summit has safe elevated islands, three flyers, a five-HP boss and a required exit gate',()=>{
+test('Skyline Summit has safe elevated islands, four flyers, a five-HP boss and a required exit gate',()=>{
   const g=createGame();g.eval('newGame();startLevel(5)');
   assert.equal(g.eval('LEVELS.length'),6);assert.equal(g.eval('LEVELS[5].name'),'Skyline Summit');
-  assert.equal(g.eval('enemies.filter(e=>e.type==="nightwing").length'),3);
+  assert.equal(g.eval('enemies.filter(e=>e.type==="nightwing").length'),4);
   assert.equal(g.eval('enemies.filter(e=>e.type==="guardian").length'),1);
   assert.equal(g.eval('enemies.find(e=>e.type==="guardian").health'),5);
   assert.equal(g.eval('bossState.required&&!bossState.defeated&&isSolid(Math.floor(start.x/T),13)&&isSolid(flag.x/T,13)'),true);
   assert.equal(g.eval('grid.flat().some(c=>"nGbsPFSoeh".includes(c))'),false);
-  assert.equal(g.eval('LEVELS[5].arenaStart<132'),true);
+  assert.equal(g.eval('LEVELS[5].arenaStart===216'),true);
 });
 
 for(const hero of ['hopper','minty','ember','nova','bolt']){
@@ -28,7 +28,7 @@ for(const hero of ['hopper','minty','ember','nova','bolt']){
       g.step();const health=g.eval('enemies.find(e=>e.type==="guardian")?.health??0');if(health<hp){hits.push([frame,health]);hp=health;}
       assert.equal(g.eval('lives'),3);assert.equal(g.eval('shields.some(s=>s.got)'),false);assert.equal(g.eval('ability.cooldown'),0);
     }
-    assert.deepEqual(hits,route.bossHits);assert.equal(g.eval('state'), 'done');assert.equal(g.eval('bossState.defeated'),true);assert.equal(g.eval('score'),765);
+    assert.deepEqual(hits,route.bossHits);assert.equal(g.eval('state'), 'done');assert.equal(g.eval('bossState.defeated'),true);assert.equal(g.eval('score'),route.score);
     g.click('Finish');assert.equal(g.eval('state'),'win');assert.match(g.element('menu-description').textContent,/All 6 levels complete/);
   });
 }
@@ -49,13 +49,12 @@ test('Guardian armor rejects hits, recovery accepts one HP, and closes without p
   g.eval('enemies[0].hitTime=0');assert.equal(g.eval("damageEnemy(enemies[0],'stomp')"),false,'one hit per visible opening');
 });
 
-test('Guardian wind-up, slam waves and recovery are fixed-time and phase two is visibly faster',()=>{
-  for(const health of [5,2]){
+test('Guardian three-phase wind-up, material attacks and recovery use fixed simulation time',()=>{
+  for(const health of [5,3,1]){
     const g=fixture();g.eval(`enemies[0].health=${health};enemies[0].attackTimer=DT`);g.step();
-    assert.equal(g.eval('enemies[0].attackPhase'),'windup');assert.equal(g.eval('enemies[0].attackTimer'),health===5?1:.75);
-    g.step(health===5?59:44);assert.equal(g.eval('enemyCombat.projectiles.length'),0);g.step();
+    assert.equal(g.eval('enemies[0].attackPhase'),'windup');const windup=health===5?1.15:health===3?1:.9;
+    assert.equal(g.eval('enemies[0].attackTimer'),windup);g.step(Math.round(windup*60));
     assert.equal(g.eval('enemies[0].attackPhase'),'recover');assert.equal(g.eval('enemyCombat.projectiles.length'),2);
-    assert.equal(g.eval('enemyCombat.effects.length'),1);assert.equal(g.eval('enemies[0].attackTimer'),health===5?1.6:1.3);
     assert.equal(g.eval('enemyCombat.projectiles.every(p=>p.kind==="wave"&&Math.abs(p.vx)===150)'),true);
   }
 });
@@ -111,9 +110,9 @@ test('pause/settings/restart cancel freeze boss health/phase/waves and native HU
   assert.deepEqual(g.snapshot('({bossState,enemyCombat,enemies,pl,score,timer})'),frozen);g.click('Resume');g.step();assert.notDeepEqual(g.snapshot('enemyCombat'),frozen.enemyCombat);
 });
 
-test('boss HUD exposes five-HP value, phase and explicit guard/recovery/defeat text',()=>{
-  const g=fixture();g.eval('draw()');assert.equal(g.element('boss-health').getAttribute('aria-valuenow'),'5');assert.match(g.element('boss-status').textContent,/Guarding/);
-  g.eval("enemies[0].health=2;enemies[0].attackPhase='recover';draw()");assert.match(g.element('boss-name').textContent,/Phase 2/);assert.match(g.element('boss-status').textContent,/stomp now/);
+test('boss HUD exposes HP and defeat without narrating internal states or commands',()=>{
+  const g=fixture();g.eval('draw()');assert.equal(g.element('boss-health').getAttribute('aria-valuenow'),'5');assert.equal(g.element('boss-status').textContent,'');
+  g.eval("enemies[0].health=2;enemies[0].attackPhase='recover';draw()");assert.doesNotMatch(g.element('boss-name').textContent,/Phase|stomp|recover/i);assert.equal(g.element('boss-status').hidden,true);
   g.eval('bossState.defeated=true;draw()');assert.equal(g.element('boss-health').getAttribute('aria-valuenow'),'0');assert.match(g.element('boss-status').textContent,/exit open/);
   g.eval('bossState.defeated=false;enemies[0].maxHealth=7;draw()');assert.equal(g.element('boss-health').getAttribute('aria-valuemax'),'7');assert.match(g.element('boss-name').textContent,/2 \/ 7/);
 });

@@ -17,8 +17,8 @@ test('Moonlit Gardens is exactly the fourth level with a supported start and fin
     safeFinish:isSolid(flag.x/T,flag.y/T+1),
     markersRemoved:!grid.flat().some(c=>'hSoeFP'.includes(c)),
     initialShield:pl.shield})`), {
-    count: 4, name: 'Moonlit Gardens', shieldCount: 2, hoppers: 4,
-    walkers: 2, coins: 24, width: 109, rows: 15,
+    count: 4, name: 'Moonlit Gardens', shieldCount: 2, hoppers: 7,
+    walkers: 2, coins: 41, width: 205, rows: 15,
     safeStart: true, safeFinish: true, markersRemoved: true, initialShield: false,
   });
 });

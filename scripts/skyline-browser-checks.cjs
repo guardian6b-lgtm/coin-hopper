@@ -65,7 +65,7 @@ module.exports=async function verifySkyline(browser,url,output){
     const still=await page.evaluate('(()=>{drawSummitBG();const a=cv.toDataURL();enemyCombat.clock+=10;drawSummitBG();return a===cv.toDataURL()})()');assert.equal(still,true);await page.evaluate('draw()');
     results.push('PASS reduced-motion Summit background removes decorative wind streaks');
     for(const size of [{width:960,height:540},{width:1440,height:900},{width:390,height:844},{width:844,height:390},{width:320,height:240}]){
-      await page.setViewportSize(size);await page.waitForFunction('Math.abs(parseFloat(cv.style.width)-Math.min(innerWidth/960,innerHeight/540)*960)<.1',null,{polling:50});await page.evaluate('draw()');
+      await page.setViewportSize(size);await page.waitForFunction('Math.abs(parseFloat(cv.style.width)-Math.min(innerWidth/960,(innerHeight-(touchMode?96:0))/540)*960)<.1',null,{polling:50});await page.evaluate('draw()');
       const box=await page.locator('#boss-hud').boundingBox(),button=await page.locator('#ability-button').boundingBox(),power=await page.locator('#ability-hud').boundingBox();
       assert.ok(box&&box.x>=0&&box.y>=0&&box.x+box.width<=size.width&&box.y+box.height<=size.height,JSON.stringify({box,size}));
       const overlaps=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;

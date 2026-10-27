@@ -9,8 +9,8 @@ const originalLevels = [
   ['Starry Night', '2a6c12f1759e0d4a008239125ec83fc29e6f8813d18359aa6b515e14359640a4', 22, 7],
 ];
 
-test('all three original maps, names, and order stay unchanged', () => {
-  const levels = createGame().snapshot('LEVELS');
+test('all three archived foundation maps, names, and order stay unchanged', () => {
+  const levels = createGame().snapshot('FOUNDATION_LEVELS');
   assert.ok(levels.length >= 4);
   for (let i = 0; i < originalLevels.length; i++) {
     assert.equal(levels[i].name, originalLevels[i][0]);
@@ -30,8 +30,8 @@ test('each original level loads its coins, enemies, spawn, and supported flag', 
       removedMarkers:!grid.flat().some(tile=>'oeFP'.includes(tile))
     })`);
     assert.deepEqual(actual, {
-      state: 'play', lvl: i, coinCount, enemyCount, rows: 15,
-      width: [78, 84, 86][i], rectangular: true, spawnMatches: true,
+      state: 'play', lvl: i, coinCount:coinCount+17, enemyCount:enemyCount+3, rows: 15,
+      width: [174, 180, 182][i], rectangular: true, spawnMatches: true,
       flagSupported: true, removedMarkers: true,
     });
   });
