@@ -90,7 +90,7 @@ results are in the draft PR.
 | Save validation / fallback | PASS | Bad versions/shapes/cursors, noncontiguous completion, oversized payload, blocked storage, existing-save isolation and cancel-without-write |
 | Reset / anti-farming | PASS | Fresh score/lives, death and restart, saved completed boss still requires a new fight, no repeated flag/metadata award |
 | Full Chromium | PASS locally | **94 groups**, zero page errors; previous 88 plus six progression groups, actual route/reload, five sizes, all heroes/boss gate, pointer/keyboard and simulated portrait touch |
-| Responsive selection | PASS locally | 960×540, 1440×810, 390×844, 844×390 and 320×240; all six native choices scroll fully into view and remain 44px+ |
+| Responsive selection | PASS locally | 960×540, 1440×810, 390×844, 844×390 and 320×240; all six native choices remain 44px+; the six choices and Back fit standard desktop sizes, while smaller panels scroll |
 | Actual offline Linux Electron | See PR | Full audio/controls/enemy/route smoke plus earned unlock, Continue, reload, all five heroes and responsive Level Select |
 | Windows NSIS/portable | See PR | Exact-head workflow, earned unlocks across full process restart, real offline storage/menu flows, actual content-window sizes and existing audio/minimize/F11/resize checks |
 | Human UX, physical touch, audible audio, formal screen-reader/art/balance acceptance | NOT TESTED | Injected browser/Windows controls and signal measurements do not establish human/device acceptance |
@@ -98,6 +98,8 @@ results are in the draft PR.
 Late-game availability/locked-exit screenshots use clearly labeled seeded-save and
 position fixtures; they do not claim that a human earned those completions. Separate
 canonical recordings cover all six legal routes and the required five-hit boss.
+
+Screenshot review found Back below the fold at 960×540; the Level Select layout was tightened and an explicit full-panel assertion now guards standard desktop sizes.
 
 No confirmed unresolved defect remains in completed local checks. Optional checkpoint
 comfort remains a human playtest question. The next separate stage is Issue #14's

@@ -38,7 +38,9 @@ module.exports=async function verifyProgressionPage(page,output,label='browser',
         const button=page.locator('#level-choice-'+i);assert.equal(await button.isDisabled(),false);await button.scrollIntoViewIfNeeded();const b=await button.boundingBox();
         assert.ok(b&&b.x>=-1&&b.y>=-1&&b.x+b.width<=size.width+1&&b.y+b.height<=size.height+1&&b.width>=44&&b.height>=44,JSON.stringify({size,b,i}));
       }
-      await page.locator('#level-choice-0').scrollIntoViewIfNeeded();await page.screenshot({path:path.join(output,`${label}-progress-levels-${size.width}x${size.height}.png`)});
+      await page.locator('#level-choice-0').scrollIntoViewIfNeeded();
+      if(size.width>=960&&size.height>=540){await page.locator('.menu-panel').evaluate(el=>el.scrollTop=0);const back=await page.getByRole('button',{name:'Back',exact:true}).boundingBox();assert.ok(back&&back.y>=0&&back.y+back.height<=size.height,JSON.stringify({size,back}));}
+      await page.screenshot({path:path.join(output,`${label}-progress-levels-${size.width}x${size.height}.png`)});
       await page.getByRole('button',{name:'Back',exact:true}).click();
     }
     await resize(sizes[0]);

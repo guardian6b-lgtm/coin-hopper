@@ -88,6 +88,12 @@ button:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:4
 .level-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}
 .level-grid .menu-button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:82px;font-size:16px}
 .level-grid small{font-size:12px}
+#menu[data-screen="levels"] .menu-panel{padding:16px}
+#menu[data-screen="levels"] h1{font-size:clamp(26px,4vw,38px);padding:9px 12px}
+#menu[data-screen="levels"] p{font-size:16px;margin:6px 0}
+#menu[data-screen="levels"] .level-grid{gap:8px;margin:10px 0}
+#menu[data-screen="levels"] .level-grid .menu-button{min-height:70px;padding:8px 12px}
+#menu[data-screen="levels"] #menu-actions{margin-top:10px}
 @media(max-width:700px){#menu[data-screen="characters"] .menu-panel{padding:16px}#menu .character-card{min-height:224px}#menu .character-card canvas{width:112px;height:112px}#menu .character-name{font-size:21px}}
 @media(max-height:560px) and (min-width:701px){#menu[data-screen="characters"] .menu-panel{padding:14px}#menu .menu-panel h1{padding:9px;font-size:30px}#menu .character-card{min-height:210px;padding:7px}#menu .character-card canvas{width:100px;height:100px}#menu .character-flavor{font-size:12px}#menu[data-screen="characters"] #menu-description{margin-bottom:8px}.character-grid{margin:10px 0}#character-choice{font-size:14px}}
 @media(max-height:400px) and (max-width:700px){#menu .character-card{min-height:156px;padding:6px;gap:3px}#menu .character-card canvas{width:56px;height:56px}#menu .character-name{font-size:16px}#menu .character-flavor{font-size:11px;line-height:1.2;min-height:28px}#menu .character-status{font-size:10px;padding:2px 8px}#menu .character-power{font-size:11px}#menu[data-screen] .menu-panel{padding:14px}}
