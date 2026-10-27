@@ -77,6 +77,12 @@ only after this stage's technical compatibility gates pass. Nightwing, Skyline
 Summit and Stone Guardian remain outside this PR; the reconciled README preserves
 their approved plans and the separate PR #7 stays untouched.
 
+Browser harness correction: the multi-touch cancellation check observes delivery
+of the actual touchcancel event before checking controls. A CDP compositor
+acknowledgement alone could race that handler under load. Twenty focused runs
+cleared inputs, and the synchronized full suite passes; no product input or physics
+change is made for this test correction.
+
 ## Preview and reproduction
 
 ```sh

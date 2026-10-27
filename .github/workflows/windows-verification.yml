@@ -46,7 +46,7 @@ jobs:
           "WINDOWS_ARTIFACTS=$bundle" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           @{ commit=$env:GITHUB_SHA; run=$env:GITHUB_RUN_ID; platform='windows-x64'; published=$false } |
             ConvertTo-Json | Set-Content (Join-Path $bundle 'build.json')
-      - name: Run all gameplay tests and four recorded routes
+      - name: Run all gameplay tests and recorded campaign routes
         shell: pwsh
         run: |
           node --test --test-reporter=tap | Tee-Object -FilePath "$env:WINDOWS_ARTIFACTS/gameplay.tap"
