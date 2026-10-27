@@ -56,3 +56,9 @@ in a separate draft targeting the verified ability branch. No new enemy placemen
 in Levels 1–4, Nightwing, Level 5/6 maps or Stone Guardian boss are included.
 The six-level roadmap and mandatory final boss remain approved future work;
 README reconciles those plans with the separate, unmerged documentation PR #7.
+
+Issue #11 / Stage B adds [Crystal Caverns](crystal-caverns.md) in a separate stacked
+draft from the verified enemy foundation. Original Levels 1–4 stay unchanged.
+The five-level temporary ending is explicit; Skyline Summit/Nightwing/Guardian
+remain the next independent stage, and the approved graphical reference is reserved
+for the subsequent visual redesign branch.

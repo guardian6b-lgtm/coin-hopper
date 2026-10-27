@@ -98,7 +98,7 @@ module.exports = async function verifyEnemies(browser, url, output) {
     const arena=await context.newPage();arena.on('pageerror',e=>errors.push(e.message));
     await arena.goto(new URL('enemy-arena.html',url).href);
     await arena.getByRole('button',{name:'Play',exact:true}).click();await arena.getByRole('button',{name:'Ember',exact:true}).click();await arena.getByRole('button',{name:'Start game',exact:true}).click();
-    assert.equal(await arena.evaluate('LEVELS.length===4&&enemies[0].type==="shellback"&&enemies[0].health===2'),true);
+    assert.equal(await arena.evaluate('LEVELS.length>=4&&enemies[0].type==="shellback"&&enemies[0].health===2'),true);
     await arena.getByRole('button',{name:'Reset Sentinel',exact:true}).click();
     assert.equal(await arena.evaluate('enemies[0].type==="sentinel"&&score===0&&lives===3'),true);
     await arena.keyboard.press('KeyE');await arena.evaluate('for(let i=0;i<40;i++)update();draw()');
@@ -109,7 +109,7 @@ module.exports = async function verifyEnemies(browser, url, output) {
     await context.setOffline(true);const offline=await context.newPage();offline.on('pageerror',e=>errors.push(e.message));
     await offline.setContent(fs.readFileSync(path.join(output,'enemy-arena.html'),'utf8'));
     await offline.getByRole('button',{name:'Play',exact:true}).click();await offline.getByRole('button',{name:'Ember',exact:true}).click();await offline.getByRole('button',{name:'Start game',exact:true}).click();
-    assert.equal(await offline.evaluate('enemies[0].type==="shellback"&&LEVELS.length===4'),true);await offline.close();
+    assert.equal(await offline.evaluate('enemies[0].type==="shellback"&&LEVELS.length>=4'),true);await offline.close();
     results.push('PASS generated artifact-only review arena, enemy reset, real E, native restart and offline HTML execution');
     assert.deepEqual(errors,[]);fs.writeFileSync(path.join(output,'enemy-results.json'),JSON.stringify({results,errors},null,2));return results;
   } finally {await context.close();}

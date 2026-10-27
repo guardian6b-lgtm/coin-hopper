@@ -11,6 +11,7 @@ const { parseArgs } = require('node:util');
 const { chromium } = require('playwright');
 const verifyExecutableAbilities = require('./ability-executable-checks.cjs');
 const verifyExecutableEnemies = require('./enemy-executable-checks.cjs');
+const verifyExecutableCampaign = require('./campaign-executable-checks.cjs');
 const { values } = parseArgs({ options: {
   executable: { type: 'string' }, label: { type: 'string', default: 'packaged' },
   output: { type: 'string' }, profile: { type: 'string' },
@@ -127,8 +128,8 @@ async function main() {
   try {
     app = await launch();
     report.versions = await app.main.evaluate('({electron:process.versions.electron,chrome:process.versions.chrome,node:process.versions.node})');
-    assert.deepEqual(await app.page.evaluate('LEVELS.map(l=>l.name)'), ['Sunny Meadow', 'Brick Hills', 'Starry Night', 'Moonlit Gardens']);
-    pass('launch', 'Actual packaged executable opens its four-level game from app.asar');
+    assert.deepEqual(await app.page.evaluate('LEVELS.slice(0,4).map(l=>l.name)'), ['Sunny Meadow', 'Brick Hills', 'Starry Night', 'Moonlit Gardens']);
+    pass('launch', 'Actual packaged executable opens the expanded game from app.asar and preserves the four original levels');
     await app.context.setOffline(true);
     await app.page.reload();
     await app.page.waitForFunction("state==='title'");
@@ -191,6 +192,8 @@ async function main() {
     pass('all-five-abilities','All five powers activate and resolve in the actual offline executable, with cooldown/pause checks');
     report.enemies=await verifyExecutableEnemies(app,output,values.label);
     pass('multi-hit-enemies','All five heroes interact with and defeat both new types; Sentinel shots, pause, shield and cleanup pass in the actual executable');
+    report.expansionRoutes=await verifyExecutableCampaign(app,output,values.label);
+    pass('expansion-no-power-routes','All five heroes complete each new level in the actual offline renderer with legal keyboard inputs, no powers/shield/damage and expected scores; fixed 60 Hz replay');
     // Show the new level in the packaged binary; this is a runtime fixture, not
     // a natural completion route (all four routes run in the Node suite).
     await app.page.evaluate('startLevel(3)');
