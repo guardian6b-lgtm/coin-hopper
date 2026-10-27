@@ -238,6 +238,7 @@ async function main() {
     report.expansionRoutes=await verifyExecutableCampaign(app,output,values.label);
     pass('six-level-no-power-campaigns','All five heroes complete all six levels and the required boss through normal New Game/Next/Finish, with legal keyboard inputs, no character powers/shield/damage (High Jump pickups may be collected), earned unlocks and the explicitly versioned Stage H route scores; fixed 60 Hz replay, not a human playthrough.');
     report.stageH=await require('./stage-h-page-checks.cjs')(app.page,output,values.label);
+    report.ownerFollowup=await require('./owner-followup-page-checks.cjs')(app.page,output,values.label);
     pass('stage-h-high-jump-and-boss-privacy','All five heroes cross the Level3 lower approach in the actual offline executable; ordinary boss state/timer/commands are hidden.');
     // Show the new level in the packaged binary; this is a runtime fixture, not
     // a natural completion route (all four routes run in the Node suite).

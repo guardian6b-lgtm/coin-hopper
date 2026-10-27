@@ -1,0 +1,19 @@
+// Exact owner-reviewed page, native viewport comparisons, labeled fixture captures.
+const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),http=require('node:http'),{execFileSync}=require('node:child_process');
+const {chromium}=require('playwright');const baseline='8f349cf921f968edf1f22c3f213ae8b108155f40';
+const root=path.join(__dirname,'..'),output=process.env.COIN_HOPPER_TEST_OUTPUT||path.join(os.tmpdir(),'coin-hopper-followup');fs.mkdirSync(output,{recursive:true});
+const pages={before:execFileSync('git',['show',baseline+':index.html'],{cwd:root,maxBuffer:8*1024*1024}),after:fs.readFileSync(path.join(root,'index.html'))};
+const server=http.createServer((q,r)=>{r.setHeader('Content-Type','text/html');r.end(pages[q.url==='/before'?'before':'after']);});
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||(fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined)});const captures=[];
+ try{for(const label of ['before','after'])for(const size of [{width:844,height:390},{width:960,height:540},{width:390,height:844}]){
+  const c=await browser.newContext({viewport:size,hasTouch:size.width!==960,isMobile:size.width!==960});await c.addInitScript(()=>requestAnimationFrame=()=>0);const p=await c.newPage();await p.goto(`http://127.0.0.1:${server.address().port}/${label}`);
+  const snap=async view=>{const file=`owner-${label}-${view}-${size.width}x${size.height}.png`;await p.screenshot({path:path.join(output,file)});captures.push(file);};
+  await p.getByRole('button',{name:'Play',exact:true}).click();await p.waitForFunction('heroArt.complete&&heroArt.naturalWidth');await snap('picker');await p.getByRole('button',{name:'Start game',exact:true}).click();await p.evaluate('for(let n=0;n<65;n++)update();draw()');await snap('meadow');
+  await p.evaluate('startLevel(1);pl.x=45*T;pl.y=400;cam=pl.x-W/3;draw()');await snap('hills');
+  await p.evaluate("startLevel(5);const b=enemies.find(e=>e.type==='guardian');b.attackPhase='recover';b.openingHit=false;b.attackTimer=2.8;pl.x=b.x-100;pl.y=436;cam=pl.x-W/3;draw()");await snap('guardian');
+  if(label==='after'){await p.evaluate("playtestPrefs.core=true;selectedCharacter='minty';startLevel(4);pl.core={ammo:6,cooldown:0};enemies=[];for(let n=0;n<5;n++)update();draw()");await p.keyboard.press('KeyF');await p.evaluate('for(let n=0;n<8;n++)update();draw()');await snap('core-trial');}
+  await c.close();
+ }
+ // Wall-clock keyboard footage: ordinary spawn, actual input, no fixture world edits.
+ const c=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,isMobile:true,recordVideo:{dir:output,size:{width:844,height:390}}}),p=await c.newPage();await p.goto(`http://127.0.0.1:${server.address().port}/after`);await p.getByRole('button',{name:'Play',exact:true}).tap();await p.getByRole('button',{name:'Ember',exact:true}).tap();await p.getByRole('button',{name:'Start game',exact:true}).tap();await p.keyboard.down('ArrowRight');await p.waitForTimeout(200);await p.keyboard.down('Space');await p.keyboard.down('KeyE');await p.waitForTimeout(500);await p.keyboard.up('KeyE');await p.waitForTimeout(250);await p.keyboard.up('Space');await p.waitForTimeout(300);await p.keyboard.up('ArrowRight');await p.keyboard.press('KeyP');await p.waitForTimeout(300);const v=p.video();await c.close();await v.saveAs(path.join(output,'owner-normal-input.webm'));fs.writeFileSync(path.join(output,'owner-captures.json'),JSON.stringify({baseline,captures,video:'owner-normal-input.webm',videoInput:'native keyboard in mobile viewport, ordinary spawn; not physical touch',guardianAndCore:'named isolated state fixtures, not full playthrough',physicalDevices:'NOT TESTED'},null,2));
+ }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());
