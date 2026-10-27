@@ -1,0 +1,15 @@
+{
+  "results": [
+    "PASS actual-engine C3 idle/windup/throw/open/damage/walk/death/rubble renders at three native viewport sizes (named fixtures, not owner art acceptance)",
+    "PASS real OfflineAudioContext renders original stone Foley through a 25% effects gain; audible quality NOT TESTED",
+    "PASS native preview checkbox and safe versioned persistence",
+    "PASS chromium simulated touch: five heroes, fixed title/footer and inset Jump at 844×390",
+    "PASS chromium simulated touch: five heroes, fixed title/footer and inset Jump at 390×844",
+    "PASS chromium simulated touch: five heroes, fixed title/footer and inset Jump at 960×540",
+    "PASS chromium simulated touch: five heroes, fixed title/footer and inset Jump at 320×240",
+    "PASS chromium simulated touch: five heroes, fixed title/footer and inset Jump at 568×320",
+    "PASS isolated Hopper portrait/native comparison and review-only motion study capture; no runtime integration"
+  ],
+  "physicalDevices": "NOT TESTED",
+  "audibleAcceptance": "NOT TESTED"
+}

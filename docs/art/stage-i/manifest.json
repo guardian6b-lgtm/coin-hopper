@@ -1,0 +1,169 @@
+{
+  "purpose": "Owner-approved C3 Guardian implementation preview. Hopper refinement is concept-only pending owner approval; all rejected designs are excluded from runtime.",
+  "baseline": "5e82e70a2f1357e225620334f657c806d3edf793",
+  "creation": "Original image_gen proposals and owner-supplied C3-reference customization. Approved selection PNG, original runtime atlas and Sunny Meadow illustration preserved. Runtime C3 is same-size WebP encoding via FFmpeg libwebp quality90. No offline repaint/crop/resize of asset files.",
+  "atlases": {
+    "guardian": {
+      "original": "guardian-c3-original.png",
+      "originalBytes": 2625236,
+      "originalSHA256": "f5ce491f933a63981184d20bda7db384eae2f8d3810e573e2ada932f350f97cf",
+      "runtime": "guardian-c3-runtime.webp",
+      "runtimeBytes": 663688,
+      "runtimeSHA256": "23d2691f2bb769cfea96ddd3ef9ae4e40ffa408a1b8bcc5f5c197f7a2b18c8be",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "inkRectangles": [
+        [
+          4,
+          34,
+          310,
+          310
+        ],
+        [
+          315,
+          0,
+          330,
+          345
+        ],
+        [
+          600,
+          90,
+          351,
+          259
+        ],
+        [
+          949,
+          50,
+          305,
+          294
+        ],
+        [
+          0,
+          350,
+          317,
+          337
+        ],
+        [
+          317,
+          352,
+          303,
+          332
+        ],
+        [
+          618,
+          346,
+          316,
+          340
+        ],
+        [
+          933,
+          340,
+          321,
+          351
+        ],
+        [
+          8,
+          690,
+          286,
+          271
+        ],
+        [
+          302,
+          688,
+          324,
+          284
+        ],
+        [
+          626,
+          682,
+          317,
+          286
+        ],
+        [
+          939,
+          695,
+          315,
+          266
+        ],
+        [
+          0,
+          1023,
+          395,
+          211
+        ],
+        [
+          395,
+          972,
+          229,
+          282
+        ],
+        [
+          628,
+          978,
+          314,
+          271
+        ],
+        [
+          943,
+          1005,
+          311,
+          232
+        ]
+      ],
+      "reference": "Owner supplied C3 Guardian image in chat; image_gen used that image to reduce repeated engravings and preserve poses. Original attachment bytes were not exposed as a downloadable file; this is the retained derived output, not a claimed byte-copy.",
+      "approval": "Guardian visual direction approved; native animation/engraving evidence awaits final owner review.",
+      "layout": "Irregular four-row reference sheet. Explicit per-pose source rectangles; never divide the artwork into uniform cells."
+    }
+  },
+  "rejectedHopper": {
+    "status": "REJECTED by owner: sphere-like silhouette and heart markings. Reference only; not embedded or rendered.",
+    "sha256": "f0786a36dec5ef71c153acb887ecef9167f1f96df27523a45b45144a8b0dd565",
+    "archive": "Original generation retained outside shipped repository; not integrated."
+  },
+  "unapprovedWalker": {
+    "status": "Unapproved proposal only. Existing in-game Walker preserved.",
+    "sha256": "b47c0556d42fcdc37dce500be8497e5144f54720513ac6bf8e625c6fabff4ef9",
+    "archive": "Original generation retained outside shipped repository; not integrated."
+  },
+  "hopperRefinement": {
+    "file": "concept-review/hopper-refinement-pending.png",
+    "sha256": "174e7b24ddfe97f9a456430cec029961abe6a813306eaf882c1777a936d3b27d",
+    "status": "Owner-preferred compact reference; superseded by painted refinement for approval. Neither candidate is embedded in gameplay."
+  },
+  "rejectedConcepts": [
+    {
+      "name": "rejected-a-crownstride.png",
+      "sha256": "484f9d1089d01b62d29db2247d9392d2dcb996ac30783363bdfd8809932d9134",
+      "status": "REJECTED; original generation retained outside shipped repository."
+    },
+    {
+      "name": "rejected-b-crownkeep.png",
+      "sha256": "c6ae2be9d0b4f7f3019dbbbc13f4c5a2bff27cad98f8dc3f80ce69142928ca60",
+      "status": "REJECTED; original generation retained outside shipped repository."
+    },
+    {
+      "name": "rejected-c-crestspring.png",
+      "sha256": "7e1c44e5b53b8ba1c66d6ff539c5a25caf228b9a5c5c68bcf98e61bcb85e5dce",
+      "status": "REJECTED; original generation retained outside shipped repository."
+    }
+  ],
+  "hopperPaintedRefinement": {
+    "file": "concept-review/hopper-painted-refinement.png",
+    "bytes": 960928,
+    "sha256": "979540a9825f851f8cbd9d7fe51f867ee2259d13fa2df11919a0ad9271b3ee23",
+    "dimensions": [
+      1535,
+      1025
+    ],
+    "inkRectangle": [
+      286,
+      67,
+      1002,
+      895
+    ],
+    "provenance": "image_gen single-pose edit of owner-preferred compact candidate with approved Sunny Meadow illustration as material/lighting reference. Original output preserved in generated_images. No replacement atlas generated.",
+    "status": "PENDING OWNER APPROVAL. Review portrait and single-image motion blockout only. Excluded from shipped game and Electron payload."
+  }
+}

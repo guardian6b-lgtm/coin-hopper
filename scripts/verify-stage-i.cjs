@@ -1,0 +1,27 @@
+const fs=require('node:fs'),http=require('node:http'),path=require('node:path'),assert=require('node:assert/strict'),{chromium,webkit}=require('playwright');
+const root=path.resolve(__dirname,'..'),out=process.env.COIN_HOPPER_TEST_OUTPUT||path.resolve(root,'../.cloud-setup/coin-hopper/stage-i/browser');
+const mime={'.png':'image/png','.webp':'image/webp','.html':'text/html; charset=utf-8','.md':'text/plain'};
+const server=http.createServer((q,r)=>{const file=path.resolve(root,'.'+decodeURIComponent(new URL(q.url,'http://localhost').pathname== '/'?'/index.html':new URL(q.url,'http://localhost').pathname));if(!file.startsWith(root+path.sep)){r.writeHead(403);return r.end();}try{r.setHeader('Content-Type',mime[path.extname(file)]||'application/octet-stream');r.end(fs.readFileSync(file));}catch{r.writeHead(404);r.end();}});
+(async()=>{fs.mkdirSync(out,{recursive:true});await new Promise(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1:'+server.address().port,all=[];
+ for(const engine of process.env.STAGE_I_WEBKIT==='1'?['chromium','webkit']:['chromium']){
+  const browser=await(engine==='webkit'?webkit:chromium).launch(engine==='chromium'?{executablePath:process.env.CHROMIUM_PATH||(fs.existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined)}:{});
+  try{const errors=[],context=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,isMobile:true});const p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(url);await context.setOffline(true);all.push(...await require('./stage-i-page-checks.cjs')(p,out,engine));
+   // Native accessible selection/Jump targets across short/tall phone viewports.
+   for(const size of [{width:844,height:390},{width:390,height:844},{width:960,height:540},{width:320,height:240},{width:568,height:320}]){
+    await p.setViewportSize(size);await p.evaluate("showMenu('title','title')");await p.getByRole('button',{name:'Play',exact:true}).tap();const title=await p.locator('#menu-title').boundingBox();assert.ok(title.y>=0&&title.y+title.height<=size.height);
+    for(const name of ['Start game','Back']){const r=await p.getByRole('button',{name,exact:true}).boundingBox();assert.ok(r.y>=0&&r.y+r.height<=size.height&&r.height>=44);}
+    for(const name of ['Hopper','Minty','Ember','Nova','Bolt']){const button=p.getByRole('button',{name,exact:true});await button.scrollIntoViewIfNeeded();const r=await button.boundingBox();assert.ok(r.x>=0&&r.x+r.width<=size.width+1&&r.y>=0&&r.y+r.height<=size.height+1&&r.height>=44);await button.tap();}
+    await p.screenshot({path:path.join(out,`${engine}-picker-${size.width}x${size.height}.png`)});await p.getByRole('button',{name:'Start game',exact:true}).tap();const jump=await p.locator('#touch-jump').boundingBox();assert.ok(jump.x+jump.width<=size.width-8);all.push(`PASS ${engine} simulated touch: five heroes, fixed title/footer and inset Jump at ${size.width}×${size.height}`);
+   }
+   await p.setViewportSize({width:844,height:390});await p.evaluate("window.__reviewRAF=requestAnimationFrame;requestAnimationFrame=()=>0;selectedCharacter='hopper';newGame();meadowSettings.mode='illustrated';prepareMeadowArt()");await p.waitForFunction('heroArt.complete&&meadowPlate.complete&&meadowPlate.naturalWidth>0');await p.evaluate('for(let n=0;n<70;n++)update();pl.inv=0;draw()');
+   await context.setOffline(false);const review=out;await p.screenshot({path:path.join(review,'native-game-original.png')});
+   // A named screenshot mockup only. No candidate references are added to index.html.
+   await p.evaluate(async url=>{const study=new Image();study.src=url;await study.decode();drawCharacter=(ctx,id,x,y,w,h,face)=>{ctx.save();ctx.translate(x,y);ctx.scale(face,1);ctx.drawImage(study,286,67,1002,895,-48*1002/895/2,-48,48*1002/895,48);ctx.restore();};draw();},url+'/docs/art/stage-i/concept-review/hopper-painted-refinement.png');await p.screenshot({path:path.join(review,'native-game-proposed-study.png')});
+   await context.close();assert.deepEqual(errors,[]);
+   if(engine==='chromium'){
+    const gallery=await browser.newContext({viewport:{width:1100,height:900},recordVideo:{dir:out,size:{width:1100,height:900}}}),page=await gallery.newPage();await page.goto(url+'/docs/art/stage-i/concept-review/index.html');await page.waitForFunction('window.reviewReady===true');await page.getByRole('button',{name:'Pause study',exact:true}).click();await page.screenshot({path:path.join(out,'hopper-portrait-comparison.png'),fullPage:true});await page.locator('#motion').scrollIntoViewIfNeeded();await page.getByRole('button',{name:'Play study',exact:true}).click();await page.waitForTimeout(3300);await page.getByRole('button',{name:'Face left',exact:true}).click();await page.waitForTimeout(3300);await page.locator('#pose').selectOption('jump');await page.waitForTimeout(3300);const video=page.video(),temporary=await video.path();await gallery.close();const target=path.join(out,'hopper-motion-study.webm');await video.saveAs(target);if(temporary!==target)fs.rmSync(temporary);all.push('PASS isolated Hopper portrait/native comparison and review-only motion study capture; no runtime integration');
+   }
+  }finally{await browser.close();}
+ }
+ fs.writeFileSync(path.join(out,'stage-i-results.json'),JSON.stringify({results:all,physicalDevices:'NOT TESTED',audibleAcceptance:'NOT TESTED'},null,2));console.log(all.join('\n'));
+})().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());

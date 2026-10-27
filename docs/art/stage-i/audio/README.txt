@@ -1,0 +1,1 @@
+Original deterministic synthesized C3 Guardian Foley from the exact game composer. WAV mono22050Hz/16bit and OGG Vorbis. Routed through the existing effects-volume bus in game. Audible/device/owner acceptance NOT TESTED. These are effects, not the deferred full music arrangements.

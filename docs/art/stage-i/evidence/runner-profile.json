@@ -1,0 +1,8 @@
+{
+  "frames": 240,
+  "p95Ms": 5.600000001490116,
+  "meanMs": 5.648749999981374,
+  "decodedGuardianRGBABytes": 6290064,
+  "heapBytes": 12252644,
+  "scope": "Headless runner render cost; not device FPS, temperature, battery or touch latency."
+}
