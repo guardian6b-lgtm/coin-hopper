@@ -2,13 +2,15 @@ name: Windows verification
 
 on:
   push:
-    branches: [codex/moonlit-gardens, codex/character-select-redesign, codex/character-abilities]
+    branches: [codex/moonlit-gardens, codex/character-select-redesign, codex/character-abilities, codex/enemy-balance]
     paths:
       - index.html
       - desktop/**
       - tests/**
       - scripts/verify-executable.cjs
       - scripts/ability-executable-checks.cjs
+      - scripts/enemy-executable-checks.cjs
+      - scripts/enemy-fixture.cjs
       - .github/workflows/windows-verification.yml
   workflow_dispatch:
 

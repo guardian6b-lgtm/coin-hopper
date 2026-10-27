@@ -10,6 +10,7 @@ const { spawn, execFileSync } = require('node:child_process');
 const { parseArgs } = require('node:util');
 const { chromium } = require('playwright');
 const verifyExecutableAbilities = require('./ability-executable-checks.cjs');
+const verifyExecutableEnemies = require('./enemy-executable-checks.cjs');
 const { values } = parseArgs({ options: {
   executable: { type: 'string' }, label: { type: 'string', default: 'packaged' },
   output: { type: 'string' }, profile: { type: 'string' },
@@ -188,6 +189,8 @@ async function main() {
     }
     report.abilities=await verifyExecutableAbilities(app,output,values.label);
     pass('all-five-abilities','All five powers activate and resolve in the actual offline executable, with cooldown/pause checks');
+    report.enemies=await verifyExecutableEnemies(app,output,values.label);
+    pass('multi-hit-enemies','All five heroes interact with and defeat both new types; Sentinel shots, pause, shield and cleanup pass in the actual executable');
     // Show the new level in the packaged binary; this is a runtime fixture, not
     // a natural completion route (all four routes run in the Node suite).
     await app.page.evaluate('startLevel(3)');

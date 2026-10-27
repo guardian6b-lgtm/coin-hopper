@@ -1,5 +1,15 @@
 # Playable browser preview
 
+For enemy Phase 1 / Issue #6, download **enemy-phase-one-browser-evidence** from
+the `codex/enemy-balance` draft PR's Gameplay checks run. `index.html` plays the
+four unchanged campaign maps; the new enemies have **no placements** there.
+Open the separate **enemy-arena.html** to try Shellback or Crystal Sentinel on a
+plain test floor. Choose a hero normally, then use Reset Shellback / Reset Sentinel.
+This generated review copy is not a campaign level or shipped product UI. Native
+Restart resets that arena; title lets you change hero. See `docs/enemies-phase-one.md`
+in the source branch for rules and human checks. Screenshots/results and Windows
+NSIS/portable verification artifacts are temporary; no public release is created.
+
 For Issue #5, download **character-abilities-browser-evidence** from the
 `codex/character-abilities` draft PR's Gameplay checks run. It includes the
 self-contained `index.html`, preview instructions, screenshots and browser results.
