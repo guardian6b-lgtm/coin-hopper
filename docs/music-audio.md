@@ -98,6 +98,13 @@ rather than assuming immediate exact decimal values. No confirmed unresolved def
 remains in completed checks. Wider audio-device/CPU testing and human mix/melody
 approval remain necessary; no audible PASS is claimed.
 
+Initial Windows native-minimize checks exposed Playwright's default focus emulation:
+it forces the renderer to remain focused/visible even when the real window is
+minimized. The window test disables that override, asserts actual native window
+state and uses timer polling while animation frames are suspended, then restores
+automation defaults. This is a verification-harness correction; game audio rules
+are unchanged. Exact-head Windows outcomes are recorded in the PR.
+
 Next is Stage F / Issue #16 progression, only after this stage's technical gates
 pass. The reconciled roadmap remains in README; PR #7 remains separate and unmerged.
 

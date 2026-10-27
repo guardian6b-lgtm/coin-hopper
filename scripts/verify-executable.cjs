@@ -149,13 +149,24 @@ async function main() {
     pass('music-and-audio','Actual offline renderer: eight themes/two loops, volume/mute persistence, keyboard pause/resume, blur and real Web Audio mixing measurements. Audible/device acceptance NOT TESTED.');
     if(process.platform==='win32'){
       await app.page.getByRole('button',{name:'Play',exact:true}).click();await app.page.getByRole('button',{name:'Start game',exact:true}).click();
-      await app.main.evaluate('ciWindow.minimize();true');
-      await app.page.waitForFunction('state==="pause"&&musicState.source===null&&(ac.state!=="running"||masterGain.gain.value===0)');
-      const retained=await app.page.evaluate('musicState.offset');
-      await app.main.evaluate('ciWindow.restore();ciWindow.focus();true');
-      await app.page.waitForFunction('!document.hidden');
-      assert.equal(await app.page.evaluate('state'), 'pause');assert.equal(await app.page.evaluate('musicState.offset'),retained);
-      await app.page.getByRole('button',{name:'Resume',exact:true}).click();await app.page.waitForFunction('!!musicState.source&&ac.state==="running"');
+      // Playwright normally forces renderer focus/visibility even when its native
+      // window is minimized. Disable that override for this real OS lifecycle test.
+      const focusSession=await app.context.newCDPSession(app.page);
+      await focusSession.send('Emulation.setFocusEmulationEnabled',{enabled:false});
+      try{
+        await app.main.evaluate('ciWindow.show();ciWindow.focus();ciWindow.webContents.focus();true');
+        await app.page.waitForFunction('document.hasFocus()&&!document.hidden',null,{polling:50});
+        if(await app.page.evaluate('state')==='pause')await app.page.getByRole('button',{name:'Resume',exact:true}).click();
+        await app.page.waitForFunction('state==="play"&&!!musicState.source',null,{polling:50});
+        await app.main.evaluate('ciWindow.minimize();true');await until(()=>app.main.evaluate('ciWindow.isMinimized()'));
+        await app.page.waitForFunction('state==="pause"&&musicState.source===null&&(ac.state!=="running"||masterGain.gain.value===0)',null,{polling:50});
+        const retained=await app.page.evaluate('musicState.offset');
+        await app.main.evaluate('ciWindow.restore();ciWindow.focus();ciWindow.webContents.focus();true');
+        await until(async()=>!(await app.main.evaluate('ciWindow.isMinimized()')));
+        await app.page.waitForFunction('!document.hidden&&document.hasFocus()',null,{polling:50});
+        assert.equal(await app.page.evaluate('state'), 'pause');assert.equal(await app.page.evaluate('musicState.offset'),retained);
+        await app.page.getByRole('button',{name:'Resume',exact:true}).click();await app.page.waitForFunction('!!musicState.source&&ac.state==="running"',null,{polling:50});
+      }finally{await focusSession.send('Emulation.setFocusEmulationEnabled',{enabled:true});await focusSession.detach();}
       await app.page.keyboard.press('Escape');await app.page.getByRole('button',{name:'Title screen',exact:true}).click();
       pass('native-window-audio-pause','Actual Windows minimize/restore pauses game/music, retains loop position and requires explicit Resume; automated window APIs, not physical input.');
     }else report.checks.push({name:'native-window-audio-pause',status:'NOT TESTED',detail:'Headless Linux has no native desktop; actual Windows CI runs minimize/restore checks.'});
@@ -253,6 +264,7 @@ async function main() {
   } catch (error) {
     report.status = 'FAIL'; report.errors.push(error.stack || error.message);
     if(app)report.rendererAtFailure=await app.page.evaluate('({state,menuReturn,lvl,hidden:document.hidden,audioBlurred,context:ac?.state,time:ac?.currentTime,theme:musicState.theme,source:!!musicState.source,master:masterGain?.gain.value,masterTarget:masterGain?gainValues.get(masterGain):null,music:musicGain?.gain.value,effects:effectsGain?.gain.value,muted:audioPrefs.muted,matchingContext:musicGain?.context===ac})').catch(()=>null);
+    if(app)report.windowAtFailure=await app.main.evaluate('({minimized:ciWindow.isMinimized(),visible:ciWindow.isVisible(),focused:ciWindow.isFocused(),contentsFocused:ciWindow.webContents.isFocused()})').catch(()=>null);
     if (app) await app.page.screenshot({ path: path.join(output, `${values.label}-failure.png`) }).catch(() => {});
     throw error;
   } finally {
@@ -264,7 +276,7 @@ async function main() {
 main().catch(error => {
   console.error(error);
   if(process.env.GITHUB_ACTIONS){
-    const detail=(String(error.stack||error)+'\nRenderer: '+JSON.stringify(report.rendererAtFailure)).replace(/%/g,'%25').replace(/\r/g,'%0D').replace(/\n/g,'%0A');
+    const detail=(String(error.stack||error)+'\nRenderer: '+JSON.stringify(report.rendererAtFailure)+'\nWindow: '+JSON.stringify(report.windowAtFailure)).replace(/%/g,'%25').replace(/\r/g,'%0D').replace(/\n/g,'%0A');
     console.error(`::error title=Coin Hopper ${values.label} smoke::${detail}`);
   }
   process.exitCode = 1;
