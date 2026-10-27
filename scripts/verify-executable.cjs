@@ -240,6 +240,11 @@ async function main() {
     report.stageH=await require('./stage-h-page-checks.cjs')(app.page,output,values.label);
     report.ownerFollowup=await require('./owner-followup-page-checks.cjs')(app.page,output,values.label);
     report.meadowPrototype=await require('./sunny-meadow-page-checks.cjs')(app.page,output,values.label);
+    report.stageI=await require('./stage-i-page-checks.cjs')(app.page,output,values.label,async size=>{
+      if(process.platform==='win32'){await app.main.evaluate(`ciWindow.setContentSize(${size.width},${size.height});true`);await app.page.waitForFunction(size=>innerWidth===size.width&&innerHeight===size.height,size);}
+      else await app.page.setViewportSize(size);
+    });
+    pass('stage-i-c3-preview','Actual offline executable: C3 pose/rubble fixtures, exact combat dimensions, real Foley gain rendering, preview persistence and native screenshots; human art/audible acceptance remains pending.');
     pass('stage-h-high-jump-and-boss-privacy','All five heroes cross the Level3 lower approach in the actual offline executable; ordinary boss state/timer/commands are hidden.');
     // Show the new level in the packaged binary; this is a runtime fixture, not
     // a natural completion route (all four routes run in the Node suite).

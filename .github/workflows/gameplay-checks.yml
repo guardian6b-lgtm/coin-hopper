@@ -33,12 +33,16 @@ jobs:
           path: |
             index.html
             docs/preview.md
+            docs/art/stage-i/
+            docs/art/reference/coin_hopper_character_selection.png
+            docs/art/generated/characters-v1.png
+            docs/stage-i-playtest.md
           if-no-files-found: error
           retention-days: 7
 
   browser:
     name: Character, ability and enemy browser checks
-    if: github.event_name != 'push' || github.ref_name == 'codex/sunny-meadow-art-prototype'
+    if: github.event_name != 'push' || contains(fromJSON('["codex/sunny-meadow-art-prototype","codex/stage-i-prototypes"]'), github.ref_name)
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -60,6 +64,16 @@ jobs:
         env:
           STAGE_H_WEBKIT: '1'
         run: node scripts/verify-stage-h.cjs
+      - name: Verify isolated Hopper review and C3 preview in Chromium and WebKit
+        env:
+          STAGE_I_WEBKIT: '1'
+        run: node scripts/verify-stage-i.cjs
+      - name: Capture Stage I native comparisons and normal-input gait evidence
+        env:
+          STAGE_I_GAIT: '1'
+        run: node scripts/capture-stage-i.cjs
+      - name: Export original Guardian Foley samples
+        run: node scripts/export-stage-i-audio.cjs "$COIN_HOPPER_TEST_OUTPUT/guardian-audio"
       - name: Capture exact Stage G comparisons and real normal-input footage
         run: node scripts/capture-stage-h.cjs
       - name: Export original owner listening samples
