@@ -10,7 +10,7 @@ Fix commits remain on `codex/owner-playtest-followup`, stacked against `codex/st
 | Owner baseline before edits | PASS |337Node tests |
 | P0 independent commit50fea40 | PASS |339Node tests |
 | Combat independent commitdb3eb81 | PASS |367Node tests, detached checkout |
-| Combined repair/music/Core suite | PASS |380Node tests; existing regression cases retained and intentional timing/UI expectations revised |
+| Combined repair/music/Core suite | PASS |380Node tests at first candidate;43targeted cases pass after Core placement/focus repairs (382total cases); existing regression cases retained and intentional timing/UI expectations revised |
 | Six levels ×five heroes | PASS |30Chromium routes, no powers/shields; identical3755campaign total,3lives; new Guardian five-opening route |
 | Chromium retained browser suite | PASS |94PASS groups, one separately labeled file-mode NOT TESTED |
 | Chromium mobile/layout/animation +new charge/Core checks | PASS |14Stage H groups +11follow-up groups; native844×390/portrait/short-height controls, all five charge tiers/independent Core/pause |
@@ -36,3 +36,5 @@ CI retains NodeLinux/Windows, full Chromium and WebKit checks, copied/canonical/
 Use [coordinated playtest guide](owner-followup-playtest.md). Physical touch ergonomics (including four contacts, notches/browser bars), iOS/Android real audio suspension, long-session heat/battery/fps, audible mix/theme judgment, actual Windows install/uninstall/DPI/security, accessibility/face readability, Guardian fairness with Minty/Nova, Core pickup density/control scheme and isolated Sunny Meadow artwork remain owner acceptance. A desktop-emulated touch pass is not a physical-device pass.
 
 Open balance proposals are documented in [design note](owner-followup-design.md): quantized5HP bands, bounded charge strengths, onebossHP/opening, shield→Core precedence, optional shared six-shot Core and opt-in extra pickup locations. Existing scoring formula/level geometry/base physics remain guarded; longer boss time changes its time bonus. No Levels7–12, Team Rally or Enhanced Edition code is included.
+
+Follow-up pickup audit corrected two trial Core positions above their raised platforms and added standing/jump collection tests; native keyboard Core returns canvas focus. The executable test helper restores its prior hero after isolated fixtures, preserving later persistence checks.

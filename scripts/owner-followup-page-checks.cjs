@@ -2,7 +2,7 @@
 // no-power routes elsewhere never edit actors, world geometry or rewards.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 module.exports=async function followupPage(page,output,label='browser'){
- const results=[];await page.evaluate('window.__followupRAF=requestAnimationFrame;requestAnimationFrame=()=>0');await page.waitForTimeout(40);
+ const initial=await page.evaluate('selectedCharacter');const results=[];await page.evaluate('window.__followupRAF=requestAnimationFrame;requestAnimationFrame=()=>0');await page.waitForTimeout(40);
  const step=n=>page.evaluate(n=>{for(let i=0;i<n;i++)update();draw();},n);
  const ready=async hero=>page.evaluate(hero=>{selectedCharacter=hero;newGame();enemies=[createEnemy('shellback',pl.x+80,440),createEnemy('shellback',pl.x+150,440)];enemies.forEach(e=>e.vx=0);pl.y=436;pl.ground=true;draw();},hero);
  try{
@@ -33,5 +33,5 @@ module.exports=async function followupPage(page,output,label='browser'){
   assert.equal(await page.evaluate("(()=>{const b=enemies.find(e=>e.type==='guardian');return damageEnemy(b,'slam','#fff',3)&&!damageEnemy(b,'fireball','#fff',3)&&b.health===4&&b.attackTimer===2.8})()"),true);
   await page.screenshot({path:path.join(output,`${label}-guardian-hit.png`)});results.push('PASS Guardian: bright opening, one HP maximum at full charge, preserved2.8s recovery');
   await page.evaluate("showMenu('title','title')");return results;
- }finally{await page.evaluate('requestAnimationFrame=window.__followupRAF;delete window.__followupRAF;last=performance.now();accum=0;requestAnimationFrame(frame)');fs.writeFileSync(path.join(output,`${label}-owner-followup.json`),JSON.stringify({results,humanAcceptance:'NOT TESTED'},null,2));}
+ }finally{await page.evaluate(initial=>{selectedCharacter=initial;newGame();},initial);await page.evaluate('requestAnimationFrame=window.__followupRAF;delete window.__followupRAF;last=performance.now();accum=0;requestAnimationFrame(frame)');fs.writeFileSync(path.join(output,`${label}-owner-followup.json`),JSON.stringify({results,humanAcceptance:'NOT TESTED'},null,2));}
 };

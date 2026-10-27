@@ -58,3 +58,10 @@ test('Skyline composition rises at33/66% without backtrack resets; only engaged 
 test('Core cooldown/ammo freeze on pause, and death/restart/transition clear carried state without farming',()=>{
  const g=ready('nova');g.eval('playtestPrefs.core=true;startLevel(4);coreItems[0].got=true;pl.core={ammo:4,cooldown:.4}');g.click('pause-button');g.step(180);assert.equal(g.eval('pl.core.cooldown'),.4);g.click('Resume');g.eval('hurt(true)');assert.equal(g.eval('pl.core'),null);assert.equal(g.eval('coreItems[0].got'),true);g.click('pause-button');g.click('Restart level');g.click('Restart level');assert.equal(g.eval('coreItems[0].got'),false);assert.equal(g.eval('pl.core'),null);
 });
+
+test('trial Core placements sit outside solid terrain and are collectible from their actual supporting surface',()=>{
+ for(const lvl of [2,4,5]){const g=ready('minty');g.eval(`playtestPrefs.core=true;startLevel(${lvl});enemies=[];const item=coreItems[0];if(isSolid(Math.floor(item.x/T),Math.floor(item.y/T)))throw Error('Core inside solid');pl.x=item.x-13;pl.y=(${lvl===5?13:11})*T-pl.h;pl.ground=true;pl.vy=0;pl.vx=0`);if(lvl===5){g.event('keydown',{code:'Space'});g.step(7);}else g.step();assert.equal(g.eval('coreItems[0].got&&pl.core.ammo===6'),true);}
+});
+test('keyboard Core activation restores canvas focus so ordinary movement remains available',()=>{
+ const g=ready('nova');g.eval('pl.core={ammo:6,cooldown:0}');g.element('core-button').focus();g.domEvent('core-button','click',{detail:0});assert.equal(g.document.activeElement,g.element('c'));g.step();assert.equal(g.eval('pl.core.ammo'),5);
+});

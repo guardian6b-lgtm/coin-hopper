@@ -546,7 +546,7 @@ addEventListener('keydown',e=>{
   if(state==='characters'&&characterKey(e))return;
   if(state!=='play'&&e.code==='Escape'){e.preventDefault();backFromMenu();return;}
   if((e.code==='KeyP'||e.code==='Escape')&&(state==='play'||state==='pause')){e.preventDefault();togglePause();return;}
-  if(state==='play'&&e.code==='KeyF'){if(!keys.KeyF)coreEdge=true;keys.KeyF=true;e.preventDefault();return;}
+  if(state==='play'&&e.code==='KeyF'){cv.focus();if(!keys.KeyF)coreEdge=true;keys.KeyF=true;e.preventDefault();return;}
   if(state==='play'&&e.code==='KeyE'){if(!keys.KeyE)beginCharge('keyboard',e);keys.KeyE=true;e.preventDefault();return;}
   // Native menu buttons and range controls keep their standard keyboard behavior.
   if(e.target&&e.target.closest&&e.target.closest('button,input,select,textarea,a'))return;
@@ -924,7 +924,7 @@ function prototypePickups(){
   // Raised, optional routes. Never replace a coin, actor, platform or hazard.
   if([0,1,2,4].includes(lvl)){const col=LEVELS[lvl].expansionStart+(lvl===4?32:0)+7;shields.push({x:col*T+18,y:10*T+18,got:false,trial:true});}
   if(lvl===5)shields.push({x:(LEVELS[5].arenaStart-5)*T+18,y:11*T+18,got:false,trial:true});
-  if([2,4,5].includes(lvl)){const col=lvl===5?LEVELS[5].arenaStart+3:LEVELS[lvl].expansionStart+(lvl===4?32:0)+9;coreItems.push({x:col*T+18,y:11*T+18,got:false});}
+  if([2,4,5].includes(lvl)){const col=lvl===5?LEVELS[5].arenaStart+3:LEVELS[lvl].expansionStart+(lvl===4?32:0)+9;coreItems.push({x:col*T+18,y:(lvl===5?11:10)*T+18,got:false});}
 }
 function fireCore(){
   if(state!=='play'||!pl.core||pl.core.ammo<=0||pl.core.cooldown>0)return false;
@@ -948,8 +948,8 @@ function drawCoreWorld(){
   if(pl?.core){cx.strokeStyle='#ffd984';cx.lineWidth=1.5;cx.beginPath();cx.ellipse(pl.x+13-cam,pl.y+16,21,24,0,0,7);cx.stroke();}
 }
 const coreButton=document.getElementById('core-button');
-coreButton.addEventListener('pointerdown',e=>{if(state==='play'&&(e.button==null||e.button===0)){e.preventDefault();audio();coreEdge=true;}});
-coreButton.addEventListener('click',e=>{if(e.detail===0&&state==='play'){audio();coreEdge=true;}});
+coreButton.addEventListener('pointerdown',e=>{if(state==='play'&&(e.button==null||e.button===0)){e.preventDefault();audio();cv.focus();coreEdge=true;}});
+coreButton.addEventListener('click',e=>{if(e.detail===0&&state==='play'){audio();cv.focus();coreEdge=true;}});
 function syncCoreUI(){const show=state==='play'&&!!pl?.core;coreButton.hidden=!show;if(show){coreButton.disabled=pl.core.ammo<=0||pl.core.cooldown>0;coreButton.textContent='✦ '+pl.core.ammo;coreButton.setAttribute('aria-label','Fire Star Core: '+pl.core.ammo+' shots. F.');}}
 
 // ---------- Game state ----------
