@@ -1,5 +1,12 @@
 # Playable browser preview
 
+For Stage D / Issue #13, download **visual-redesign-browser-evidence** from the
+visual redesign draft PR. Its standalone `index.html` embeds all character artwork;
+it needs no CDN, fonts or asset download. `before-stage-d.html` is the verified
+Stage C comparison. Before/after screenshots show five viewport sizes, all six
+scenes and seven menu fixtures. Windows artifacts contain equivalent actual
+packaged captures and temporary executables. See `docs/visual-redesign.md`.
+
 For Stage C / Issue #12, download **skyline-summit-browser-evidence** from the
 Skyline draft PR. Its `index.html` contains all six levels and the mandatory Guardian
 finale. Every hero has a recorded no-power/no-shield win. The exit stays locked until

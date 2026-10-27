@@ -1,0 +1,16 @@
+{
+  "sha": "6381c6f81a169bfbc702591fc2ead0ef81eca765",
+  "dataHash": "bef771bbc8d60b61c6b7c3c769c8d4af4204f645767a28eea74ad9374d9cf041",
+  "functions": {
+    "update": "97af91494323b84d56d480e50a5c934c888a8be8561db42b95f41069173009a1",
+    "collide": "dcc04e6884618a6f3fd38b7af7f850e04da71675d9d3dfd5df041e41bda9103f",
+    "isSolid": "8d49ecfadb6bbfe2d69e2d86a53c9e667e3b2fd73973a612c8193a5e04294315",
+    "hurt": "0b27f04204ac0a007ded7a6b57824cc8e6b838123728eb225198361e3c748f4b",
+    "spawn": "4a6693ec89f49258326becb4a5e7120a170243d30d539275a3963dca57356d24",
+    "startLevel": "f9a6afe48ce107a6bbde2c5fbe6831a90c5afcf0f772df0546d3c815fc0f081c",
+    "resetAbility": "2f1acc14b25b900cd17cd8c34a69c7bbf7279f6627cdb170201d8d595e1b164e",
+    "damageEnemy": "0fdba8520aa7ad9314de903f8ec0a8e07e630ae892778102d5a92081a0faa505",
+    "updateNightwing": "c546ce98f5cded95ce0ca5297f3dd7ab4d0ef2c01f04c20047caa9e9eaabe4a1",
+    "updateGuardian": "dff2df6fb1baff34a444ab865b166309d8de1acc6f65314320411e04f8bc35ac"
+  }
+}

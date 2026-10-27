@@ -13,6 +13,7 @@ const buildEnemyPreview = require('./enemy-preview.cjs');
 const replayRoute = require('./replay-browser-route.cjs');
 const verifyCampaign = require('./campaign-browser-checks.cjs');
 const verifySkyline = require('./skyline-browser-checks.cjs');
+const verifyVisual = require('./visual-browser-checks.cjs');
 
 const output = process.env.COIN_HOPPER_TEST_OUTPUT || path.join(os.tmpdir(), 'coin-hopper-browser-check');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'));
@@ -219,6 +220,7 @@ async function main() {
     results.push(...await verifyEnemies(browser, url, output));
     results.push(...await verifyCampaign(browser, url, output));
     results.push(...await verifySkyline(browser, url, output));
+    results.push(...await verifyVisual(browser, url, output));
     assert.deepEqual(errors, []);
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ browser: browser.version(), results, errors }, null, 2));
     console.log(results.join('\n'));

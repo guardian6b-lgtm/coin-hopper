@@ -23,6 +23,14 @@ the stacked Skyline branch. Defeat the Guardian to unlock the final flag; every
 hero has a recorded damage-free victory without powers or shields. See
 [Skyline Summit and boss verification](docs/skyline-summit.md).
 
+**Stage D implements the reference-driven visual redesign.** The exact approved
+PNG is archived with its checksum in [docs/art/reference](docs/art/reference/README.md).
+Five locally embedded toy-like mascots have six distinct poses each; wooden panels,
+rounded buttons, grassy pedestals, six themed floating-island environments, tiles,
+enemy shading, coins, shields and HUD share the new palette. Native menus remain
+interactive. Settings adds a saved reduced-motion preference; system reduced motion
+also applies. See [visual design, before/after screenshots and verification](docs/visual-redesign.md).
+
 Play the currently published browser game: https://guardian6b-lgtm.github.io/coin-hopper/
 
 > **Release vs. development:** The published `main` game and downloadable Windows
@@ -167,12 +175,13 @@ See [enemy and boss design, Issue #6](https://github.com/guardian6b-lgtm/coin-ho
 
 ### Art, audio and release work
 
-The visual overhaul is staged: character selection, rounded character artwork and
-initial menu/HUD styling are implemented in drafts #8/#9, including ability effects,
-animations and sounds. The complete world tile/parallax overhaul, broader
-player/enemy/power-up animations and original music remain planned. Music playback
-is not implemented; the settings menu currently saves a *future* music-volume preference on the
-development branch.
+The visual overhaul remains staged in separate drafts. Stage D / Issue #13 adds
+the reference-derived characters, all six scene/tile palettes, live rounded menus,
+HUD and enemy/effect presentation, plus reduced motion. This artwork is an
+interactive game interpretation of the approved reference; formal human art
+acceptance is still open. Original looping music remains Stage E / Issue #15;
+music playback is not implemented yet, and its volume preference is saved for
+that stage. Persistent progression remains Stage F / Issue #16.
 
 Browser and Windows installer/portable editions are verified separately; current
 automated results and remaining gates are in the [ability report](docs/abilities-verification.md)

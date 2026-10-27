@@ -66,5 +66,9 @@ for the subsequent visual redesign branch.
 Issue #12 / Stage C implements [Skyline Summit, Nightwing and the Stone Guardian](skyline-summit.md)
 in a separate stacked draft. All six levels now have recorded no-power completion
 for every hero, including the required boss gate. Human balancing remains open.
-Next: Issue #13 reference-driven art, then #15 music, #16 progression and #14 final
+Issue #13 / Stage D now implements the reference-driven visual layer; see
+[the visual guide](visual-redesign.md). The exact original reference is archived,
+and generated runtime characters are separately identified. No gameplay rebalance.
+
+Next: #15 music, #16 progression and #14 final
 technical/human release-readiness records. No release is authorized by this plan.

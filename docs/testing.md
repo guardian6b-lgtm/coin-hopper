@@ -100,3 +100,15 @@ Record the branch commit, browser/device, result, and any issue for each item.
 Do not mark these manual checks passed based on the VM tests. Keep original levels
 unchanged if a pre-existing level-design issue is discovered; discuss any layout
 change separately before implementing it.
+# Stage D visual verification
+
+Stage D adds reference-byte validation, a locked six-level/simulation baseline,
+all five heroes × six visual poses, simulation-pure rendering and saved/blocked
+reduced-motion settings: **251 Node tests** total. **84 Chromium groups** include
+all 30 no-power routes, real before/after captures at five sizes, 30 distinct pose
+pixel checks, offline menus and measured rendering. Windows verification builds
+the verified Stage C baseline locally for actual before captures and the current
+NSIS/portable artifacts for after captures and smoke checks. Neither is published.
+Exact-head hosted results, links and remaining human checks live in the draft PR
+and [visual guide](visual-redesign.md). Device, audible and formal art acceptance
+remain separate human gates.
