@@ -1025,7 +1025,7 @@ function update(){
     if(e.root>0)e.root=tickDown(e.root);
     else if(e.type==='nightwing')updateNightwing(e);
     else{
-    e.vy=Math.min(e.vy+1800*DT,900);e.x+=e.vx*DT;if(collide(e,'x'))e.vx*=-1;
+    const gaitX=e.x;e.vy=Math.min(e.vy+1800*DT,900);e.x+=e.vx*DT;if(collide(e,'x'))e.vx*=-1;e.animDistance=(e.animDistance||0)+Math.abs(e.x-gaitX);
     e.ground=false;e.y+=e.vy*DT;collide(e,'y');
     if(e.ground){const fx=Math.floor((e.vx>0?e.x+e.w+1:e.x-1)/T),fy=Math.floor((e.y+e.h+2)/T);if(!isSolid(fx,fy))e.vx*=-1;}
     if(e.type==='hopper'){
@@ -1297,27 +1297,25 @@ function characterPose(p){
   if(!p.ground)return p.vy<0?'jump':'fall';
   return Math.abs(p.vx)>20?'run':'idle';
 }
-// Eight contact/passing/flight frames, selected by distance traveled (64px stride).
+// A planted foot moves backward by exactly the traveled distance (32px stride).
 // Layered shaded limbs are articulated independently of the raster head/torso.
-const RUN_CYCLE=Object.freeze([
-  {left:-7,right:7,liftL:0,liftR:-6,arm:-5,body:0},
-  {left:-4,right:5,liftL:0,liftR:-9,arm:-3,body:-1},
-  {left:0,right:1,liftL:-2,liftR:-10,arm:0,body:-2},
-  {left:5,right:-3,liftL:-6,liftR:-3,arm:3,body:-1},
-  {left:7,right:-7,liftL:-6,liftR:0,arm:5,body:0},
-  {left:5,right:-4,liftL:-9,liftR:0,arm:3,body:-1},
-  {left:1,right:0,liftL:-10,liftR:-2,arm:0,body:-2},
-  {left:-3,right:5,liftL:-3,liftR:-6,arm:-3,body:-1}
-]);
+const WALK_STRIDE=32;
+function gaitSample(clock,stride=WALK_STRIDE){
+  const phase=((clock%1)+1)%1;
+  const foot=p=>p<.5?{x:stride/4-stride*p,lift:0,planted:true}:{x:-stride/4*Math.cos((p-.5)*Math.PI*2),lift:-8*Math.sin((p-.5)*Math.PI*2),planted:false};
+  const left=foot(phase),right=foot((phase+.5)%1);
+  return {left:left.x,right:right.x,liftL:left.lift,liftR:right.lift,plantL:left.planted,plantR:right.planted,arm:-left.x*.55,body:-.6*(1-Math.cos(phase*Math.PI*4))};
+}
+const RUN_CYCLE=Object.freeze(Array.from({length:8},(_,i)=>Object.freeze(gaitSample(i/8))));
 function drawHeroRig(ctx,id,rect,x,y,w,h,face,clock,pose){
   const palettes={hopper:['#ffb4d8','#e8498e'],minty:['#b4f4c7','#25a78b'],ember:['#ffdc8a','#ed732b'],nova:['#d1a4ff','#7345ce'],bolt:['#fff4a0','#eabb35']};
-  const colors=palettes[id],run=pose==='run',f=run?RUN_CYCLE[(Math.floor(clock*8)%8+8)%8]:{left:0,right:0,liftL:0,liftR:0,arm:0,body:0};
+  const colors=palettes[id],run=pose==='run',f=run?gaitSample(clock):{left:0,right:0,liftL:0,liftR:0,arm:0,body:0};
   const height=h*1.5,width=height*rect[2]/rect[3];
   ctx.save();ctx.translate(x,y);ctx.scale(face,1);
   // Far limbs sit in occlusion; foot contact alternates at the visible ground edge.
   for(const side of [-1,1]){
     const step=side<0?f.left:f.right,lift=side<0?f.liftL:f.liftR;
-    ctx.save();ctx.translate(side*width*.17+step,-h*.06+lift);ctx.rotate(step*.035);
+    ctx.save();ctx.translate(side*w*.10+step,-h*.17+lift);if(lift<0)ctx.rotate(step*.02);
     artEllipse(ctx,0,0,w*.19,h*.17,colors[0],colors[1],'#3c3b5844');
     ctx.fillStyle='#fff5c655';ctx.beginPath();ctx.ellipse(-2,-2,w*.08,1.5,0,0,7);ctx.fill();ctx.restore();
   }
@@ -1343,9 +1341,9 @@ function drawCharacter(ctx,id,x,y,w,h,face=1,pose='idle',clock=0){
     const height=h*1.5,width=height*rect[2]/rect[3],bob=still?0:pose==='idle'?Math.sin(clock*3)*.6:pose==='run'?Math.sin(clock*12)*1.2:pose==='victory'?Math.sin(clock*7)*1.4:0;
     ctx.save();ctx.translate(x,y+bob);ctx.scale(face,1);ctx.drawImage(heroArt,...rect,-width/2,-height,width,height);ctx.restore();return;
   }
-  const step=pose==='run'?Math.sin(phase)*3:0,bob=still?0:pose==='idle'?Math.sin(clock*3)*.6:pose==='victory'?Math.sin(clock*7)*1.4:0;
+  const gait=pose==='run'?gaitSample(clock):null,step=gait?-gait.left*.45:0,bob=still?0:pose==='idle'?Math.sin(clock*3)*.6:pose==='victory'?Math.sin(clock*7)*1.4:0;
   ctx.save();ctx.translate(x,y+bob);ctx.scale(w/30,h/32);ctx.lineJoin='round';ctx.lineCap='round';
-  if(pose==='hurt')ctx.rotate(-.13);else if(pose==='run')ctx.rotate(face*.08);else if(pose==='victory')ctx.rotate(still?0:Math.sin(clock*7)*.08);
+  if(pose==='hurt')ctx.rotate(-.13);else if(pose==='victory')ctx.rotate(still?0:Math.sin(clock*7)*.08);
   const palette={hopper:['#ff9fca','#ef3f8c'],minty:['#97f0bb','#20b48e'],ember:['#ffcb64','#f47629'],nova:['#bf7cfb','#7942d8'],bolt:['#fff181','#f2c02d']}[skin.id];
   if(id==='nova')for(const [sx,sy,r] of [[-12,-33,9],[8,-38,11],[16,-29,9]])artEllipse(ctx,sx,sy,r,r,'#b975fa','#7141cb');
   if(id==='bolt'){
@@ -1357,7 +1355,7 @@ function drawCharacter(ctx,id,x,y,w,h,face=1,pose='idle',clock=0){
   const raised=pose==='jump'||pose==='victory',falling=pose==='fall';
   for(const side of [-1,1]){
     artEllipse(ctx,side*15,-17+(raised?-5:falling?3:side*step*.5),5.5,6,palette[0],palette[1]);
-    artEllipse(ctx,side*7,-2+(pose==='jump'?-3:pose==='fall'?2:side*step),5.8,6.8,palette[0],palette[1]);
+    artEllipse(ctx,gait?side*3+face*(side<0?gait.left:gait.right):side*7,gait?-6.8+(side<0?gait.liftL:gait.liftR):-2+(pose==='jump'?-3:pose==='fall'?2:0),5.8,6.8,palette[0],palette[1]);
   }
   artEllipse(ctx,0,-19,16,16,palette[0],palette[1]);
   // Soft top-left highlight gives the toy-like volume in the approved reference.
@@ -1393,7 +1391,7 @@ function drawPlayer(){const p=pl,pose=characterPose(p);
   const sw=reducedMotion()?1:1/p.squash,sh=reducedMotion()?1:p.squash;
   // Reduced motion replaces flashing with the distinct hurt pose; protection stays unchanged.
   cx.save();if(p.inv>0&&!reducedMotion())cx.globalAlpha=.65+.25*Math.sin(time*20);
-  drawCharacter(cx,p.character,p.x-cam+p.w/2,p.y+p.h,p.w*sw+4,p.h*sh,p.face,pose,pose==='run'?p.animDistance/64:time);cx.restore();
+  drawCharacter(cx,p.character,p.x-cam+p.w/2,p.y+p.h,p.w*sw+4,p.h*sh,pose==='run'?Math.sign(p.vx):p.face,pose,pose==='run'?p.animDistance/WALK_STRIDE:time);cx.restore();
 }
 
 function drawArmoredEnemy(e){
@@ -1402,7 +1400,7 @@ function drawArmoredEnemy(e){
   if(e.dead)cx.scale(1.3,.3);
   if(e.type==='shellback'){
     cx.fillStyle='#79b99a';cx.strokeStyle='#355c58';rr(-18,-13,36,14,7);cx.fill();cx.stroke();
-    for(const side of [-1,1]){const stride=[-3,0,3,0][(step+(side<0?2:0))%4];artEllipse(cx,side*12+stride,-2,7,4,'#8ad9b8','#398477');}
+    const gait=gaitSample((e.animDistance||0)/24,24),direction=Math.sign(e.vx)||-1;for(const side of [-1,1]){const stride=side<0?gait.left:gait.right,lift=side<0?gait.liftL:gait.liftR;artEllipse(cx,side*9+direction*stride,-4+lift*.45,7,4,'#8ad9b8','#398477');}
     const shell=cx.createLinearGradient(-15,-29,13,-8);shell.addColorStop(0,e.health<e.maxHealth?'#f1d7b0':'#fff1a5');shell.addColorStop(1,e.health<e.maxHealth?'#b38c76':'#c6964f');cx.fillStyle=shell;cx.strokeStyle='#776154';
     cx.beginPath();cx.ellipse(0,-15,18,14,0,Math.PI,Math.PI*2);cx.lineTo(18,-10);cx.lineTo(-18,-10);cx.closePath();cx.fill();cx.stroke();
     cx.strokeStyle='#b38254';cx.beginPath();cx.moveTo(-8,-26);cx.lineTo(-7,-11);cx.moveTo(7,-26);cx.lineTo(8,-11);cx.moveTo(-16,-19);cx.lineTo(16,-19);cx.stroke();
@@ -1510,11 +1508,11 @@ function drawEnemy(e){if(e.type==='nightwing'){drawNightwing(e);return;}if(e.typ
     artEllipse(cx,0,-14,15,14,'#b5f5b0','#38b69e','#288b7a');
     // Leaf ears and broad feet distinguish hoppers from purple walkers.
     cx.beginPath();cx.moveTo(-9,-22);cx.quadraticCurveTo(-22,-43,-5,-34);cx.lineTo(0,-23);cx.moveTo(4,-23);cx.quadraticCurveTo(10,-44,18,-34);cx.lineTo(12,-21);cx.fill();
-    for(const side of [-1,1])artEllipse(cx,side*11,-2+(e.ground?0:-4),7,4,'#b6e8a0','#2ba99e');
+    const gait=gaitSample((e.animDistance||0)/20,20),direction=Math.sign(e.vx)||-1;for(const side of [-1,1])artEllipse(cx,side*5+(e.ground?direction*(side<0?gait.left:gait.right):side*3),-4+(e.ground?(side<0?gait.liftL:gait.liftR)*.65:-4),7,4,'#b6e8a0','#2ba99e');
     cx.fillStyle='#fff1a6';cx.beginPath();cx.arc(-6,-17,5,0,7);cx.arc(6,-17,5,0,7);cx.fill();
     cx.fillStyle='#203c58';cx.beginPath();cx.arc(-6+Math.sign(e.vx),-17,2,0,7);cx.arc(6+Math.sign(e.vx),-17,2,0,7);cx.fill();cx.restore();return;
   }
-  for(const side of [-1,1]){const stride=[-3,0,3,0][((e.root>0?0:Math.floor(enemyCombat.clock*9))+(side<0?2:0))%4];artEllipse(cx,side*8+stride,-2,6,4,'#bba2ee','#7855a9');}
+  const gait=gaitSample((e.animDistance||0)/WALK_STRIDE),direction=Math.sign(e.vx)||-1;for(const side of [-1,1]){const stride=side<0?gait.left:gait.right,lift=side<0?gait.liftL:gait.liftR;artEllipse(cx,side*3+direction*stride,-4+lift*.7,6,4,'#bba2ee','#7855a9');}
   artEllipse(cx,0,-14,15,15,'#e1a4fa','#9461ce','#754f98');
   cx.fillStyle='#fff';const d=e.vx>0?3:-3;cx.beginPath();cx.arc(-5+d,-17,5,0,7);cx.arc(5+d,-17,5,0,7);cx.fill();
   cx.fillStyle='#222';cx.beginPath();cx.arc(-5+d*1.5,-17,2.3,0,7);cx.arc(5+d*1.5,-17,2.3,0,7);cx.fill();cx.restore();}
