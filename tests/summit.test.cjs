@@ -29,7 +29,7 @@ for(const hero of ['hopper','minty','ember','nova','bolt']){
       assert.equal(g.eval('lives'),3);assert.equal(g.eval('shields.some(s=>s.got)'),false);assert.equal(g.eval('ability.cooldown'),0);
     }
     assert.deepEqual(hits,route.bossHits);assert.equal(g.eval('state'), 'done');assert.equal(g.eval('bossState.defeated'),true);assert.equal(g.eval('score'),route.score);
-    g.click('Finish');assert.equal(g.eval('state'),'win');assert.match(g.element('menu-description').textContent,/All 6 levels complete/);
+    g.click('Finish');assert.equal(g.eval('state'),'win');assert.match(g.element('menu-description').textContent,/First 6 of 12 planned levels complete/);
   });
 }
 

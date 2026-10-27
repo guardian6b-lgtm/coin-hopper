@@ -128,7 +128,7 @@ function createGame({ html, saved = {}, storageBlocked = false } = {}) {
   };
   parseMarkup(html.split('<script>')[0], body);
   const canvas = document.getElementById('c');
-  const context2d = new Proxy({ createLinearGradient: () => ({ addColorStop: noop }) }, {
+  const context2d = new Proxy({ createLinearGradient: () => ({ addColorStop: noop }), createRadialGradient: () => ({ addColorStop: noop }) }, {
     get(target, property) { return property in target ? target[property] : noop; },
   });
   canvas.getContext = () => context2d;
