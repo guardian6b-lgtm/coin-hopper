@@ -59,6 +59,8 @@ node scripts/embed-character-art.cjs --check
 - Collision edges, spikes, pits and enemy warnings remain readable. Decorations
   do not add platforms or hide a collision surface. All six complete level
   definitions and authoritative movement/combat functions are hash-locked to Stage C.
+  Source hashing normalizes CRLF/LF so Windows checkout line endings do not create
+  false differences; an initial Windows test-only failure was reproduced and fixed.
 - **Reduce decorative motion** in Settings stores `coinhopper_motion_v1` separately
   from character and volume preferences. System reduced motion also applies.
   It removes player bobbing/flashing/squash, decorative wing/body pulse, wind,

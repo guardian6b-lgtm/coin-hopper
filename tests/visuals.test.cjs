@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {createGame}=require('./harness.cjs');
 test('visual redesign preserves all six definitions, balance tables and authoritative simulation functions',()=>{
-  const baseline=require('./fixtures/visual-baseline.json'),g=createGame(),hash=v=>crypto.createHash('sha256').update(v).digest('hex');
+  const baseline=require('./fixtures/visual-baseline.json'),g=createGame(),hash=v=>crypto.createHash('sha256').update(v.replace(/\r\n/g,'\n')).digest('hex');
   assert.equal(hash(g.eval('JSON.stringify({LEVELS,ABILITIES,ENEMY_TYPES,ENEMY_COMBAT,ENEMY_DAMAGE})')),baseline.dataHash);
   for(const [name,expected]of Object.entries(baseline.functions))assert.equal(hash(g.eval(name+'.toString()')),expected,name);
 });
