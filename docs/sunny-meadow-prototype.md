@@ -16,7 +16,7 @@ Levels2–6 render **pixel-identically** when the quality preference is switched
 
 | Check | Result | Scope |
 |---|---|---|
-| Full gameplay suite | PASS |392 tests including383 repair regressions +9 prototype cases |
+| Full gameplay suite | PASS |398 tests including383 repair regressions +10 prototype cases +5 functional charge-outcome cases |
 | Art/simulation isolation | PASS |All five heroes ×six scenes ×three modes preserve full simulation snapshots |
 | Levels2–6 pixels | PASS |Real Chromium mode comparisons, no hidden rollout |
 | Optional asset/fallback/storage/cache | PASS |Original/embedded byte match, invalid/blocked preference, missing/error image fallback, bounded4tile cache |

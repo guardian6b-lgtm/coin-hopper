@@ -1059,7 +1059,7 @@ const meadowPlate=document.getElementById('meadow-plate');let meadowAssetFailed=
 meadowPlate.addEventListener('error',()=>{meadowAssetFailed=true;});
 function prepareMeadowArt(){if(meadowSettings.mode!=='standard'&&!meadowPlate.src&&!meadowAssetFailed)meadowPlate.src=meadowPlate.getAttribute('data-source');}
 prepareMeadowArt();
-function meadowPrototypeActive(){return lvl===0&&!!pl&&meadowSettings.mode!=='standard'&&!meadowAssetFailed&&meadowPlate.complete&&meadowPlate.naturalWidth===1536;}
+function meadowPrototypeActive(){const world=state==='play'||state==='pause'||state==='restart'||state==='done'||state==='over'||((state==='settings'||state==='controls')&&menuReturn==='pause');return world&&lvl===0&&!!pl&&meadowSettings.mode!=='standard'&&!meadowAssetFailed&&meadowPlate.complete&&meadowPlate.naturalWidth===1536;}
 const meadowTileCache=new Map();
 function meadowTile(top){
  const detailed=meadowSettings.mode==='illustrated',key=(top?'top':'inner')+(detailed?'rich':'lite');if(meadowTileCache.has(key))return meadowTileCache.get(key);

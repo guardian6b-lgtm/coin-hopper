@@ -16,3 +16,7 @@ test('missing or failed optional plate falls back, and tile caches stay bounded'
 test('new prototype plate preserves original generated PNG bytes and embedded copy matches manifest',()=>{
  const root=path.join(__dirname,'..'),manifest=require('../docs/art/prototypes/sunny-meadow-provenance.json');const raw=fs.readFileSync(path.join(root,'docs/art/prototypes',manifest.file));assert.equal(raw.subarray(0,8).toString('hex'),'89504e470d0a1a0a');assert.equal(raw.readUInt32BE(16),1536);assert.equal(raw.readUInt32BE(20),1024);assert.equal(raw.length,manifest.bytes);assert.equal(crypto.createHash('sha256').update(raw).digest('hex'),manifest.sha256);const html=fs.readFileSync(path.join(root,'index.html'),'utf8');const encoded=html.match(/id="meadow-plate"[^>]*data-source="data:image\/png;base64,([^"]+)"/)[1];assert.deepEqual(Buffer.from(encoded,'base64'),raw);
 });
+
+test('returning to title and picker never opts their backgrounds into the Level1 artwork',()=>{
+ const g=createGame();g.eval("newGame();meadowSettings.mode='illustrated';meadowPlate.complete=true;meadowPlate.naturalWidth=1536");assert.equal(g.eval('meadowPrototypeActive()'),true);g.eval("showMenu('title','title');draw()");assert.equal(g.eval('meadowPrototypeActive()'),false);g.click('Play');assert.equal(g.eval('meadowPrototypeActive()'),false);g.click('Start game');assert.equal(g.eval('meadowPrototypeActive()'),true);
+});
