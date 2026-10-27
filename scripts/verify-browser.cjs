@@ -141,7 +141,7 @@ async function main() {
     // Only the scheduler changes; real keyboard handlers, simulation and Canvas2D
     // run unchanged. This is not a wall-clock human playthrough.
     const replay = await browser.newContext({ viewport: { width: 960, height: 540 } });
-    await replay.addInitScript(() => { window.requestAnimationFrame = () => 1; });
+    await replay.addInitScript(() => { window.requestAnimationFrame = () => 1;localStorage.setItem('coinhopper_meadow_art_v1','illustrated'); });
     const rp = await replay.newPage();
     rp.on('pageerror', error => errors.push(error.message));
     for (const id of ['hopper', 'minty', 'ember', 'nova', 'bolt']) {

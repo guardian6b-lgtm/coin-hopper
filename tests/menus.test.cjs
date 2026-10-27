@@ -43,7 +43,7 @@ test('Tab and Shift+Tab wrap through visible native menu controls', () => {
   assert.equal(game.document.activeElement, game.element('motion-toggle'));
   game.event('keydown', { code: 'Tab', target: game.element('motion-toggle') });
   assert.equal(game.document.activeElement, game.element('core-trial'));game.event('keydown',{code:'Tab',target:game.element('core-trial')});
-  assert.equal(game.document.activeElement, game.findButton('Back'));
+  assert.equal(game.document.activeElement, game.element('meadow-quality'));game.event('keydown',{code:'Tab',target:game.element('meadow-quality')});assert.equal(game.document.activeElement,game.findButton('Back'));
 });
 
 test('native Enter activation does not queue a second title-screen action', () => {
