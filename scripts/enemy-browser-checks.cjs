@@ -14,7 +14,7 @@ module.exports = async function verifyEnemies(browser, url, output) {
     await page.getByRole('button',{name:hero[0].toUpperCase()+hero.slice(1),exact:true}).click();
     await page.getByRole('button',{name:'Start game',exact:true}).click();
   };
-  const cast=async()=>{await page.keyboard.down('KeyE');await step(1);await page.keyboard.up('KeyE');};
+  const cast=async()=>{await page.keyboard.press('KeyE');await step(1);};
   const safeWait=async n=>{await page.evaluate('pl.x=144;pl.y=13*T-pl.h;pl.vx=0;pl.vy=0;pl.ground=true');await step(n);};
   const stomp=async()=>{
     await page.evaluate('pl.x=enemies[0].x;pl.y=enemies[0].y-pl.h-2;pl.vx=0;pl.vy=200;pl.ground=false;pl.coyote=0;pl.buf=0');

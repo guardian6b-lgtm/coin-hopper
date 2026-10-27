@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const {createGame}=require('./harness.cjs');
-for(const theme of ['title','meadow','hills','night','garden','cavern','summit','boss'])test(`${theme}: original score is deterministic, bounded and sample-continuous at the loop boundary`,()=>{
+for(const theme of ['title','meadow','hills','night','garden','cavern','summit','summitRise','summitPeak','boss'])test(`${theme}: original score is deterministic, bounded and sample-continuous at the loop boundary`,()=>{
   const g=createGame();const read=()=>g.eval(`composeMusic('${theme}')`),a=read(),b=read();
   assert.equal(a.samples.length,Math.round(g.eval(`32*60/MUSIC.${theme}.bpm`)*a.sampleRate));
   assert.equal(a.samples[0],0);assert.equal(a.samples.at(-1),0);let peak=0,sum=0;
@@ -17,13 +17,13 @@ test('all six scene themes and the mandatory boss select the intended distinct a
   for(const [level,theme]of ['meadow','hills','night','garden','cavern','summit'].entries()){
     g.eval(`startLevel(${level});syncMusic()`);assert.equal(g.eval('musicState.theme'),theme);
   }
-  g.eval("pl.x=LEVELS[5].arenaStart*T;syncMusic()");assert.equal(g.eval('musicState.theme'),'boss');
-  g.eval('bossState.defeated=true;syncMusic()');assert.equal(g.eval('musicState.theme'),'summit');
+  g.eval("pl.x=LEVELS[5].arenaStart*T;syncMusic()");assert.equal(g.eval('musicState.theme'),'summitPeak');g.eval('bossState.engaged=true;syncMusic()');assert.equal(g.eval('musicState.theme'),'boss');
+  g.eval('bossState.defeated=true;syncMusic()');assert.equal(g.eval('musicState.theme'),'summitPeak');
 });
 test('effects/music route separately through a bounded shared master and compressor',()=>{
   const g=createGame();g.click('Settings');g.input('effects-volume',0);g.input('music-volume',100);
   assert.equal(g.eval('effectsGain.gain.value'),0);assert.equal(g.eval('musicGain.gain.value'),1);assert.equal(g.eval('masterGain.gain.value'),.7);
-  assert.equal(g.eval('musicState.source.connections[0]===musicGain'),true);assert.equal(g.eval('effectsGain.connections[0]===audioLimiter&&musicGain.connections[0]===audioLimiter'),true);
+  assert.equal(g.eval('musicState.source.connections[0].connections[0]===musicGain'),true);assert.equal(g.eval('effectsGain.connections[0]===audioLimiter&&musicGain.connections[0]===audioLimiter'),true);
   assert.equal(g.eval('audioLimiter.ratio.value'),20);assert.equal(g.eval('audioLimiter.threshold.value'),-12);
   g.input('music-volume',0);assert.equal(g.eval('musicState.source'),null);g.input('effects-volume',100);assert.equal(g.eval('effectsGain.gain.value'),1);
 });

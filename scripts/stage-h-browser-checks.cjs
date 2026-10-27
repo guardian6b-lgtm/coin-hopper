@@ -30,7 +30,7 @@ module.exports=async function stageHBrowser(browser,url,output,{engine='chromium
    await page.setViewportSize(size);await page.evaluate('fit();draw()');
    assert.equal(await page.locator('#pause-button').isVisible(),true);
    const boxes=[];for(const id of ['touch-left','touch-right','touch-jump','ability-button']){const b=await page.locator('#'+id).boundingBox();assert.ok(b&&b.width>=44&&b.height>=44&&b.x>=0&&b.y>=0&&b.x+b.width<=size.width+1&&b.y+b.height<=size.height+1,JSON.stringify({id,b,size}));boxes.push(b);}
-   const canvas=await page.locator('#c').boundingBox();assert.ok(canvas.y+canvas.height<=Math.min(...boxes.map(b=>b.y)),JSON.stringify({canvas,boxes,size}));
+   const canvas=await page.locator('#c').boundingBox();assert.ok(canvas.y+468*canvas.height/540<=Math.min(...boxes.map(b=>b.y))+1,JSON.stringify({canvas,boxes,size}));if(size.width>=480&&size.width>size.height)assert.ok(canvas.width>=size.width-1);
    for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++)assert.equal(overlap(boxes[i],boxes[j]),false);
    assert.equal(await page.evaluate('document.documentElement.scrollWidth<=innerWidth'),true);await snap(`touch-${size.width}x${size.height}`);
   }
@@ -41,9 +41,9 @@ module.exports=async function stageHBrowser(browser,url,output,{engine='chromium
    if(engine==='chromium'){
     const cdp=await context.newCDPSession(page);const points=[];await page.evaluate(()=>{window.inputTrace=[];for(const n of ['pointerdown','pointerup','pointercancel','lostpointercapture'])document.addEventListener(n,e=>inputTrace.push([n,e.target.id,e.pointerId,e.button]));});
     for(const [i,id]of ['touch-right','touch-jump','ability-button'].entries()){const b=await page.locator('#'+id).boundingBox();points.push({id:i+1,x:b.x+b.width/2,y:b.y+b.height/2,radiusX:3,radiusY:3});}
-    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:points});await page.evaluate('update();draw()');
-    assert.equal(await page.evaluate('tb.right&&tb.jump&&pl.vx>0&&(pl.vy<0||pl.character==="hopper"&&ability.effects.some(f=>f.kind==="shockwave"))&&ability.cooldown>0'),true,JSON.stringify(await page.evaluate('({tb,x:pl.x,y:pl.y,vx:pl.vx,vy:pl.vy,cooldown:ability.cooldown,trace:window.inputTrace})')));const cast=await page.evaluate('ability.cooldown');
-    const canvas=await page.locator('#c').boundingBox();await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[...points,{id:99,x:canvas.x+canvas.width*.5,y:canvas.y+canvas.height*.4,radiusX:3,radiusY:3}]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:points});await page.evaluate('for(let n=0;n<25;n++)update();draw()');assert.equal(await page.evaluate('ability.charging&&ability.cooldown===0&&tb.right&&tb.jump'),true);const area=await page.locator('#c').boundingBox(),fourth={id:99,x:area.x+area.width*.5,y:Math.max(90,area.y+area.height*.4),radiusX:3,radiusY:3};await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[...points,fourth]});assert.equal(await page.evaluate('tb.right&&tb.jump&&ability.charging'),true,'fourth simultaneous contact must preserve held charge/movement');await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[fourth]});if(hero==='minty')await page.evaluate('enemies[0].x=pl.x+80;enemies[0].y=pl.y+4');await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[points[2]]});await page.evaluate('update();draw()');
+    assert.equal(await page.evaluate('tb.right&&tb.jump&&pl.vx>0&&ability.cooldown>0'),true,JSON.stringify(await page.evaluate('({tb,x:pl.x,y:pl.y,vx:pl.vx,vy:pl.vy,cooldown:ability.cooldown,trace:window.inputTrace})')));const cast=await page.evaluate('ability.cooldown');
+    const canvas=await page.locator('#c').boundingBox();await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[...points.slice(0,2),{id:99,x:canvas.x+canvas.width*.5,y:canvas.y+canvas.height*.4,radiusX:3,radiusY:3}]});
     await page.evaluate('update();draw()');assert.equal(await page.evaluate('tb.right&&tb.jump'),true,'fourth canvas contact must not release native button owners');
     await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});await page.evaluate('update();draw()');assert.equal(await page.evaluate('tb.right||tb.jump'),false);
     assert.ok(await page.evaluate('ability.cooldown')<cast);await cdp.detach();
@@ -51,7 +51,7 @@ module.exports=async function stageHBrowser(browser,url,output,{engine='chromium
     // WebKit mobile emulation supports native single taps; simultaneous contact
     // delivery here is pointer-event injection, explicitly not physical iOS.
     for(const [i,id]of ['touch-right','touch-jump','ability-button'].entries())await page.locator('#'+id).dispatchEvent('pointerdown',{pointerId:i+1,button:0,pointerType:'touch'});
-    await page.evaluate('update();draw()');assert.equal(await page.evaluate('tb.right&&tb.jump&&(pl.vy<0||pl.character==="hopper"&&ability.effects.some(f=>f.kind==="shockwave"))&&ability.cooldown>0'),true);
+    await page.evaluate('for(let n=0;n<25;n++)update();draw()');assert.equal(await page.evaluate('ability.charging&&ability.cooldown===0'),true);if(hero==='minty')await page.evaluate('enemies[0].x=pl.x+80;enemies[0].y=pl.y+4');await page.locator('#ability-button').dispatchEvent('pointerup',{pointerId:3,pointerType:'touch'});await page.evaluate('update();draw()');assert.equal(await page.evaluate('tb.right&&tb.jump&&ability.cooldown>0'),true);
     for(const [i,id]of ['touch-right','touch-jump'].entries())await page.locator('#'+id).dispatchEvent('pointercancel',{pointerId:i+1,pointerType:'touch'});
    }
    await snap('ability-'+hero);results.push(`PASS ${engine} ${hero}: overlapping move+jump+Ability, native cast/cooldown and cancellation (fixture enemy)`);
@@ -72,6 +72,7 @@ module.exports=async function stageHBrowser(browser,url,output,{engine='chromium
   results.push(`PASS ${engine}: all five heroes have eight distinct native gameplay-scale articulated frames`);
   await page.evaluate("showMenu('pause')");const frozen=await page.evaluate('JSON.stringify({pl,time,ability,enemyCombat,enemies})');await page.evaluate('for(let i=0;i<120;i++)update();draw()');assert.equal(await page.evaluate('JSON.stringify({pl,time,ability,enemyCombat,enemies})'),frozen);
   await page.getByRole('button',{name:'Resume',exact:true}).tap();await page.setViewportSize({width:390,height:844});await page.evaluate('draw()');assert.equal(await page.evaluate('tb.right||tb.jump||tb.left'),false);
+  results.push(await require('./landscape-route-checks.cjs')(page,url,output,engine));
   await context.setOffline(true);await page.evaluate('update();draw()');results.push(`PASS ${engine}: pause freezes animation/combat, rotation clears held inputs, active game continues with network offline`);
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(output,`stage-h-${engine}-results.json`),JSON.stringify({engine,results,captures,errors,physicalDevices:'NOT TESTED'},null,2));return results;
  }finally{await context.close();}

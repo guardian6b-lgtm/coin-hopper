@@ -2,7 +2,7 @@ name: Windows verification
 
 on:
   push:
-    branches: [codex/moonlit-gardens, codex/character-select-redesign, codex/character-abilities, codex/enemy-balance, codex/crystal-caverns, codex/skyline-summit, codex/visual-redesign, codex/music-audio, codex/progression, codex/release-verification, codex/stage-h-integrated]
+    branches: [codex/moonlit-gardens, codex/character-select-redesign, codex/character-abilities, codex/enemy-balance, codex/crystal-caverns, codex/skyline-summit, codex/visual-redesign, codex/music-audio, codex/progression, codex/release-verification, codex/stage-h-integrated, codex/owner-playtest-followup, codex/sunny-meadow-art-prototype]
     paths:
       - index.html
       - .gitattributes
@@ -16,6 +16,9 @@ on:
       - scripts/campaign-executable-checks.cjs
       - scripts/replay-browser-route.cjs
       - scripts/visual-captures.cjs
+      - scripts/owner-followup-page-checks.cjs
+      - scripts/sunny-meadow-page-checks.cjs
+      - docs/owner-followup*
       - scripts/stage-h-page-checks.cjs
       - docs/stage-h*
       - docs/screenshots/stage-h/**
@@ -131,20 +134,25 @@ jobs:
           node scripts/verify-executable.cjs --executable "$($portable[0].FullName)" --label portable --output "$env:WINDOWS_ARTIFACTS"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Seal the integrated Stage H Windows and phone-browser playtest bundle
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.ref_name == 'codex/stage-h-integrated' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(fromJSON('["codex/stage-h-integrated","codex/owner-playtest-followup","codex/sunny-meadow-art-prototype"]'), github.ref_name) }}
         shell: pwsh
         run: |
           Copy-Item index.html "$env:WINDOWS_ARTIFACTS/index.html"
-          Copy-Item docs/stage-h-playtest.md "$env:WINDOWS_ARTIFACTS/START-HERE.md"
+          $guide = if (Test-Path docs/owner-followup-playtest.md) { "docs/owner-followup-playtest.md" } else { "docs/stage-h-playtest.md" }
+          Copy-Item $guide "$env:WINDOWS_ARTIFACTS/START-HERE.md"
           Copy-Item docs "$env:WINDOWS_ARTIFACTS/docs" -Recurse
           $nsis = Get-Content "$env:WINDOWS_ARTIFACTS/nsis-installed.json" -Raw | ConvertFrom-Json
           $portable = Get-Content "$env:WINDOWS_ARTIFACTS/portable.json" -Raw | ConvertFrom-Json
-          @("# Stage H exact-build verification", "", "Commit: $env:GITHUB_SHA", "NSIS actual executable: $($nsis.status)", "Portable actual executable: $($portable.status)", "", "See [full report](docs/stage-h-verification.md) and [owner instructions](docs/stage-h-playtest.md). Physical Android/iOS, human Windows, audible and art/balance acceptance remain NOT TESTED.") | Set-Content "$env:WINDOWS_ARTIFACTS/VERIFICATION.md"
+          @("# Stage H exact-build verification", "", "Commit: $env:GITHUB_SHA", "NSIS actual executable: $($nsis.status)", "Portable actual executable: $($portable.status)", "", "See START-HERE.md and docs/owner-followup-verification.md when present; Stage H historical evidence remains in docs/stage-h-verification.md. Physical Android/iOS, human Windows, audible and art/balance acceptance remain NOT TESTED.") | Set-Content "$env:WINDOWS_ARTIFACTS/VERIFICATION.md"
+          node scripts/export-music.cjs "$env:WINDOWS_ARTIFACTS/music-preview"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item scripts/serve-stage-h.cjs "$env:WINDOWS_ARTIFACTS/serve-preview.cjs"
           $files = @(Get-ChildItem "$env:WINDOWS_ARTIFACTS" -File | Where-Object { $_.Extension -eq '.exe' -or $_.Name -eq 'index.html' -or $_.Name -eq 'serve-preview.cjs' })
           $files | Sort-Object Name | ForEach-Object {
             "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
           } | Set-Content "$env:WINDOWS_ARTIFACTS/SHA256SUMS.txt"
+          node scripts/seal-owner-playtest.cjs "$env:WINDOWS_ARTIFACTS"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Upload temporary executable and verification artifacts
         if: always()
         uses: actions/upload-artifact@v4

@@ -14,7 +14,7 @@ function stomp(game) {
 function safeWait(game, ticks) {
   game.eval('pl.x=144;pl.y=13*T-pl.h;pl.vx=0;pl.vy=0;pl.ground=true');game.step(ticks);
 }
-function cast(game) {game.event('keydown', { code: 'KeyE' });game.step();game.event('keyup', { code: 'KeyE' });}
+function cast(game) {game.event('keydown', { code: 'KeyE' });game.event('keyup', { code: 'KeyE' });game.step();}
 function shot(game, code = '') {
   game.eval(`enemyCombat.projectiles.push({owner:enemies[0],x:pl.x+13,y:pl.y+16,vx:0,vy:0,radius:6,life:3${code}})`);
 }

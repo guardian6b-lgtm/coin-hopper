@@ -31,7 +31,7 @@ module.exports=async function sequences(browser,url,out){
    for(let n=0;n<3;n++){await snap(`guardian-${pattern}-windup-${n}-fixture`);await step(12);}
    for(let n=0;n<5;n++){await step(6);await snap(`guardian-${pattern}-impact-${n}-fixture`);}
   }
-  await page.evaluate("const boss=enemies.find(e=>e.type==='guardian');boss.attackPhase='recover';boss.hitTime=0;damageEnemy(boss,'stomp');draw()");for(let n=0;n<5;n++){await snap(`guardian-defeat-${n}-fixture`);await step(6);}
+  await page.evaluate("const boss=enemies.find(e=>e.type==='guardian');boss.attackPhase='recover';boss.openingHit=false;boss.hitTime=0;damageEnemy(boss,'stomp');draw()");for(let n=0;n<5;n++){await snap(`guardian-defeat-${n}-fixture`);await step(6);}
   if(errors.length)throw new Error(errors.join('\n'));
   fs.writeFileSync(path.join(out,'stage-h-animation-sequences.json'),JSON.stringify({source:'Actual960x540gameplay canvas+HUD. Named isolated fixtures; not a human playthrough or physical-device capture.',files,errors},null,2));
   const groups=Object.groupBy(files,f=>f.replace(/-\d+-fixture\.png$/,'-frames'));

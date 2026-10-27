@@ -11,7 +11,7 @@ module.exports=async function verifySkyline(browser,url,output){
   const bossFixture=()=>page.evaluate(()=>{
     startLevel(5);enemies=enemies.filter(e=>e.type==='guardian');const boss=enemies[0];
     pl.x=boss.x-80;pl.y=436;pl.vx=0;pl.vy=0;pl.ground=true;pl.inv=0;cam=pl.x-W/3;coins=[];shields=[];
-    boss.attackPhase='recover';boss.attackTimer=20;draw();
+    boss.attackPhase='recover';boss.openingHit=false;boss.attackTimer=20;draw();
   });
   try{
     await choose('hopper');await page.evaluate('startLevel(5)');await step(7);
@@ -65,11 +65,11 @@ module.exports=async function verifySkyline(browser,url,output){
     const still=await page.evaluate('(()=>{drawSummitBG();const a=cv.toDataURL();enemyCombat.clock+=10;drawSummitBG();return a===cv.toDataURL()})()');assert.equal(still,true);await page.evaluate('draw()');
     results.push('PASS reduced-motion Summit background removes decorative wind streaks');
     for(const size of [{width:960,height:540},{width:1440,height:900},{width:390,height:844},{width:844,height:390},{width:320,height:240}]){
-      await page.setViewportSize(size);await page.waitForFunction('Math.abs(parseFloat(cv.style.width)-Math.min(innerWidth/960,(innerHeight-(touchMode?96:0))/540)*960)<.1',null,{polling:50});await page.evaluate('draw()');
+      await page.setViewportSize(size);await page.waitForFunction('Math.abs(parseFloat(cv.style.width)-(touchMode&&innerWidth>innerHeight&&innerWidth>=480?innerWidth/960:Math.min(innerWidth/960,innerHeight/540))*960)<.1',null,{polling:50});await page.evaluate('draw()');
       const box=await page.locator('#boss-hud').boundingBox(),button=await page.locator('#ability-button').boundingBox(),power=await page.locator('#ability-hud').boundingBox();
       assert.ok(box&&box.x>=0&&box.y>=0&&box.x+box.width<=size.width&&box.y+box.height<=size.height,JSON.stringify({box,size}));
       const overlaps=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;
-      assert.equal(overlaps(box,button)||overlaps(box,power),false,JSON.stringify({box,button,power}));
+      assert.equal(overlaps(box,button)||(power&&overlaps(box,power))||false,false,JSON.stringify({box,button,power}));
       assert.equal(await page.locator('#boss-health').getAttribute('aria-valuenow'),'5');
       await page.screenshot({path:path.join(output,`guardian-hud-${size.width}x${size.height}.png`)});
     }

@@ -42,6 +42,7 @@ test('Tab and Shift+Tab wrap through visible native menu controls', () => {
   game.event('keydown', { code: 'Tab', target: game.element('audio-mute') });
   assert.equal(game.document.activeElement, game.element('motion-toggle'));
   game.event('keydown', { code: 'Tab', target: game.element('motion-toggle') });
+  assert.equal(game.document.activeElement, game.element('core-trial'));game.event('keydown',{code:'Tab',target:game.element('core-trial')});
   assert.equal(game.document.activeElement, game.findButton('Back'));
 });
 

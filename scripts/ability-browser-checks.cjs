@@ -25,7 +25,7 @@ module.exports = async function verifyAbilities(browser, url, output) {
         if (id === 'bolt') enemies.push({x:pl.x+150,y:440,w:28,h:28,vx:0,vy:0,dead:0,ground:true});
         draw();
       }, id);
-      await page.keyboard.down('KeyE');await step(1);await page.keyboard.up('KeyE');
+      await page.keyboard.press('KeyE');await step(1);
       assert.ok(await page.evaluate('ability.cooldown>0'), id);
       assert.equal(await page.locator('#ability-button').isDisabled(), true);
       assert.match(await page.locator('#ability-name').innerText(), new RegExp(id[0].toUpperCase() + id.slice(1)));
@@ -91,35 +91,24 @@ module.exports = async function verifyAbilities(browser, url, output) {
       await mp.getByRole('button', { name: 'Start game', exact: true }).tap();
       await mp.evaluate('for(let i=0;i<10;i++)update();draw()');
       const client = await mobile.newCDPSession(mp);
-      const rect = await mp.locator('#c').boundingBox();
-      const ability = await mp.locator('#ability-button').boundingBox();
-      const point = (id, x, y) => ({ id, x, y, radiusX: 3, radiusY: 3 });
-      const right=point(0,rect.x+190*rect.width/960,rect.y+470*rect.height/540);
-      const jump=point(1,rect.x+875*rect.width/960,rect.y+465*rect.height/540);
-      const power=point(2,ability.x+ability.width/2,ability.y+ability.height/2);
-      await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [right] });
-      await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [right,jump] });
+      const point = async (id, name) => {const b=await mp.locator('#'+name).boundingBox();return {id,x:b.x+b.width/2,y:b.y+b.height/2,radiusX:3,radiusY:3};};
+      const right=await point(0,'touch-right'),jump=await point(1,'touch-jump'),power=await point(2,'ability-button');
       await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [right,jump,power] });
-      assert.equal(await mp.evaluate('held("right")&&held("jump")&&abilityEdge'), true);
-      await mp.evaluate('update();draw()');
-      assert.equal(await mp.evaluate('ability.projectiles.length'), 1);
-      // CDP's compositor acknowledgement can precede delivery of touchcancel to
-      // the page under load. Observe that event before asserting handler state.
-      await mp.evaluate('window.__cancelSeen=false;cv.addEventListener("touchcancel",e=>{if(!e.targetTouches.length)window.__cancelSeen=true;})');
+      await mp.evaluate('for(let i=0;i<25;i++)update();draw()');
+      assert.equal(await mp.evaluate('held("right")&&held("jump")&&ability.charging&&ability.cooldown===0'),true);
+      await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[power]});
+      await mp.evaluate('update();draw()');assert.equal(await mp.evaluate('ability.projectiles.length'),1);
       await client.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
-      await mp.waitForFunction('window.__cancelSeen===true',null,{polling:10,timeout:1000});
-      assert.equal(await mp.evaluate('held("right")||held("jump")||abilityEdge'), false);
+      await mp.waitForFunction('!held("right")&&!held("jump")',null,{polling:10});
       await mp.screenshot({ path: path.join(output, 'ability-mobile-landscape.png') });
       for (const size of [{ width: 390, height: 844 }, { width: 320, height: 240 }]) {
         await mp.setViewportSize(size);
-        await mp.waitForFunction('Math.abs(parseFloat(cv.style.width)-Math.min(innerWidth/960,(innerHeight-(touchMode?96:0))/540)*960)<.1',null,{polling:50});
+        await mp.waitForFunction('Math.abs(parseFloat(cv.style.width)-(touchMode&&innerWidth>innerHeight&&innerWidth>=480?innerWidth/960:Math.min(innerWidth/960,innerHeight/540))*960)<.1',null,{polling:50});
         await mp.evaluate('draw()');
         const box=await mp.locator('#ability-button').boundingBox(),canvas=await mp.locator('#c').boundingBox();
         assert.ok(box.width>=44&&box.height>=44&&box.x>=0&&box.y>=0&&box.x+box.width<=size.width&&box.y+box.height<=size.height,JSON.stringify({box,size}));
-        const cx=canvas.x+875*canvas.width/960,cy=canvas.y+465*canvas.height/540,r=58*1.35*canvas.width/960;
-        const nearX=Math.max(box.x,Math.min(cx,box.x+box.width)),nearY=Math.max(box.y,Math.min(cy,box.y+box.height));
-        assert.ok(Math.hypot(cx-nearX,cy-nearY)>r, 'Ability target must not cover the Jump touch target');
-        if(size.height===844)assert.ok(box.y>=canvas.y+canvas.height+8,'Portrait Ability button belongs in the lower letterbox, outside the world');
+        const jumpBox=await mp.locator('#touch-jump').boundingBox();
+        assert.ok(box.x+box.width<=jumpBox.x||jumpBox.x+jumpBox.width<=box.x||box.y+box.height<=jumpBox.y||jumpBox.y+jumpBox.height<=box.y,'Separate Ability and Jump targets');
         if(size.height===844)await mp.screenshot({ path: path.join(output, 'ability-mobile-portrait.png') });
       }
       results.push('PASS mobile three-finger movement+jump+Ability, cancellation and responsive non-overlapping 44px+ button');

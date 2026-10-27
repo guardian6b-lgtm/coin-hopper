@@ -53,7 +53,7 @@ for(const hero of heroes){
     }
     assert.equal(game.eval('state'),'win');assert.equal(game.eval('score'),total);
     assert.deepEqual(game.snapshot('progress.completed'),Array(routes.length).fill(true));
-    assert.match(game.element('menu-description').textContent,new RegExp(`All ${routes.length} levels complete`));
+    assert.match(game.element('menu-description').textContent,/First 6 of 12 planned levels complete/);
   });
 
   test(`${hero} reaches every Crystal Caverns raised coin group on the optional legal route`,()=>{

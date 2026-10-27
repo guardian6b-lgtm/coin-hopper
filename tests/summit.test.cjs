@@ -5,7 +5,7 @@ function fixture(type='guardian',hero='hopper'){
   const g=onFlatGround(createGame({saved:{coinhopper_character_v1:hero}}));
   g.eval(`enemies=[createEnemy('${type}',400,${type==='guardian'?404:372})];shields=[];bossState={required:${type==='guardian'},defeated:false};pl.inv=0`);return g;
 }
-function cast(g){g.event('keydown',{code:'KeyE'});g.step();g.event('keyup',{code:'KeyE'});}
+function cast(g){g.event('keydown',{code:'KeyE'});g.event('keyup',{code:'KeyE'});g.step();}
 function wave(g,more=''){g.eval(`enemyCombat.projectiles.push({kind:'wave',owner:enemies[0],x:pl.x+13,y:pl.y+23,vx:0,vy:0,radius:7,life:2.4${more}})`);}
 
 test('Skyline Summit has safe elevated islands, four flyers, a five-HP boss and a required exit gate',()=>{
@@ -29,14 +29,14 @@ for(const hero of ['hopper','minty','ember','nova','bolt']){
       assert.equal(g.eval('lives'),3);assert.equal(g.eval('shields.some(s=>s.got)'),false);assert.equal(g.eval('ability.cooldown'),0);
     }
     assert.deepEqual(hits,route.bossHits);assert.equal(g.eval('state'), 'done');assert.equal(g.eval('bossState.defeated'),true);assert.equal(g.eval('score'),route.score);
-    g.click('Finish');assert.equal(g.eval('state'),'win');assert.match(g.element('menu-description').textContent,/All 6 levels complete/);
+    g.click('Finish');assert.equal(g.eval('state'),'win');assert.match(g.element('menu-description').textContent,/First 6 of 12 planned levels complete/);
   });
 }
 
 test('the final flag gives no completion or flag bonus until the Guardian is defeated',()=>{
   const g=createGame();g.eval('newGame();startLevel(5);enemies=enemies.filter(e=>e.type==="guardian");coins=[];pl.x=flag.x;pl.y=436;pl.vx=0');g.step();
   assert.equal(g.eval('state'),'play');assert.equal(g.eval('score'),0);
-  for(let i=0;i<5;i++)g.eval("enemies[0].attackPhase='recover';enemies[0].hitTime=0;damageEnemy(enemies[0],'stomp')");
+  for(let i=0;i<5;i++)g.eval("enemies[0].attackPhase='recover';enemies[0].openingHit=false;enemies[0].hitTime=0;damageEnemy(enemies[0],'stomp')");
   assert.equal(g.eval('bossState.defeated&&score===50'),true);g.step();assert.equal(g.eval('state'),'done');assert.equal(g.eval('score'),450);
   g.step(100);assert.equal(g.eval('score'),450);
 });
@@ -45,23 +45,23 @@ test('Guardian armor rejects hits, recovery accepts one HP, and closes without p
   const g=fixture();
   for(const source of ['stomp','slam','fireball','lightning'])assert.equal(g.eval(`damageEnemy(enemies[0],'${source}')`),false);
   g.eval("enemies[0].attackPhase='recover'");assert.equal(g.eval("damageEnemy(enemies[0],'fireball')"),true);
-  assert.equal(g.eval('enemies[0].health===4&&score===0&&enemies[0].attackPhase==="idle"'),true);
+  assert.equal(g.eval('enemies[0].health===4&&score===0&&!guardianOpen(enemies[0])'),true);
   g.eval('enemies[0].hitTime=0');assert.equal(g.eval("damageEnemy(enemies[0],'stomp')"),false,'one hit per visible opening');
 });
 
 test('Guardian three-phase wind-up, material attacks and recovery use fixed simulation time',()=>{
   for(const health of [5,3,1]){
     const g=fixture();g.eval(`enemies[0].health=${health};enemies[0].attackTimer=DT`);g.step();
-    assert.equal(g.eval('enemies[0].attackPhase'),'windup');const windup=health===5?1.15:health===3?1:.9;
+    assert.equal(g.eval('enemies[0].attackPhase'),'windup');const windup=health===5?1.15:health===3?1.1:.9;
     assert.equal(g.eval('enemies[0].attackTimer'),windup);g.step(Math.round(windup*60));
     assert.equal(g.eval('enemies[0].attackPhase'),'recover');assert.equal(g.eval('enemyCombat.projectiles.length'),2);
-    assert.equal(g.eval('enemyCombat.projectiles.every(p=>p.kind==="wave"&&Math.abs(p.vx)===150)'),true);
+    assert.equal(g.eval('enemyCombat.projectiles.every(p=>p.kind==="wave"&&Math.abs(p.vx)==='+(health===1?165:150)+')'),true);
   }
 });
 
 for(const hero of ['hopper','ember','bolt']){
   test(`${hero}'s damaging power removes one boss HP during recovery and cannot skip the encounter`,()=>{
-    const g=fixture('guardian',hero);g.eval(`enemies[0].attackPhase='recover';enemies[0].attackTimer=20;enemies[0].x=${hero==='hopper'?199:260}`);
+    const g=fixture('guardian',hero);g.eval(`enemies[0].attackPhase='recover';enemies[0].openingHit=false;enemies[0].attackTimer=20;enemies[0].x=${hero==='hopper'?199:260}`);
     if(hero==='hopper')g.eval('pl.y=330;pl.ground=false;pl.vy=100');cast(g);g.step(30);
     assert.equal(g.eval('enemies[0].health'),4);assert.equal(g.eval('score'),0);assert.equal(g.eval('bossState.defeated'),false);
   });
@@ -76,7 +76,7 @@ test('Minty roots the boss for two seconds, freezes its phase and releases befor
 
 test('Nova can glide through a legal jump over a shockwave without flight, damage or boss damage',()=>{
   const g=fixture('guardian','nova');g.eval('enemies[0].attackTimer=999');wave(g,',x:pl.x-50,vx:150');
-  g.event('keydown',{code:'Space'});g.event('keydown',{code:'KeyE'});g.step();g.event('keyup',{code:'KeyE'});g.step(50);
+  g.event('keydown',{code:'Space'});g.event('keydown',{code:'KeyE'});g.event('keyup',{code:'KeyE'});g.step();g.step(50);
   assert.equal(g.eval('lives'),3);assert.equal(g.eval('enemies[0].health'),5);assert.equal(g.eval('score'),0);
   assert.ok(g.eval('pl.vy')>=-640);assert.ok(g.eval('pl.y')>200);
 });
@@ -112,7 +112,7 @@ test('pause/settings/restart cancel freeze boss health/phase/waves and native HU
 
 test('boss HUD exposes HP and defeat without narrating internal states or commands',()=>{
   const g=fixture();g.eval('draw()');assert.equal(g.element('boss-health').getAttribute('aria-valuenow'),'5');assert.equal(g.element('boss-status').textContent,'');
-  g.eval("enemies[0].health=2;enemies[0].attackPhase='recover';draw()");assert.doesNotMatch(g.element('boss-name').textContent,/Phase|stomp|recover/i);assert.equal(g.element('boss-status').hidden,true);
+  g.eval("enemies[0].health=2;enemies[0].attackPhase='recover';enemies[0].openingHit=false;draw()");assert.doesNotMatch(g.element('boss-name').textContent,/Phase|stomp|recover/i);assert.equal(g.element('boss-status').hidden,true);
   g.eval('bossState.defeated=true;draw()');assert.equal(g.element('boss-health').getAttribute('aria-valuenow'),'0');assert.match(g.element('boss-status').textContent,/exit open/);
   g.eval('bossState.defeated=false;enemies[0].maxHealth=7;draw()');assert.equal(g.element('boss-health').getAttribute('aria-valuemax'),'7');assert.match(g.element('boss-name').textContent,/2 \/ 7/);
 });

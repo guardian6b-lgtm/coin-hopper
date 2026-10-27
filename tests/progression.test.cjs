@@ -63,7 +63,7 @@ test('death and restart retain earned progress while existing HP/pickup/score re
 test('saved completed Level 6 never bypasses its fresh boss, and repeated selection never banks old score',()=>{
   const g=createGame({saved:{[key]:savedRun(6,5)}});g.click('Continue');g.click('Start game');
   g.eval('pl.x=flag.x;pl.vx=0;pl.y=436');g.step();assert.equal(g.eval('state'),'play');assert.equal(g.eval('score'),0);
-  g.eval("const boss=enemies.find(e=>e.type==='guardian');for(let i=0;i<5;i++){boss.attackPhase='recover';boss.hitTime=0;damageEnemy(boss,'stomp')}");g.step();assert.equal(g.eval('state'),'done');const score=g.eval('score');
+  g.eval("const boss=enemies.find(e=>e.type==='guardian');for(let i=0;i<5;i++){boss.attackPhase='recover';boss.openingHit=false;boss.hitTime=0;damageEnemy(boss,'stomp')}");g.step();assert.equal(g.eval('state'),'done');const score=g.eval('score');
   g.eval('syncMenu();syncMenu()');g.step(60);assert.equal(g.eval('score'),score);g.click('Finish');g.click('Title screen');g.click('Continue');g.click('Start game');
   assert.equal(g.eval('score===0&&lives===3&&bossState.required&&!bossState.defeated'),true);
 });

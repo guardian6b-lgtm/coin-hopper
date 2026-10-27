@@ -40,9 +40,9 @@ module.exports=async function verifyMusicPage(page,output,label='browser'){
         report.push({theme,peak,rms:Math.sqrt(sum/samples.length),seam,signature,loop:source.loop,duration:data.duration,first:data.samples[0],last:data.samples.at(-1)});
       }return report;
     });
-    assert.equal(themes.length,8);assert.equal(new Set(themes.map(t=>t.signature)).size,8);
+    assert.equal(themes.length,10);assert.equal(new Set(themes.map(t=>t.signature)).size,10);
     for(const theme of themes){assert.ok(theme.peak>0&&theme.peak<1&&theme.rms>.001&&theme.loop&&theme.seam<.01,JSON.stringify(theme));assert.equal(theme.first,0);assert.equal(theme.last,0);}
-    results.push('PASS eight distinct real OfflineAudioContext themes, two continuous loops each, bounded signal and measured loop seams');
+    results.push('PASS ten distinct real OfflineAudioContext themes, two continuous loops each, bounded signal and measured loop seams');
     await page.evaluate('window.__musicRAF=requestAnimationFrame;requestAnimationFrame=()=>0');await page.waitForTimeout(40);
     let mixing;
     try{mixing=await page.evaluate(async()=>{
