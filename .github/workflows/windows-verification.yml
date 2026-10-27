@@ -9,6 +9,7 @@ on:
       - desktop/**
       - tests/**
       - scripts/verify-executable.cjs
+      - scripts/verify-packaged-page.cjs
       - scripts/ability-executable-checks.cjs
       - scripts/enemy-executable-checks.cjs
       - scripts/enemy-fixture.cjs
@@ -68,13 +69,8 @@ jobs:
       - name: Copy the PR game page
         working-directory: desktop
         run: npm run copy-index
-      - name: Check the copied page matches the PR head
-        shell: pwsh
-        run: |
-          if ((Get-FileHash index.html).Hash -ne (Get-FileHash desktop/index.html).Hash) {
-            throw 'Desktop page differs from PR source'
-          }
-          node -e "const fs=require('node:fs'),cp=require('node:child_process');const canonical=cp.execFileSync('git',['show','HEAD:index.html'],{maxBuffer:8*1024*1024});if(!canonical.equals(fs.readFileSync('index.html')))throw Error('Windows checkout changed canonical game bytes');
+      - name: Check copied and canonical Git page bytes before packaging
+        run: node scripts/verify-packaged-page.cjs
       - name: Build Windows x64 NSIS and portable without publishing
         id: build
         working-directory: desktop
