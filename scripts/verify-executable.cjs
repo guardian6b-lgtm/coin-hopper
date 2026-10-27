@@ -252,6 +252,7 @@ async function main() {
     report.status = 'PASS';
   } catch (error) {
     report.status = 'FAIL'; report.errors.push(error.stack || error.message);
+    if(app)report.rendererAtFailure=await app.page.evaluate('({state,menuReturn,lvl,hidden:document.hidden,audioBlurred,context:ac?.state,time:ac?.currentTime,theme:musicState.theme,source:!!musicState.source,master:masterGain?.gain.value,masterTarget:masterGain?gainValues.get(masterGain):null,music:musicGain?.gain.value,effects:effectsGain?.gain.value,muted:audioPrefs.muted,matchingContext:musicGain?.context===ac})').catch(()=>null);
     if (app) await app.page.screenshot({ path: path.join(output, `${values.label}-failure.png`) }).catch(() => {});
     throw error;
   } finally {
@@ -263,7 +264,7 @@ async function main() {
 main().catch(error => {
   console.error(error);
   if(process.env.GITHUB_ACTIONS){
-    const detail=String(error.stack||error).replace(/%/g,'%25').replace(/\r/g,'%0D').replace(/\n/g,'%0A');
+    const detail=(String(error.stack||error)+'\nRenderer: '+JSON.stringify(report.rendererAtFailure)).replace(/%/g,'%25').replace(/\r/g,'%0D').replace(/\n/g,'%0A');
     console.error(`::error title=Coin Hopper ${values.label} smoke::${detail}`);
   }
   process.exitCode = 1;
