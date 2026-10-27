@@ -43,6 +43,8 @@ module.exports=async function stageHBrowser(browser,url,output,{engine='chromium
     for(const [i,id]of ['touch-right','touch-jump','ability-button'].entries()){const b=await page.locator('#'+id).boundingBox();points.push({id:i+1,x:b.x+b.width/2,y:b.y+b.height/2,radiusX:3,radiusY:3});}
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:points});await page.evaluate('update();draw()');
     assert.equal(await page.evaluate('tb.right&&tb.jump&&pl.vx>0&&(pl.vy<0||pl.character==="hopper"&&ability.effects.some(f=>f.kind==="shockwave"))&&ability.cooldown>0'),true,JSON.stringify(await page.evaluate('({tb,x:pl.x,y:pl.y,vx:pl.vx,vy:pl.vy,cooldown:ability.cooldown,trace:window.inputTrace})')));const cast=await page.evaluate('ability.cooldown');
+    const canvas=await page.locator('#c').boundingBox();await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[...points,{id:99,x:canvas.x+canvas.width*.5,y:canvas.y+canvas.height*.4,radiusX:3,radiusY:3}]});
+    await page.evaluate('update();draw()');assert.equal(await page.evaluate('tb.right&&tb.jump'),true,'fourth canvas contact must not release native button owners');
     await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});await page.evaluate('update();draw()');assert.equal(await page.evaluate('tb.right||tb.jump'),false);
     assert.ok(await page.evaluate('ability.cooldown')<cast);await cdp.detach();
    }else{

@@ -7,7 +7,7 @@ This is the **draft PR #27 / `codex/stage-h-integrated`** build, not the publish
 `build.json` identifies the exact Git commit and CI run. `SHA256SUMS.txt` identifies the two Windows executables and the standalone `index.html`. The Windows application's embedded HTML is checked against this very same source before building. Do not mix an older HTML/EXE with this bundle. The packaging version remains the existing 1.0.0 because this is an unpublished test; use the commit/checksum to identify Stage H.
 
 Expected standalone page SHA-256:
-`a54af90087609ccf37056a215a1ee629b6f135540492746bd83a43de6c87a27a`.
+`8f3c96f48576b0924362dff6dafd43eaec27b740bd2a205df59e04ae54db71da`.
 
 On Windows verify: `Get-FileHash .\index.html -Algorithm SHA256` (similarly for each EXE). Compare with the bundled checksums. Temporary artifacts expire seven days after creation; they are not public releases.
 

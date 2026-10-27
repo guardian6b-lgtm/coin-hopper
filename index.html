@@ -489,7 +489,8 @@ addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{clearInput();if(state==='play')showMenu('pause');});
 var touchMode=window.matchMedia?.('(pointer: coarse)')?.matches||false;fit();const tb={left:false,right:false,jump:false,pause:false};
 const BTN={left:{x:70,y:H-70,r:48},right:{x:190,y:H-70,r:48},jump:{x:W-85,y:H-75,r:58},pause:{x:W-40,y:40,r:26}};
-function clearInput(){if(typeof touchOwners!=='undefined')for(const owners of Object.values(touchOwners))owners.clear();for(const k in keys)keys[k]=false;for(const b in tb)tb[b]=false;jumpEdge=false;anyEdge=false;abilityEdge=false;}
+const canvasTouches={left:false,right:false,jump:false,pause:false};
+function clearInput(){for(const b in canvasTouches)canvasTouches[b]=false;if(typeof touchOwners!=='undefined')for(const owners of Object.values(touchOwners))owners.clear();for(const k in keys)keys[k]=false;for(const b in tb)tb[b]=false;jumpEdge=false;anyEdge=false;abilityEdge=false;}
 function onTouch(e){e.preventDefault();audio();if(!touchMode){touchMode=true;fit();}pauseButton.hidden=false;
   if(state!=='play'){clearInput();return;}
   const r=cv.getBoundingClientRect(),now={left:false,right:false,jump:false,pause:false};
@@ -498,14 +499,14 @@ function onTouch(e){e.preventDefault();audio();if(!touchMode){touchMode=true;fit
   }
   if(now.pause&&!tb.pause){showMenu('pause');return;}
   if(now.jump&&!tb.jump)jumpEdge=true;
-  Object.assign(tb,now);
+  Object.assign(canvasTouches,now);for(const b in now)tb[b]=now[b]||!!touchOwners[b]?.size;
 }
 ['touchstart','touchmove','touchend','touchcancel'].forEach(n=>cv.addEventListener(n,onTouch,{passive:false}));
 cv.addEventListener('mousedown',()=>{audio();if(state==='play')cv.focus();});
 const touchOwners={left:new Set(),right:new Set(),jump:new Set()};
 for(const action of ['left','right','jump']){
   const button=document.getElementById('touch-'+action);
-  const release=e=>{e.preventDefault();touchOwners[action].delete(e.pointerId);tb[action]=touchOwners[action].size>0;};
+  const release=e=>{e.preventDefault();touchOwners[action].delete(e.pointerId);tb[action]=touchOwners[action].size>0||canvasTouches[action];};
   button.addEventListener('pointerdown',e=>{if(state!=='play'||(e.button!=null&&e.button!==0))return;e.preventDefault();audio();touchMode=true;fit();if(e.isTrusted)button.setPointerCapture?.(e.pointerId);if(action==='jump'&&!tb.jump)jumpEdge=true;touchOwners[action].add(e.pointerId);tb[action]=true;});
   for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,release);
 }

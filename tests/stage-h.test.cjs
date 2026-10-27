@@ -88,3 +88,11 @@ test('level completion, next level and reload clear boosted charges and attempt 
   g.click('Next level');assert.equal(g.eval('pl.highJump===0&&checkpoint===null&&pl.character==="minty"'),true);
   const saved=Object.fromEntries(g.storage),reload=createGame({saved});reload.click('Continue');reload.click('Start game');assert.equal(reload.eval('lvl===1&&pl.highJump===0&&checkpoint===null&&score===0&&lives===3&&pl.character==="minty"'),true);assert.deepEqual(reload.snapshot('settings'),{music:.4,effects:.7});
 });
+test('mixed legacy canvas touches and native button contacts never cancel another held owner',()=>{
+  const g=onFlatGround(createGame());g.domEvent('touch-right','pointerdown',{pointerId:1,button:0});
+  g.canvasEvent('touchstart',{touches:[{clientX:500,clientY:200}]});assert.equal(g.eval('held("right")'),true);
+  g.domEvent('touch-jump','pointerdown',{pointerId:2,button:0});g.canvasEvent('touchmove',{touches:[{clientX:190,clientY:470}]});assert.equal(g.eval('held("right")&&held("jump")'),true);
+  g.domEvent('touch-right','pointerup',{pointerId:1});assert.equal(g.eval('held("right")'),true,'canvas contact still owns right');
+  g.canvasEvent('touchcancel',{touches:[]});assert.equal(g.eval('!held("right")&&held("jump")'),true,'native Jump survives canvas cancellation');
+  g.domEvent('touch-jump','pointercancel',{pointerId:2});assert.equal(g.eval('held("right")||held("jump")'),false);g.event('blur');assert.equal(g.eval('Object.values(canvasTouches).some(Boolean)'),false);
+});
