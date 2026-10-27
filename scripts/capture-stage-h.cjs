@@ -20,6 +20,7 @@ const server=http.createServer((q,r)=>{r.setHeader('Content-Type','text/html');r
    }
    await context.close();
   }
+  await require('./stage-h-animation-captures.cjs')(browser,base+'/after',out);
   // Normal menus with a disclosed fully unlocked save, then actual timed input.
   // Every level begins at ordinary spawn; no direct startLevel/actor setup.
   const context=await browser.newContext({viewport:{width:960,height:540},recordVideo:{dir:path.join(out,'clips'),size:{width:960,height:540}}});

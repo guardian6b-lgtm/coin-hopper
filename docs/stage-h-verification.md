@@ -20,7 +20,7 @@ Local environment: Debian 13, Node 24.19.0, actual Chromium 154 and Electron 44.
 | Check | Local result | Evidence / scope |
 |---|---|---|
 | Pre-edit Stage G baseline | PASS |308/308 Node tests before source edits; parent independently verified live |
-| Full current Node regression | PASS |335 tests, zero skipped/failures;308 prior cases retained/adapted explicitly for authorized maps, route scores and hidden debug HUD |
+| Full current Node regression | PASS |336 tests, zero skipped/failures;308 prior cases retained/adapted explicitly for authorized maps, route scores and hidden debug HUD |
 | All5 heroes×6levels | PASS |30 legal normal-menu campaign recordings,3 lives, no character power or shield; optional boots collected in five level routes; Level3 route needs none |
 | Original content / physics | PASS |Archived original map hashes retained; extension inversion test permits only documented Level3 local changes; collision/ability/nonboss AI locks and movement/arc tests retained |
 | High Jump / Level3 | PASS |2 equal launches; normal108.5 px vs boosted193.6667 px maximum rise; grounded-only charge consumption; independent shields/powers; pause/reset/transition; lower crossing at x24/24.5/25 tiles ×18/24/30/36/42/48-frame holds for all heroes |
@@ -29,12 +29,14 @@ Local environment: Debian 13, Node 24.19.0, actual Chromium 154 and Electron 44.
 | Native before/after and normal-input evidence | PASS |Exact Stage G comparison,960×540/1440×810/390×844/844×390/960×360; all 6spawn scenes and boss; all-hero ordinary-spawn wall-clock keyboard clips/frame sequences. Fixtures are named. Owner quality approval is separate |
 | Render budget | PASS on this runner |360 six-scene draw sample;p95 threshold33.34ms; actual measured JSON in artifact includes mean/max/outliers. Not a phone FPS/heat/power certificate |
 | Offline packaged Linux app | PASS |Actual Electron file renderer,30routes,all powers/enemies/shields/audio/progression/fullprocess save restart,5boots crossings and boss privacy. Embedded HTML matches source byte-for-byte |
-| Windows NSIS/portable build and executable smoke | NOT TESTED locally |Dedicated Windows CI builds without publishing; tests both actual executables, all 30routes, High Jump, privacy, persistence/F11/resize/minimize/restore. Final exact-head outcome is in PR27 and bundled JSON; do not infer it from Linux |
+| Windows NSIS/portable build and executable smoke | PASS hosted / NOT TESTED locally |Dedicated Windows CI builds without publishing; tests both actual executables, all 30routes, High Jump, privacy, persistence/F11/resize/minimize/restore. Final exact-head outcome is in PR27 and bundled JSON; do not infer it from Linux |
 | WebKit mobile emulation | NOT TESTED locally |Local WebKit download host denied access; hosted Ubuntu workflow installs WebKit and runs same14 groups. Pointer injection there is not physical multi-touch Safari |
 | Audio | PASS technically / human NOT TESTED |Existing independent buses/mute/offline/loop/signal/mixing tests retained; no new music assets. No human listening or physical hardware claim |
 | Real Android/iOS, human Windows, art/balance/accessibility | NOT TESTED |Owner checklist below; automation is not acceptance |
 
 Old route recordings remain in `tests/fixtures/routes.cjs`, `crystal-caverns.cjs`, `skyline-summit.cjs` and the explicit Stage G campaign aggregator. New inputs live in `stage-h-routes.json` plus the optional cave bonus route. The new cave bonus reaches every original raised group without losing its shield. No assertion was simply deleted to conceal an unreachable route. Fixed60Hz replays batch drawing between input changes; native-input footage/render budget use real rendering separately. Route generation used speculative search, but final fixtures replay only real key handlers and simulation, without actor edits, removed enemies, invulnerability changes or collision bypasses.
+
+The first integrated candidate `d74cf5351bf462cab9718cc5c20215be85269289` passed Node22 Ubuntu/Windows,95retained Chromium groups,14Stage H Chromium groups and14WebKit groups in [run40510875231](https://github.com/guardian6b-lgtm/coin-hopper/actions/runs/40510875231), plus both actual Windows executable suites in the linked Windows run. Final evidence-only refinements add comprehensive native fixture animation sequences and one explicit transition/reload reset test (336total); final-head checks/artifact links live in draft PR27. Product HTML remains SHA-256 `a54af90087609ccf37056a215a1ee629b6f135540492746bd83a43de6c87a27a` throughout.
 
 ## Measured route comparison
 
@@ -71,7 +73,7 @@ Browser scripts need Playwright 1.62 and matching installed engines/FFmpeg. Linu
 ![After — stone boss fixture, no command HUD](screenshots/stage-h/after-guardian-fixture-960x540.png)
 ![After — portrait native touch controls](screenshots/stage-h/stage-h-chromium-touch-390x844.png)
 
-[All-hero native-scale articulated strips](screenshots/stage-h/native-scale-run-strips.html) are isolated renderer diagnostics; the video and `native-run-*` PNGs are ordinary input samples. Artifact notes state how captures were produced. Formal art-reference fidelity remains owner-reviewed; no claim of pixel-exact painted art or physical phone rendering.
+[All-hero native-scale articulated strips](screenshots/stage-h/native-scale-run-strips.html) are isolated renderer diagnostics; the video and `native-run-*` PNGs are ordinary input samples. Artifact notes state how captures were produced. `stage-h-animation-sequences.html` and its JSON enumerate native960×540 controlled sequences for all five power casts, pickup/active states, enemy locomotion/reaction/defeat, Guardian stone patterns/defeat, and all-hero hurt/victory; these are explicitly fixtures, not ordinary playthroughs. Formal art-reference fidelity remains owner-reviewed; no claim of pixel-exact painted art or physical phone rendering.
 
 ## Remaining acceptance / next action
 

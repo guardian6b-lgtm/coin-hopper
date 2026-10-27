@@ -82,3 +82,9 @@ test('run cycle is eight articulated alternating contacts and render state freez
 test('touch mode retains an explicit visible native Pause button alongside the action controls',()=>{
   const g=createGame();g.eval('touchMode=true;newGame();draw()');assert.equal(g.element('pause-button').hidden,false);assert.equal(g.element('touch-controls').hidden,false);g.click('pause-button');assert.equal(g.eval('state'),'pause');g.click('Resume');assert.equal(g.element('pause-button').hidden,false);
 });
+test('level completion, next level and reload clear boosted charges and attempt checkpoints without changing saved preferences',()=>{
+  const g=createGame({saved:{coinhopper_character_v1:'minty',coinhopper_settings:'{"music":0.4,"effects":0.7}'}});g.click('Play');g.click('Start game');
+  g.eval('pl.highJump=1;pl.boostToast=2;checkpoint={x:100,y:436};pl.x=flag.x;pl.vx=0');g.step();assert.equal(g.eval('state'),'done');assert.equal(g.eval('pl.highJump'),0);
+  g.click('Next level');assert.equal(g.eval('pl.highJump===0&&checkpoint===null&&pl.character==="minty"'),true);
+  const saved=Object.fromEntries(g.storage),reload=createGame({saved});reload.click('Continue');reload.click('Start game');assert.equal(reload.eval('lvl===1&&pl.highJump===0&&checkpoint===null&&score===0&&lives===3&&pl.character==="minty"'),true);assert.deepEqual(reload.snapshot('settings'),{music:.4,effects:.7});
+});

@@ -138,9 +138,11 @@ jobs:
         run: |
           Copy-Item index.html "$env:WINDOWS_ARTIFACTS/index.html"
           Copy-Item docs/stage-h-playtest.md "$env:WINDOWS_ARTIFACTS/START-HERE.md"
-          Copy-Item docs/stage-h-verification.md "$env:WINDOWS_ARTIFACTS/VERIFICATION.md"
+          Copy-Item docs "$env:WINDOWS_ARTIFACTS/docs" -Recurse
+          $nsis = Get-Content "$env:WINDOWS_ARTIFACTS/nsis-installed.json" -Raw | ConvertFrom-Json
+          $portable = Get-Content "$env:WINDOWS_ARTIFACTS/portable.json" -Raw | ConvertFrom-Json
+          @("# Stage H exact-build verification", "", "Commit: $env:GITHUB_SHA", "NSIS actual executable: $($nsis.status)", "Portable actual executable: $($portable.status)", "", "See [full report](docs/stage-h-verification.md) and [owner instructions](docs/stage-h-playtest.md). Physical Android/iOS, human Windows, audible and art/balance acceptance remain NOT TESTED.") | Set-Content "$env:WINDOWS_ARTIFACTS/VERIFICATION.md"
           Copy-Item scripts/serve-stage-h.cjs "$env:WINDOWS_ARTIFACTS/serve-preview.cjs"
-          Copy-Item docs/screenshots/stage-h "$env:WINDOWS_ARTIFACTS/screenshots" -Recurse
           $files = @(Get-ChildItem "$env:WINDOWS_ARTIFACTS" -File | Where-Object { $_.Extension -eq '.exe' -or $_.Name -eq 'index.html' -or $_.Name -eq 'serve-preview.cjs' })
           $files | Sort-Object Name | ForEach-Object {
             "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
