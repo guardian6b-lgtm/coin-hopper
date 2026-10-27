@@ -17,6 +17,12 @@ raised coin paths, armored Shellbacks and charging Crystal Sentinels. All five
 heroes can complete it with normal jumps/stomps and no shield or special power.
 The original four maps remain unchanged. See [Level 5 design and verification](docs/crystal-caverns.md).
 
+**Stage C completes the six-level campaign with Skyline Summit.** Floating islands,
+telegraphed Nightwing dives and a five-HP Stone Guardian finale are implemented on
+the stacked Skyline branch. Defeat the Guardian to unlock the final flag; every
+hero has a recorded damage-free victory without powers or shields. See
+[Skyline Summit and boss verification](docs/skyline-summit.md).
+
 Play the currently published browser game: https://guardian6b-lgtm.github.io/coin-hopper/
 
 > **Release vs. development:** The published `main` game and downloadable Windows
@@ -102,7 +108,7 @@ movement physics, hitboxes, and scoring are the regression baseline.
 | 3 | Starry Night | Existing original level; preserve layout |
 | 4 | Moonlit Gardens | Developed in draft PR #3: hopping enemies and one-hit shield; human acceptance pending |
 | 5 | Crystal Caverns | Implemented in its stacked draft: crystal platforms, armored/ranged enemies, optional bonuses; technical and human review gates recorded separately |
-| 6 | Skyline Summit | **Planned:** flying threats and mandatory Stone Guardian boss battle |
+| 6 | Skyline Summit | Implemented in its stacked draft: Nightwing dives and mandatory five-HP Stone Guardian; human acceptance pending |
 
 ### Choose Your Hopper — five playable characters
 
@@ -111,8 +117,8 @@ style with a responsive **Choose Your Hopper** screen. Selection and all five po
 are **implemented in this draft branch**, pending human acceptance and integration.
 All characters use the same base running/jumping physics, hitbox, and damage rules;
 powers add tactical options only when explicitly activated. They are not available
-in the published three-level game. Stronger enemies appear in draft Level 5;
-the Level 6 boss remains a future stage.
+in the published three-level game. Stronger enemies appear in draft Levels 5–6;
+the required Level 6 boss is implemented on the Skyline branch.
 
 | Character | Appearance | Implemented ability on this draft branch |
 | --- | --- | --- |
@@ -136,8 +142,8 @@ and [approved abilities, Issue #5](https://github.com/guardian6b-lgtm/coin-hoppe
 ### Stronger enemies and Level 6 final boss
 
 The first-draft enemy concepts have been approved to balance the new abilities.
-**Shellback and Crystal Sentinel mechanics are implemented and placed in Level 5.
-Nightwing and the Stone Guardian boss are not implemented.** HP and attack timings are **initial playtest targets**,
+**Shellback and Crystal Sentinel appear in Level 5; Skyline Summit adds Nightwing
+and the required Stone Guardian boss.** HP and attack timings are **initial playtest targets**,
 not locked values. Existing walkers and hoppers stay unchanged.
 
 | Enemy | Proposed HP | Mechanic |
@@ -145,13 +151,13 @@ not locked values. Existing walkers and hoppers stay unchanged.
 | Walker | 1 | Existing ground patrol; unchanged in original levels |
 | Hopper | 1 | Existing timed jumping patrol in Moonlit Gardens |
 | **Shellback** | 2 | Implemented in Level 5: visible cracked-shell state after first hit |
-| **Nightwing** | 1 | Planned flying patrol with clearly warned dive attacks |
+| **Nightwing** | 1 | Implemented in Level 6: predictable flight and clearly warned, locked-aim dives |
 | **Crystal Sentinel** | 2 | Implemented in Level 5: charges before slow terrain-blocked projectiles |
-| **Stone Guardian** | 5 | Planned required final boss with slam/shockwaves and escalating attack phases |
+| **Stone Guardian** | 5 | Implemented Level 6 boss: guarded wind-up, slam/shockwaves, recovery opening and faster phase two |
 
 **Stone Guardian is the approved final encounter at the end of Skyline Summit
-(Level 6).** The boss fight is planned to feature a visible health bar, readable
-wind-up/attack/recovery windows, a stronger second phase, and a victory sequence.
+(Level 6).** Its fight has a visible health bar, readable wind-up/attack/recovery
+windows, a faster second phase, and a one-time defeat effect.
 Defeating the Guardian unlocks the final exit and six-level victory. All five
 characters must be able to win the battle even **without** special abilities.
 No unavoidable attacks, projectile hits through solid terrain, or duplicated

@@ -5,6 +5,8 @@ module.exports=async function replayBrowserRoute(page,route,capture=async()=>{})
   for(const [field,key]of [['jump','Space'],['left','ArrowLeft'],['right','ArrowRight']])
     for(const [frame,down]of route[field]||[])events.push({frame,down,key});
   events.sort((a,b)=>a.frame-b.frame);
+  for(const frame of route.captureFrames||[])events.push({frame});
+  events.sort((a,b)=>a.frame-b.frame);
   events.push({frame:route.maxFrames||1800});
   await page.keyboard.down('ArrowRight');let tick=0;
   try{

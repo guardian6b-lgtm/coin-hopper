@@ -7,16 +7,19 @@ const cavern=require('./fixtures/crystal-caverns.cjs');
 const heroes=['hopper','minty','ember','nova','bolt'];
 function select(game,id){game.click('Play');game.click('character-'+id);game.click('Start game');}
 function replay(game,route,noShield=true){
-  game.event('keydown',{code:'ArrowRight'});let next=0,frames=0;
+  game.event('keydown',{code:'ArrowRight'});let frames=0;
+  const next={jump:0,left:0,right:0};
   for(;frames<route.maxFrames&&game.eval('state')==='play';frames++){
-    if(route.jump[next]?.[0]===frames){game.event(route.jump[next][1]?'keydown':'keyup',{code:'Space'});next++;}
+    for(const [field,code]of [['jump','Space'],['left','ArrowLeft'],['right','ArrowRight']]){
+      while(route[field]?.[next[field]]?.[0]===frames){game.event(route[field][next[field]][1]?'keydown':'keyup',{code});next[field]++;}
+    }
     const protectedBefore=game.eval('pl.shield');game.step();
     assert.equal(game.eval('lives'),3,`${route.name}, frame ${frames}`);
     assert.equal(game.eval('ability.cooldown===0&&!ability.active&&ability.projectiles.length===0'),true);
     if(noShield)assert.equal(game.eval('shields.some(s=>s.got)'),false);
     else if(protectedBefore&&game.eval('state')==='play')assert.equal(game.eval('pl.shield'),true,'optional shield must not mask route damage');
   }
-  game.event('keyup',{code:'ArrowRight'});game.event('keyup',{code:'Space'});
+  game.event('keyup',{code:'ArrowRight'});game.event('keyup',{code:'ArrowLeft'});game.event('keyup',{code:'Space'});
   assert.equal(game.eval('state'),'done',route.name);
   assert.equal(game.eval('levelScore'),route.score);
   return frames;

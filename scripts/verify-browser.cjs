@@ -12,6 +12,7 @@ const verifyEnemies = require('./enemy-browser-checks.cjs');
 const buildEnemyPreview = require('./enemy-preview.cjs');
 const replayRoute = require('./replay-browser-route.cjs');
 const verifyCampaign = require('./campaign-browser-checks.cjs');
+const verifySkyline = require('./skyline-browser-checks.cjs');
 
 const output = process.env.COIN_HOPPER_TEST_OUTPUT || path.join(os.tmpdir(), 'coin-hopper-browser-check');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'));
@@ -151,6 +152,7 @@ async function main() {
             await rp.screenshot({ path: path.join(output, `gameplay-${id}.png`) });captured = true;
           }
           if(index===4&&id==='nova'&&tick>=400&&!caveCaptured){await rp.screenshot({path:path.join(output,'crystal-caverns-route.png')});caveCaptured=true;}
+          if(index===5&&id==='nova'&&route.captureFrames.includes(tick))await rp.screenshot({path:path.join(output,`skyline-route-${tick}.png`)});
         });
         assert.equal(await rp.evaluate('state'), 'done', route.name);
         assert.equal(await rp.evaluate('lvl'), index);
@@ -160,6 +162,7 @@ async function main() {
         await rp.keyboard.up('ArrowRight');await rp.keyboard.up('Space');
         if (index === 3 && id === 'nova') await rp.screenshot({ path: path.join(output, 'moonlit-complete.png') });
         if (index === 4 && id === 'nova') await rp.screenshot({ path: path.join(output, 'crystal-caverns-complete.png') });
+        if (index === 5 && id === 'nova') await rp.screenshot({ path: path.join(output, 'skyline-summit-complete.png') });
         await rp.getByRole('button', { name: index === routes.length-1 ? 'Finish' : 'Next level', exact: true }).click();
         results.push(`PASS browser route and character appearance: ${id} / ${route.name}`);
       }
@@ -215,6 +218,7 @@ async function main() {
     results.push(...await verifyAbilities(browser, url, output));
     results.push(...await verifyEnemies(browser, url, output));
     results.push(...await verifyCampaign(browser, url, output));
+    results.push(...await verifySkyline(browser, url, output));
     assert.deepEqual(errors, []);
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ browser: browser.version(), results, errors }, null, 2));
     console.log(results.join('\n'));

@@ -1,5 +1,12 @@
 # Playable browser preview
 
+For Stage C / Issue #12, download **skyline-summit-browser-evidence** from the
+Skyline draft PR. Its `index.html` contains all six levels and the mandatory Guardian
+finale. Every hero has a recorded no-power/no-shield win. The exit stays locked until
+the boss is defeated; stomp during its recovery opening. See `docs/skyline-summit.md`
+for routes, screenshots and human acceptance gaps. This preview is not a deployment
+or public release; Windows builds are temporary CI artifacts only.
+
 For Level 5 / Issue #11, download **crystal-caverns-browser-evidence** from the
 `codex/crystal-caverns` draft PR. Extract and open `index.html`; choose a hero and
 complete the first four levels to reach Crystal Caverns. All five characters have

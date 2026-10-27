@@ -6,6 +6,8 @@ The next stacked phase adds [shared enemy HP and two unplaced prototypes](enemie
 see its [196-test, 54-browser-check verification](enemies-verification.md).
 Stage B places those types in [Crystal Caverns](crystal-caverns.md), with 211 Node
 tests, 64 browser groups and five-character no-power campaign/bonus routes.
+Stage C adds [Skyline Summit and the required Guardian](skyline-summit.md): 241 Node
+tests, 79 browser groups, all 30 hero/level routes and five recorded no-power boss wins.
 The checklist below remains the shared baseline.
 
 Visual V1 adds character selection before Start game. The
