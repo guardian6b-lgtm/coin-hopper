@@ -62,3 +62,9 @@ draft from the verified enemy foundation. Original Levels 1–4 stay unchanged.
 The five-level temporary ending is explicit; Skyline Summit/Nightwing/Guardian
 remain the next independent stage, and the approved graphical reference is reserved
 for the subsequent visual redesign branch.
+
+Issue #12 / Stage C implements [Skyline Summit, Nightwing and the Stone Guardian](skyline-summit.md)
+in a separate stacked draft. All six levels now have recorded no-power completion
+for every hero, including the required boss gate. Human balancing remains open.
+Next: Issue #13 reference-driven art, then #15 music, #16 progression and #14 final
+technical/human release-readiness records. No release is authorized by this plan.

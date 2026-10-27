@@ -64,7 +64,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: crystal-caverns-browser-evidence
+          name: skyline-summit-browser-evidence
           path: ${{ env.COIN_HOPPER_TEST_OUTPUT }}/
           if-no-files-found: error
           retention-days: 7
