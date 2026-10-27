@@ -50,9 +50,9 @@ test('a continuous run completes all four levels in order using native menu acti
     assert.equal(game.eval('state'), 'done', route.name);
     assert.equal(game.eval('lvl'), index);
     assert.equal(game.eval('shields.some(s=>s.got)'), false);
-    game.click(index === routes.length - 1 ? 'Finish' : 'Next level');
+    game.click(game.eval('lvl+1===LEVELS.length') ? 'Finish' : 'Next level');
   }
-  assert.equal(game.eval('state'), 'win');
+  assert.equal(game.eval('state'), game.eval('LEVELS.length')>routes.length?'play':'win');
   assert.ok(game.eval('score') > 400);
   assert.equal(Number(game.storage.get('coinhopper_best')), game.eval('score'));
 });

@@ -4,6 +4,8 @@ For the stacked character powers, see [ability rules](abilities.md) and the
 [135-test, 38-browser-check verification report](abilities-verification.md).
 The next stacked phase adds [shared enemy HP and two unplaced prototypes](enemies-phase-one.md);
 see its [196-test, 54-browser-check verification](enemies-verification.md).
+Stage B places those types in [Crystal Caverns](crystal-caverns.md), with 211 Node
+tests, 64 browser groups and five-character no-power campaign/bonus routes.
 The checklist below remains the shared baseline.
 
 Visual V1 adds character selection before Start game. The

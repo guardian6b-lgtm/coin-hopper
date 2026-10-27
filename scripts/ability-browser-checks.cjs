@@ -103,7 +103,11 @@ module.exports = async function verifyAbilities(browser, url, output) {
       assert.equal(await mp.evaluate('held("right")&&held("jump")&&abilityEdge'), true);
       await mp.evaluate('update();draw()');
       assert.equal(await mp.evaluate('ability.projectiles.length'), 1);
+      // CDP's compositor acknowledgement can precede delivery of touchcancel to
+      // the page under load. Observe that event before asserting handler state.
+      await mp.evaluate('window.__cancelSeen=false;cv.addEventListener("touchcancel",e=>{if(!e.targetTouches.length)window.__cancelSeen=true;})');
       await client.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+      await mp.waitForFunction('window.__cancelSeen===true',null,{polling:10,timeout:1000});
       assert.equal(await mp.evaluate('held("right")||held("jump")||abilityEdge'), false);
       await mp.screenshot({ path: path.join(output, 'ability-mobile-landscape.png') });
       for (const size of [{ width: 390, height: 844 }, { width: 320, height: 240 }]) {

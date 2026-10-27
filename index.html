@@ -92,7 +92,7 @@ function fit(){const s=Math.min(innerWidth/W,innerHeight/H),left=(innerWidth-W*s
 addEventListener('resize',fit);fit();
 
 // ---------- Levels ----------
-// # ground  = brick  o coin  e walker  h hopper  S shield  ^ spikes  F flag  P start
+// # ground  = platform  o coin  e walker  h hopper  b shellback  s sentinel  S shield  ^ spikes  F flag  P start
 const LEVELS=[
 {name:"Sunny Meadow",sky:['#7ec8ff','#d8f1ff'],map:[
 "",
@@ -137,7 +137,24 @@ const LEVELS=[
 "                   =====       ====                ====          ======                =====",
 "  P   S   o o   h     ^^     o     h =    ^^    e         S   h    ^^^     =h      ^^         e    o o  F",
 "##########################  #########  ################  ###############   ###############   ###############",
-"##########################  #########  ################  ###############   ###############   ###############"]}
+"##########################  #########  ################  ###############   ###############   ###############"]},
+{name:"Crystal Caverns",theme:"cavern",sky:['#132d54','#695c9c'],map:[
+"",
+"",
+"",
+"",
+"",
+"",
+"",
+"",
+"",
+"                                                                                                                                        oooo",
+"         ooo                            oSo                                                                                            ======",
+"        =====                          =====",
+"  P    o o o     b  o o ^^ o      o o        o #  s   o o ^^ o      o o o  b #  s  o o o  ^^ o       o o  o  o b   #  s  o  ^ o       o       oo F",
+"##############################  ################################  ##############################   ##############################   ################",
+"##############################  ################################  ##############################   ##############################   ################"
+]}
 ];
 let L,grid,LW,coins,enemies,shields,flag,start,parts;
 function load(i){
@@ -150,6 +167,7 @@ function load(i){
     if(c==='o'){coins.push({x:x*T+T/2,y:y*T+T/2,t:Math.random()*6});grid[y][x]=' ';}
     else if(c==='e'){enemies.push(createEnemy('walker',x*T+4,y*T+8));grid[y][x]=' ';}
     else if(c==='h'){enemies.push(createEnemy('hopper',x*T+4,y*T+8));grid[y][x]=' ';}
+    else if(c==='b'||c==='s'){const type=c==='b'?'shellback':'sentinel';enemies.push(createEnemy(type,x*T+4,(y+1)*T-ENEMY_TYPES[type].height));grid[y][x]=' ';}
     else if(c==='S'){shields.push({x:x*T+T/2,y:y*T+T/2,got:false});grid[y][x]=' ';}
     else if(c==='F'){flag={x:x*T,y:y*T};grid[y][x]=' ';for(let k=y+1;k<ROWS;k++)grid[k][x]='#';}
     else if(c==='P'){start={x:x*T+5,y:y*T};grid[y][x]=' ';}
@@ -539,7 +557,32 @@ function update(){
 
 // ---------- Drawing ----------
 function rr(x,y,w,h,r){cx.beginPath();cx.roundRect?cx.roundRect(x,y,w,h,r):cx.rect(x,y,w,h);}
+function reducedMotion(){return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches||false;}
+function drawCavernBG(){
+  const gradient=cx.createLinearGradient(0,0,0,H);gradient.addColorStop(0,'#142a53');gradient.addColorStop(1,'#71659d');cx.fillStyle=gradient;cx.fillRect(0,0,W,H);
+  for(const [layer,color,size]of [[.12,'#263f6b',180],[.3,'#3e5780',140],[.48,'#536c88',100]]){
+    cx.fillStyle=color;
+    for(let i=-1;i<9;i++){
+      const x=((i*size-cam*layer)%(W+size)+W+size)%(W+size)-size;
+      cx.beginPath();cx.moveTo(x,0);cx.lineTo(x+size*.38,80+(i%3)*27);cx.lineTo(x+size*.7,18);cx.lineTo(x+size,0);cx.fill();
+      cx.beginPath();cx.moveTo(x,H);cx.lineTo(x+size*.18,380-(i%3)*35);cx.lineTo(x+size*.6,275+(i%2)*35);cx.lineTo(x+size,H);cx.fill();
+    }
+  }
+  for(let i=0;i<12;i++){
+    const x=((i*139-cam*.22)%(W+170)+W+170)%(W+170)-80,y=215+(i*67)%170;
+    cx.fillStyle=i%2?'#6cd7d0':'#a491da';cx.globalAlpha=.42;
+    cx.beginPath();cx.moveTo(x,y-34);cx.lineTo(x+16,y-9);cx.lineTo(x+8,y+19);cx.lineTo(x-12,y+12);cx.lineTo(x-17,y-10);cx.closePath();cx.fill();
+    cx.strokeStyle='#d7fbff';cx.lineWidth=1;cx.beginPath();cx.moveTo(x,y-31);cx.lineTo(x+2,y+12);cx.lineTo(x+12,y-8);cx.stroke();
+  }
+  const motion=reducedMotion();
+  for(let i=0;i<16;i++){
+    cx.globalAlpha=motion?.45:.25+.35*Math.abs(Math.sin(ability.clock*1.2+i));cx.fillStyle=i%2?'#cafbfa':'#fff0ba';
+    const x=((i*137-cam*.15)%W+W)%W,y=120+(i*79)%235;cx.fillRect(x,y,2,2);
+  }
+  cx.globalAlpha=1;
+}
 function drawBG(){
+  if(LEVELS[lvl].theme==='cavern'){drawCavernBG();return;}
   const s=LEVELS[lvl].sky,gr=cx.createLinearGradient(0,0,0,H);gr.addColorStop(0,s[0]);gr.addColorStop(1,s[1]);cx.fillStyle=gr;cx.fillRect(0,0,W,H);
   if(lvl===3){
     // A crescent, fireflies and rounded garden trees keep the arcade palette.
@@ -565,7 +608,11 @@ function drawBG(){
 function drawTiles(){
   const x0=Math.floor(cam/T),x1=x0+Math.ceil(W/T)+1;
   for(let y=0;y<ROWS;y++)for(let x=x0;x<=x1&&x<LW;x++){const c=grid[y][x],px=Math.round(x*T-cam),py=y*T;
-    if(c==='#'){const top=y===0||!isSolid(x,y-1);cx.fillStyle=lvl===3?'#665a89':lvl===2?'#5b4a7a':'#9c6b3f';cx.fillRect(px,py,T,T);
+    if(LEVELS[lvl].theme==='cavern'&&(c==='#'||c==='=')){
+      cx.fillStyle=c==='#'?'#4d6090':'#8daed0';cx.fillRect(px,py,T,T);cx.strokeStyle=c==='#'?'#35486d':'#4d739e';cx.lineWidth=2;cx.strokeRect(px+1,py+1,T-2,T-2);
+      if(c==='='||!isSolid(x,y-1)){cx.fillStyle='#b5f3e4';cx.fillRect(px,py,T,7);cx.fillStyle='#68b8c5';cx.fillRect(px,py+7,T,3);}
+      cx.strokeStyle=c==='#'?'#758db5':'#e0f9ff';cx.beginPath();cx.moveTo(px+7,py+26);cx.lineTo(px+15,py+13);cx.lineTo(px+27,py+27);cx.moveTo(px+15,py+13);cx.lineTo(px+17,py+31);cx.stroke();
+    }else if(c==='#'){const top=y===0||!isSolid(x,y-1);cx.fillStyle=lvl===3?'#665a89':lvl===2?'#5b4a7a':'#9c6b3f';cx.fillRect(px,py,T,T);
       cx.fillStyle=lvl===3?'#514971':lvl===2?'#4a3b66':'#87592f';cx.fillRect(px+6,py+14,6,6);cx.fillRect(px+22,py+24,5,5);
       if(top){cx.fillStyle=lvl===3?'#8be3ba':lvl===2?'#7fd1c8':'#5ccf5c';cx.fillRect(px,py,T,10);cx.fillStyle=lvl===3?'#59ad9e':lvl===2?'#62b3aa':'#43b043';cx.fillRect(px,py+10,T,3);
         if(lvl===3&&x%3===0){cx.fillStyle='#ffd1ed';cx.beginPath();cx.arc(px+18,py+3,4,0,7);cx.fill();}}}

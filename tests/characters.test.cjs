@@ -158,9 +158,10 @@ for (const id of roster) {
       assert.equal(game.eval('lvl'), level);
       game.eval('enemies=[];pl.x=flag.x;pl.vx=0');game.step();
       assert.equal(game.eval('pl.character'), id);
-      game.click(level === 3 ? 'Finish' : 'Next level');
+      game.click(game.eval('lvl+1===LEVELS.length') ? 'Finish' : 'Next level');
       assert.equal(game.eval('pl.character'), id);
     }
+    if(game.eval('state')==='play')game.click('pause-button');
     game.click('Title screen');game.click('Play');game.click('Start game');
     game.eval('lives=1;pl.inv=0;hurt()');assert.equal(game.eval('state'), 'over');
     assert.equal(game.eval('pl.character'), id);game.click('Try again');
@@ -195,9 +196,9 @@ for (const id of roster) {
       assert.equal(game.eval('shields.some(s=>s.got)'), false);
       assert.equal(game.eval('pl.character'), id);
       outcomes.push(game.snapshot('({score,levelScore,lives})'));
-      game.click(index === 3 ? 'Finish' : 'Next level');
+      game.click(game.eval('lvl+1===LEVELS.length') ? 'Finish' : 'Next level');
     }
-    assert.equal(game.eval('state'), 'win');
+    assert.equal(game.eval('state'), game.eval('LEVELS.length')>4?'play':'win');
     // Outcomes recorded from verified base f2c8751. All variants use the same
     // movement/collision and award rules; fixtures are
     // replayed end-to-end, not implemented with character-specific shortcuts.

@@ -12,6 +12,11 @@ This branch adds **Moonlit Gardens**, a fourth level with a crescent moon, glowi
 garden scenery, mint leaf-eared hopping enemies, and collectible cyan shields.
 Sunny Meadow, Brick Hills, and Starry Night keep their original maps and controls.
 
+**Stage B adds Crystal Caverns, Level 5**, with layered crystal scenery, optional
+raised coin paths, armored Shellbacks and charging Crystal Sentinels. All five
+heroes can complete it with normal jumps/stomps and no shield or special power.
+The original four maps remain unchanged. See [Level 5 design and verification](docs/crystal-caverns.md).
+
 Play the currently published browser game: https://guardian6b-lgtm.github.io/coin-hopper/
 
 > **Release vs. development:** The published `main` game and downloadable Windows
@@ -59,7 +64,7 @@ stack, award points, or protect against pits. Protection clears on death, level
 completion, and restart. Used pickups stay used after death; restarting the level
 restores them. See [the Stage 3 guide](docs/moonlit-gardens.md) for details.
 
-## Stronger enemies — Phase 1 (implemented for isolated review)
+## Stronger enemies — combat foundation
 
 [Issue #10](https://github.com/guardian6b-lgtm/coin-hopper/issues/10), following
 [Issue #6](https://github.com/guardian6b-lgtm/coin-hopper/issues/6), adds a shared
@@ -77,7 +82,8 @@ health/damage system and two enemy types on `codex/enemy-balance`:
   Existing walkers/hoppers remain one-hit enemies with unchanged rewards.
 
 **Neither new enemy is placed in Levels 1–4.** All four maps and no-power routes
-remain intact. The browser evidence artifact includes a separate `enemy-arena.html`
+remain intact. Crystal Caverns introduces both types in the campaign. The browser
+evidence artifact also includes a separate `enemy-arena.html`
 review fixture with character selection and Reset Shellback / Reset Sentinel
 buttons. It is not a campaign level or part of the shipped browser/Electron page.
 See [enemy rules and initial balance](docs/enemies-phase-one.md) and the
@@ -95,7 +101,7 @@ movement physics, hitboxes, and scoring are the regression baseline.
 | 2 | Brick Hills | Existing original level; preserve layout |
 | 3 | Starry Night | Existing original level; preserve layout |
 | 4 | Moonlit Gardens | Developed in draft PR #3: hopping enemies and one-hit shield; human acceptance pending |
-| 5 | Crystal Caverns | **Planned:** armored and ranged enemies and additional challenges |
+| 5 | Crystal Caverns | Implemented in its stacked draft: crystal platforms, armored/ranged enemies, optional bonuses; technical and human review gates recorded separately |
 | 6 | Skyline Summit | **Planned:** flying threats and mandatory Stone Guardian boss battle |
 
 ### Choose Your Hopper — five playable characters
@@ -105,8 +111,8 @@ style with a responsive **Choose Your Hopper** screen. Selection and all five po
 are **implemented in this draft branch**, pending human acceptance and integration.
 All characters use the same base running/jumping physics, hitbox, and damage rules;
 powers add tactical options only when explicitly activated. They are not available
-in the published three-level game. Stronger enemy mechanics are isolated for review;
-their campaign placements and the boss remain future stages.
+in the published three-level game. Stronger enemies appear in draft Level 5;
+the Level 6 boss remains a future stage.
 
 | Character | Appearance | Implemented ability on this draft branch |
 | --- | --- | --- |
@@ -130,18 +136,17 @@ and [approved abilities, Issue #5](https://github.com/guardian6b-lgtm/coin-hoppe
 ### Stronger enemies and Level 6 final boss
 
 The first-draft enemy concepts have been approved to balance the new abilities.
-**Shellback and Crystal Sentinel mechanics are implemented in isolation in this
-phase; their campaign placements remain planned. Nightwing and the Stone Guardian
-boss are not implemented.** HP and attack timings are **initial playtest targets**,
+**Shellback and Crystal Sentinel mechanics are implemented and placed in Level 5.
+Nightwing and the Stone Guardian boss are not implemented.** HP and attack timings are **initial playtest targets**,
 not locked values. Existing walkers and hoppers stay unchanged.
 
 | Enemy | Proposed HP | Mechanic |
 | --- | ---: | --- |
 | Walker | 1 | Existing ground patrol; unchanged in original levels |
 | Hopper | 1 | Existing timed jumping patrol in Moonlit Gardens |
-| **Shellback** | 2 | Implemented mechanic, not placed: visible cracked-shell state after first hit |
+| **Shellback** | 2 | Implemented in Level 5: visible cracked-shell state after first hit |
 | **Nightwing** | 1 | Planned flying patrol with clearly warned dive attacks |
-| **Crystal Sentinel** | 2 | Implemented mechanic, not placed: charges before slow terrain-blocked projectiles |
+| **Crystal Sentinel** | 2 | Implemented in Level 5: charges before slow terrain-blocked projectiles |
 | **Stone Guardian** | 5 | Planned required final boss with slam/shockwaves and escalating attack phases |
 
 **Stone Guardian is the approved final encounter at the end of Skyline Summit

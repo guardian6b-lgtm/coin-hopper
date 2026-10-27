@@ -1,5 +1,12 @@
 # Playable browser preview
 
+For Level 5 / Issue #11, download **crystal-caverns-browser-evidence** from the
+`codex/crystal-caverns` draft PR. Extract and open `index.html`; choose a hero and
+complete the first four levels to reach Crystal Caverns. All five characters have
+recorded no-power/no-shield routes. The game temporarily ends after Level 5;
+Skyline Summit/boss are a later stage. See `docs/crystal-caverns.md` for results,
+screenshots, optional bonuses and human gates. No public deployment/release.
+
 For enemy Phase 1 / Issue #6, download **enemy-phase-one-browser-evidence** from
 the `codex/enemy-balance` draft PR's Gameplay checks run. `index.html` plays the
 four unchanged campaign maps; the new enemies have **no placements** there.
