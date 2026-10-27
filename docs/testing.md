@@ -123,3 +123,14 @@ offline Linux and Windows executables run the same audio checks before existing
 menu/control/route checks. WAV previews and signal JSON are temporary artifacts.
 Audible quality and physical speaker/headphone/device acceptance remain
 **NOT TESTED**. See [the audio guide](music-audio.md) and the exact-head draft PR.
+
+## Stage F progression verification
+
+**308 Node tests** retain the previous 268 cases and add 40 validated-save/menu/
+selected-level/reset cases. Each existing full campaign recording now checks
+earned sequential unlocks. **94 Chromium groups** add a legal earned unlock,
+Continue after reload, save isolation, cancel, all five heroes, mandatory boss,
+five responsive sizes, simulated touch and blocked storage. Actual offline
+executables run the same native progression flows and Windows content-window
+resizes. See [progression rules and manual gates](progression.md); human/device
+acceptance remains NOT TESTED.

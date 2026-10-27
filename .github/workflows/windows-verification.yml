@@ -2,7 +2,7 @@ name: Windows verification
 
 on:
   push:
-    branches: [codex/moonlit-gardens, codex/character-select-redesign, codex/character-abilities, codex/enemy-balance, codex/crystal-caverns, codex/skyline-summit, codex/visual-redesign, codex/music-audio]
+    branches: [codex/moonlit-gardens, codex/character-select-redesign, codex/character-abilities, codex/enemy-balance, codex/crystal-caverns, codex/skyline-summit, codex/visual-redesign, codex/music-audio, codex/progression]
     paths:
       - index.html
       - desktop/**
@@ -15,6 +15,7 @@ on:
       - scripts/replay-browser-route.cjs
       - scripts/visual-captures.cjs
       - scripts/music-page-checks.cjs
+      - scripts/progression-page-checks.cjs
       - .github/workflows/windows-verification.yml
   workflow_dispatch:
 

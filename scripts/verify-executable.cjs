@@ -14,6 +14,7 @@ const verifyExecutableEnemies = require('./enemy-executable-checks.cjs');
 const verifyExecutableCampaign = require('./campaign-executable-checks.cjs');
 const captureVisual = require('./visual-captures.cjs');
 const verifyMusicPage = require('./music-page-checks.cjs');
+const verifyProgressionPage = require('./progression-page-checks.cjs');
 const { values } = parseArgs({ options: {
   executable: { type: 'string' }, label: { type: 'string', default: 'packaged' },
   output: { type: 'string' }, profile: { type: 'string' },
@@ -170,6 +171,11 @@ async function main() {
       await app.page.keyboard.press('Escape');await app.page.getByRole('button',{name:'Title screen',exact:true}).click();
       pass('native-window-audio-pause','Actual Windows minimize/restore pauses game/music, retains loop position and requires explicit Resume; automated window APIs, not physical input.');
     }else report.checks.push({name:'native-window-audio-pause',status:'NOT TESTED',detail:'Headless Linux has no native desktop; actual Windows CI runs minimize/restore checks.'});
+    report.progression=await verifyProgressionPage(app.page,output,values.label,async size=>{
+      if(process.platform==='win32')await app.main.evaluate(`ciWindow.setContentSize(${size.width},${size.height});true`);
+      else await app.page.setViewportSize(size);
+    });
+    pass('saved-progression','Actual offline renderer: legal earned unlock, reload, Continue fresh score/lives, locked guards, all five heroes, five responsive sizes and save isolation. Late-game saves/exit position are fixtures.');
     await app.page.getByRole('button', { name: 'Settings', exact: true }).click();
     for (const [name, value] of [['effects', 25], ['music', 80]]) {
       await app.page.locator(`#${name}-volume`).evaluate((input, next) => {
@@ -251,8 +257,11 @@ async function main() {
     assert.equal(await app.page.evaluate('pl.character'), 'nova');
     pass('character-lifecycle', 'Nova appearance survives level setup, pit death and native restart flow');
     pass('moonlit-shield', 'Actual fourth-level page renders and keyboard movement collects its shield');
+    const progressionBeforeRestart=await app.page.evaluate('JSON.stringify(progress)');
     await app.close(); app = null;
     app = await launch();
+    assert.equal(await app.page.evaluate('JSON.stringify(progress)'),progressionBeforeRestart);
+    pass('saved-progress','Earned unlocks and the saved attempt survive a complete executable restart; no banked score/lives are loaded.');
     assert.deepEqual(await app.page.evaluate('({effects:settings.effects,music:settings.music})'), { effects: .25, music: .8 });
     assert.equal(await app.page.evaluate('selectedCharacter'), 'nova');
     await app.page.getByRole('button', { name: 'Play', exact: true }).click();

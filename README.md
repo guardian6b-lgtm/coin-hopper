@@ -37,6 +37,12 @@ saved global mute and pause/visibility handling. The score and sounds run offlin
 no audio download or CDN is required. Technical signal/mixing tests are distinct
 from human listening, which remains open. See [music and audio verification](docs/music-audio.md).
 
+**Stage F adds saved progression.** Play is a new game; Continue and Level Select
+begin an unlocked level with **0 points and 3 lives**, then let you choose any hero.
+Completing a level saves its unlock immediately. New Game keeps earned unlocks;
+saved progress never banks score, lives, pickups or boss damage. Level 6 always
+requires a fresh Guardian defeat. See [progression rules and verification](docs/progression.md).
+
 Play the currently published browser game: https://guardian6b-lgtm.github.io/coin-hopper/
 
 > **Release vs. development:** The published `main` game and downloadable Windows
@@ -189,7 +195,10 @@ interactive game interpretation of the approved reference; formal human art
 acceptance is still open. Stage E / Issue #15 implements the original procedural
 score, all scene/boss themes, volume/mute, offline operation and mixing protection.
 Human listening and hardware output acceptance remain open. Persistent progression
-remains Stage F / Issue #16.
+is implemented in Stage F / Issue #16: validated local unlocks, level selection and
+Continue from a level beginning. Optional mid-level checkpoints remain deferred;
+original maps and death/restart rules are unchanged. Final technical verification
+and human acceptance remain Stage G / Issue #14.
 
 Browser and Windows installer/portable editions are verified separately; current
 automated results and remaining gates are in the [ability report](docs/abilities-verification.md)

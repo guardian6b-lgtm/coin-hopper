@@ -1,5 +1,13 @@
 # Playable browser preview
 
+For Stage F / Issue #16, download **progression-browser-evidence**. Play starts a
+new run at Sunny Meadow, keeping earned unlocks. Continue and Level Select start
+at a level beginning with **0 points and 3 lives**, through the five-character
+picker. Continue is disabled until a run starts. Complete each level to unlock
+the next; Level 6 still requires the Guardian. Saves are local to that browser/app;
+blocked storage supports in-session progress but cannot retain it after reload.
+No mid-level checkpoints are added. See `docs/progression.md` for exact reset rules.
+
 For Stage E / Issue #15, download **music-audio-browser-evidence**. The standalone
 page now plays original music after your first click/tap/key interaction. Settings
 has independent volumes and Mute all audio; pause/hidden windows stop the loop and

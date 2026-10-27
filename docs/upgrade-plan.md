@@ -74,5 +74,10 @@ Issue #15 / Stage E implements original procedural title/scene/boss loops, actua
 music volume, mute, pause/visibility and bounded mixing. Human listening is open;
 see [music verification](music-audio.md).
 
-Next: #16 progression and #14 final
+Issue #16 / Stage F implements validated local completion/unlocks, Level Select
+and Continue from a level beginning with fresh score/lives. Play/New Game keeps
+earned unlocks. No new checkpoints; original death/restart rules remain intact.
+See [progression semantics](progression.md).
+
+Next: #14 final
 technical/human release-readiness records. No release is authorized by this plan.

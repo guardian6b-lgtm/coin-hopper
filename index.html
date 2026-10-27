@@ -81,6 +81,13 @@ button:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:4
 #ability-hud{border:2px solid #8d6249;background:linear-gradient(#fff8df,#ffe8c5);box-shadow:inset 0 2px #fff,0 3px #563e3c66;color:#513b35}
 #ability-button{border:3px solid #675029;background:linear-gradient(#fff29c,#ffd256);box-shadow:inset 0 3px #fff9cf,0 4px #675029}
 .motion-setting{display:flex;align-items:center;gap:12px;min-height:48px;margin:12px 0}.motion-setting input{width:24px;height:24px;accent-color:#328952}
+#menu[data-screen="title"] #menu-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+#menu[data-screen="title"] #menu-actions .primary{grid-column:1/-1}
+#menu[data-screen="title"] #menu-content p{font-size:15px;line-height:1.4;margin:5px 0}
+#menu[data-screen] .menu-button:disabled{color:#546078;background:#dde4ee;border-color:#a3adbd;box-shadow:0 3px #a3adbd;text-shadow:none;cursor:default}
+.level-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}
+.level-grid .menu-button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:82px;font-size:16px}
+.level-grid small{font-size:12px}
 @media(max-width:700px){#menu[data-screen="characters"] .menu-panel{padding:16px}#menu .character-card{min-height:224px}#menu .character-card canvas{width:112px;height:112px}#menu .character-name{font-size:21px}}
 @media(max-height:560px) and (min-width:701px){#menu[data-screen="characters"] .menu-panel{padding:14px}#menu .menu-panel h1{padding:9px;font-size:30px}#menu .character-card{min-height:210px;padding:7px}#menu .character-card canvas{width:100px;height:100px}#menu .character-flavor{font-size:12px}#menu[data-screen="characters"] #menu-description{margin-bottom:8px}.character-grid{margin:10px 0}#character-choice{font-size:14px}}
 @media(max-height:400px) and (max-width:700px){#menu .character-card{min-height:156px;padding:6px;gap:3px}#menu .character-card canvas{width:56px;height:56px}#menu .character-name{font-size:16px}#menu .character-flavor{font-size:11px;line-height:1.2;min-height:28px}#menu .character-status{font-size:10px;padding:2px 8px}#menu .character-power{font-size:11px}#menu[data-screen] .menu-panel{padding:14px}}
@@ -241,6 +248,28 @@ function collide(e,ax){
 }
 
 // ---------- Cosmetic roster ----------
+// Versioned local progress contains completion/unlocks, never banked run points.
+const PROGRESS_KEY='coinhopper_progress_v1';
+function freshProgress(){return {version:1,completed:Array(LEVELS.length).fill(false),lastLevel:0,started:false};}
+function readProgress(){
+  try{
+    const raw=localStorage.getItem(PROGRESS_KEY);if(!raw||raw.length>4096)return freshProgress();
+    const saved=JSON.parse(raw);
+    if(!saved||saved.version!==1||!Array.isArray(saved.completed)||saved.completed.length!==LEVELS.length||saved.completed.some(value=>typeof value!=='boolean')||typeof saved.started!=='boolean')return freshProgress();
+    let prefix=0;while(prefix<LEVELS.length&&saved.completed[prefix])prefix++;
+    const unlocked=Math.min(LEVELS.length,prefix+1),lastLevel=Number.isInteger(saved.lastLevel)&&saved.lastLevel>=0&&saved.lastLevel<unlocked?saved.lastLevel:Math.min(prefix,LEVELS.length-1);
+    return {version:1,completed:saved.completed.map((value,index)=>index<prefix),lastLevel,started:saved.started||prefix>0};
+  }catch(e){return freshProgress();}
+}
+let progress=readProgress();
+function unlockedCount(){let prefix=0;while(prefix<LEVELS.length&&progress.completed[prefix])prefix++;return Math.min(LEVELS.length,prefix+1);}
+function levelUnlocked(index){return Number.isInteger(index)&&index>=0&&index<unlockedCount();}
+function saveProgress(){try{localStorage.setItem(PROGRESS_KEY,JSON.stringify(progress));}catch(e){}}
+function recordCompletion(){
+  if(state!=='done'||!pl||!flag||!levelUnlocked(lvl)||pl.x+pl.w<=flag.x+10||(bossState.required&&!bossState.defeated))return;
+  progress.completed[lvl]=true;progress.started=true;progress.lastLevel=Math.min(lvl+1,LEVELS.length-1);saveProgress();
+}
+function selectLevel(index){if(state==='levels'&&levelUnlocked(index))beginCharacterSelect(index,'levels');}
 // Appearance only. Simulation never reads these palettes or gives a character stats.
 const CHARACTERS=Object.freeze([
   Object.freeze({id:'hopper',name:'Hopper',flavor:'A brave little hopper with a big heart',body:'#ff7da7',shade:'#cf4f7a',belly:'#ffe0ec',accent:'#ffdc70',tint:'#ffe6ed',cheek:'#f75f8d'}),
@@ -250,14 +279,17 @@ const CHARACTERS=Object.freeze([
   Object.freeze({id:'bolt',name:'Bolt',flavor:'Always charged up and ready to go',body:'#ffe279',shade:'#d5a43e',belly:'#fff6ce',accent:'#249d9c',tint:'#fff3c9',cheek:'#f2a15f'})
 ]);
 const characterById=id=>CHARACTERS.find(character=>character.id===id)||CHARACTERS[0];
-let selectedCharacter='hopper',pendingCharacter='hopper';
+let selectedCharacter='hopper',pendingCharacter='hopper',pendingStartIndex=0,characterReturn='title';
 try{const saved=localStorage.getItem('coinhopper_character_v1');if(CHARACTERS.some(character=>character.id===saved))selectedCharacter=saved;}catch(e){}
-function beginCharacterSelect(){pendingCharacter=selectedCharacter;showMenu('characters','title');}
+function beginCharacterSelect(index=0,returnTo='title'){
+  if(!levelUnlocked(index))return;
+  pendingStartIndex=index;characterReturn=returnTo==='levels'?'levels':'title';pendingCharacter=selectedCharacter;showMenu('characters','title');
+}
 function confirmCharacter(){
   if(state!=='characters')return;
   selectedCharacter=pendingCharacter;
   try{localStorage.setItem('coinhopper_character_v1',selectedCharacter);}catch(e){}
-  newGame();
+  newGame(pendingStartIndex);
 }
 
 // ---------- Sound ----------
@@ -692,7 +724,7 @@ function saveBest(){if(score>best){best=score;try{localStorage.setItem('coinhopp
 function togglePause(){if(state==='play')showMenu('pause');else if(state==='pause')resumeGame();}
 function spawn(){resetAbility();resetEnemyCombat();pl={x:start.x,y:start.y,w:26,h:32,vx:0,vy:0,ground:false,coyote:0,buf:0,face:1,inv:1,squash:1,shield:false,character:selectedCharacter};cam=Math.max(0,pl.x-W/3);}
 function startLevel(i){lvl=i;load(i);spawn();levelScore=0;timer=0;state='play';syncMenu();}
-function newGame(){stopMusic(true);score=0;lives=3;startLevel(0);}
+function newGame(startAt=0){const target=levelUnlocked(startAt)?startAt:0;stopMusic(true);score=0;lives=3;progress.started=true;progress.lastLevel=target;saveProgress();startLevel(target);}
 function burst(x,y,col,n=10){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.5)*300,vy:-Math.random()*300,l:.6,col});}
 // A handled hit ends this update; respawning replaces the player object.
 // Pit falls bypass protection, including spawn/shield recovery invulnerability.
@@ -1156,18 +1188,21 @@ function confirmRestart(){
   startLevel(lvl);score=keptScore;lives=remainingLives;
 }
 function advanceLevel(){
-  if(lvl+1<LEVELS.length)startLevel(lvl+1);
+  if(lvl+1<LEVELS.length){startLevel(lvl+1);if(levelUnlocked(lvl)){progress.lastLevel=lvl;saveProgress();}}
   else{saveBest();state='win';SFX.win();syncMenu();}
 }
 function backFromMenu(){
   if(state==='pause')resumeGame();
   else if(state==='restart')showMenu('pause');
-  else if(state==='characters')showMenu('title','title');
+  else if(state==='characters')showMenu(characterReturn,'title');
+  else if(state==='levels')showMenu('title','title');
   else if(state==='settings'||state==='controls')showMenu(menuReturn);
 }
 function activateMenuAction(action){
   audio();
   if(action==='play')beginCharacterSelect();
+  else if(action==='continue'&&progress.started)beginCharacterSelect(progress.lastLevel);
+  else if(action==='levels')showMenu('levels','title');
   else if(action==='start-character')confirmCharacter();
   else if(action==='retry')newGame();
   else if(action==='resume')resumeGame();
@@ -1179,12 +1214,22 @@ function activateMenuAction(action){
   else if(action==='controls'||action==='settings')showMenu(action,state==='pause'?'pause':'title');
   else if(action==='back')backFromMenu();
 }
-function menuButton(label,action,primary=false){
+function menuButton(label,action,primary=false,disabled=false){
   const button=document.createElement('button');button.type='button';button.className='menu-button'+(primary?' primary':'');
   const screen=state;button.textContent=label;button.addEventListener('click',()=>{if(state===screen)activateMenuAction(action);});
-  menuActions.appendChild(button);menuItems.push(button);
+  button.disabled=disabled;menuActions.appendChild(button);if(!disabled)menuItems.push(button);return button;
 }
-function menuParagraph(text){const p=document.createElement('p');p.textContent=text;menuContent.appendChild(p);}
+function menuParagraph(text){const p=document.createElement('p');p.textContent=text;menuContent.appendChild(p);return p;}
+function levelChoices(){
+  const grid=document.createElement('div');grid.className='level-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label','Six levels');
+  LEVELS.forEach((level,index)=>{
+    const unlocked=levelUnlocked(index),button=document.createElement('button');button.type='button';button.id='level-choice-'+index;button.className='menu-button';button.disabled=!unlocked;
+    button.setAttribute('aria-label','Level '+(index+1)+': '+level.name);button.setAttribute('aria-describedby','level-state-'+index);
+    const name=document.createElement('strong');name.textContent=(index+1)+'. '+level.name;
+    const status=document.createElement('small');status.id='level-state-'+index;status.textContent=unlocked?(progress.completed[index]?'Completed · replay':'Unlocked · play'):'Locked · complete Level '+index;
+    button.append(name,status);button.addEventListener('click',()=>{audio();selectLevel(index);});grid.appendChild(button);if(unlocked)menuItems.push(button);
+  });menuContent.appendChild(grid);
+}
 function volumeControl(name,label){
   const row=document.createElement('label');row.className='setting';row.htmlFor=name+'-volume';
   const text=document.createElement('span');text.textContent=label;
@@ -1249,16 +1294,18 @@ function trapMenuFocus(e){
   menuItems[next].focus();
 }
 function syncMenu(){
+  recordCompletion();
   clearInput();menu.setAttribute('data-screen',state);const playing=state==='play';menu.hidden=playing;pauseButton.hidden=playing?touchMode:true;
   cv.tabIndex=playing?0:-1;cv.setAttribute('aria-hidden',playing?'false':'true');
   syncAbilityUI();syncBossUI();syncMusic();if(!playing){stopAbilitySounds();stopEnemySounds();}
   if(playing){cv.focus();return;}
   drawMenuArt();
   menuContent.replaceChildren();menuActions.replaceChildren();menuItems=[];
-  const titles={title:'COIN HOPPER',characters:'Choose Your Hopper',pause:'Paused',controls:'How to play',settings:'Sound settings',restart:'Restart this level?',done:'Level complete!',over:'Game over',win:'You win!'};
+  const titles={title:'COIN HOPPER',characters:'Choose Your Hopper',levels:'Level Select',pause:'Paused',controls:'How to play',settings:'Sound settings',restart:'Restart this level?',done:'Level complete!',over:'Game over',win:'You win!'};
   const descriptions={
-    title:'Jump, stomp, and grab every coin!',
-    characters:'Shared moves. Five special powers. Choose with a tap or Left / Right; use Tab to reach Start game.',
+    title:'Play starts a new game. Earned level unlocks stay saved.',
+    characters:'Starting Level '+(pendingStartIndex+1)+': '+LEVELS[pendingStartIndex].name+'. Shared moves, five powers. Tap or use Left / Right, then Tab to Start game.',
+    levels:'Start an unlocked level from its beginning with 0 points and 3 lives. Complete each level to unlock the next.',
     pause:'Take a breather. Your run is paused.',
     controls:'A short hop or a big leap. You choose.',
     settings:'Adjust the sound to suit you.',
@@ -1270,7 +1317,10 @@ function syncMenu(){
   menuTitle.textContent=titles[state]||'Coin Hopper';menuDescription.textContent=descriptions[state]||'';
   if(state==='title'){
     menuParagraph('Best score: '+best);menuParagraph('Your hopper: '+characterById(selectedCharacter).name+' · '+ABILITIES[selectedCharacter].name);
-    menuButton('Play','play',true);menuButton('Controls','controls');menuButton('Settings','settings');
+    const continueNote=menuParagraph(progress.started?'Continue: '+LEVELS[progress.lastLevel].name+' · level beginning, 0 points, 3 lives.':'Continue unlocks when you start a run. Level Select starts a fresh attempt.');continueNote.id='continue-note';
+    menuButton('Play','play',true);const continueButton=menuButton('Continue','continue',false,!progress.started);continueButton.setAttribute('aria-describedby','continue-note');menuButton('Level Select','levels');menuButton('Controls','controls');menuButton('Settings','settings');
+  }else if(state==='levels'){
+    levelChoices();menuParagraph(unlockedCount()+' / '+LEVELS.length+' levels unlocked. Every character is available.');menuButton('Back','back',true);
   }else if(state==='characters'){
     characterCards();menuButton('Start game','start-character',true);menuButton('Back','back');
   }else if(state==='pause'){
