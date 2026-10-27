@@ -43,6 +43,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -52,7 +54,7 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/coin-hopper-browser-tools" --no-save --package-lock=false playwright@1.62.0
           echo "NODE_PATH=$RUNNER_TEMP/coin-hopper-browser-tools/node_modules" >> "$GITHUB_ENV"
           "$RUNNER_TEMP/coin-hopper-browser-tools/node_modules/.bin/playwright" install --with-deps chromium
-      - name: Verify selection, abilities, enemies and all five campaign routes
+      - name: Verify selection, abilities, enemies, all six campaign routes and visual comparisons
         run: node scripts/verify-browser.cjs
       - name: Include the standalone playable page
         if: always()
@@ -64,7 +66,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: skyline-summit-browser-evidence
+          name: visual-redesign-browser-evidence
           path: ${{ env.COIN_HOPPER_TEST_OUTPUT }}/
           if-no-files-found: error
           retention-days: 7

@@ -2,7 +2,7 @@ name: Windows verification
 
 on:
   push:
-    branches: [codex/moonlit-gardens, codex/character-select-redesign, codex/character-abilities, codex/enemy-balance, codex/crystal-caverns, codex/skyline-summit]
+    branches: [codex/moonlit-gardens, codex/character-select-redesign, codex/character-abilities, codex/enemy-balance, codex/crystal-caverns, codex/skyline-summit, codex/visual-redesign]
     paths:
       - index.html
       - desktop/**
@@ -13,6 +13,7 @@ on:
       - scripts/enemy-fixture.cjs
       - scripts/campaign-executable-checks.cjs
       - scripts/replay-browser-route.cjs
+      - scripts/visual-captures.cjs
       - .github/workflows/windows-verification.yml
   workflow_dispatch:
 
@@ -33,6 +34,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -86,6 +88,21 @@ jobs:
           npm install --prefix "$env:RUNNER_TEMP/coin-hopper-smoke-tools" --no-save --package-lock=false playwright@1.62.0
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           "NODE_PATH=$env:RUNNER_TEMP/coin-hopper-smoke-tools/node_modules" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Build and capture the verified Stage C baseline locally without publishing
+        if: github.ref_name == 'codex/visual-redesign'
+        shell: pwsh
+        run: |
+          node -e "require('node:fs').writeFileSync('desktop/index.html',require('node:child_process').execFileSync('git',['show','6381c6f81a169bfbc702591fc2ead0ef81eca765:index.html']))"
+          $beforeDir = Join-Path $env:RUNNER_TEMP 'coin-hopper-before-art'
+          Push-Location desktop
+          npx --no-install electron-builder --win --dir --x64 --publish never "--config.directories.output=$beforeDir"
+          $buildResult = $LASTEXITCODE
+          Pop-Location
+          if ($buildResult -ne 0) { exit $buildResult }
+          $beforeExe = Join-Path $beforeDir 'win-unpacked/Coin Hopper.exe'
+          node scripts/verify-executable.cjs --executable "$beforeExe" --label before-art --output "$env:WINDOWS_ARTIFACTS" --captures-only
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node desktop/copy-index.js
       - name: Silently install and smoke-test the NSIS application
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.smoke_tools.outcome == 'success' }}
         shell: pwsh
@@ -99,6 +116,8 @@ jobs:
           $exe = Join-Path $installDir 'Coin Hopper.exe'
           if (-not (Test-Path $exe)) { throw 'Installed executable missing' }
           node scripts/verify-executable.cjs --executable "$exe" --label nsis-installed --output "$env:WINDOWS_ARTIFACTS"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/verify-executable.cjs --executable "$exe" --label after-art --output "$env:WINDOWS_ARTIFACTS" --captures-only
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Smoke-test the actual portable executable
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.smoke_tools.outcome == 'success' }}

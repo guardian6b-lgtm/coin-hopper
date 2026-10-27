@@ -12,9 +12,11 @@ const { chromium } = require('playwright');
 const verifyExecutableAbilities = require('./ability-executable-checks.cjs');
 const verifyExecutableEnemies = require('./enemy-executable-checks.cjs');
 const verifyExecutableCampaign = require('./campaign-executable-checks.cjs');
+const captureVisual = require('./visual-captures.cjs');
 const { values } = parseArgs({ options: {
   executable: { type: 'string' }, label: { type: 'string', default: 'packaged' },
   output: { type: 'string' }, profile: { type: 'string' },
+  'captures-only': { type: 'boolean', default: false },
 } });
 assert.ok(values.executable && values.output, '--executable and --output are required');
 assert.match(values.label, /^[a-z-]+$/);
@@ -133,6 +135,15 @@ async function main() {
     await app.context.setOffline(true);
     await app.page.reload();
     await app.page.waitForFunction("state==='title'");
+    if(values['captures-only']){
+      report.captures=await captureVisual(app.page,output,values.label,async size=>{
+        if(process.platform==='win32')await app.main.evaluate(`ciWindow.setContentSize(${size.width},${size.height});true`);
+        else await app.page.setViewportSize(size);
+      });
+      assert.deepEqual(report.errors,[]);
+      pass('actual-offline-visual-captures','28 actual packaged renderer captures; native window sizes on Windows, emulated viewport on Linux. Scenes are controlled fixtures.');
+      report.status='PASS';report.completedAt=new Date().toISOString();return;
+    }
     await app.page.getByRole('button', { name: 'Settings', exact: true }).click();
     for (const [name, value] of [['effects', 25], ['music', 80]]) {
       await app.page.locator(`#${name}-volume`).evaluate((input, next) => {
