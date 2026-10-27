@@ -1,3 +1,5 @@
+> **Stage H update:** attempt-local pennant retry terraces are now implemented under Issue #26. They retain used coins/enemy damage/points across death without farming, reset on level restart/transition and are not serialized. Continue/Level Select and all existing save formats remain as described below. See [Stage H rules and tests](stage-h-verification.md).
+
 # Stage F — saved unlocks, Continue and Level Select
 
 Implements [Issue #16](https://github.com/guardian6b-lgtm/coin-hopper/issues/16),
