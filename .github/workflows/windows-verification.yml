@@ -5,6 +5,7 @@ on:
     branches: [codex/moonlit-gardens, codex/character-select-redesign, codex/character-abilities, codex/enemy-balance, codex/crystal-caverns, codex/skyline-summit, codex/visual-redesign, codex/music-audio, codex/progression, codex/release-verification, codex/stage-h-integrated]
     paths:
       - index.html
+      - .gitattributes
       - desktop/**
       - tests/**
       - scripts/verify-executable.cjs
@@ -73,6 +74,7 @@ jobs:
           if ((Get-FileHash index.html).Hash -ne (Get-FileHash desktop/index.html).Hash) {
             throw 'Desktop page differs from PR source'
           }
+          node -e "const fs=require('node:fs'),cp=require('node:child_process');const canonical=cp.execFileSync('git',['show','HEAD:index.html'],{maxBuffer:8*1024*1024});if(!canonical.equals(fs.readFileSync('index.html')))throw Error('Windows checkout changed canonical game bytes');
       - name: Build Windows x64 NSIS and portable without publishing
         id: build
         working-directory: desktop

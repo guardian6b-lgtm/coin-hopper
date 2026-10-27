@@ -63,7 +63,7 @@ STAGE_H_WEBKIT=1 node scripts/verify-stage-h.cjs
 node scripts/capture-stage-h.cjs
 ```
 
-Browser scripts need Playwright 1.62 and matching installed engines/FFmpeg. Linux packaging can use the existing installed Electron distribution when the default cache path is read-only. Product configuration is unchanged. Windows workflow uses locked desktop dependencies, `electron-builder --win nsis portable --x64 --publish never`, compares copied HTML, then tests actual NSIS-installed and portable EXEs in isolated CI profiles. It uploads one integrated test bundle with the sameHTML, Windows binaries, checksums, local phone-serving helper, instructions and screenshots; no APK/IPA or release is generated. Browser evidence contains full before/after sequences, video and JSON. Downloads expire after7 days.
+Browser scripts need Playwright 1.62 and matching installed engines/FFmpeg. Linux packaging can use the existing installed Electron distribution when the default cache path is read-only. Product configuration is unchanged. Windows workflow uses locked desktop dependencies, `electron-builder --win nsis portable --x64 --publish never`, compares copied HTML and canonical Git-object bytes (LF pinned with `.gitattributes`), then tests actual NSIS-installed and portable EXEs in isolated CI profiles. It uploads one integrated test bundle with the sameHTML, Windows binaries, checksums, local phone-serving helper, instructions and screenshots; no APK/IPA or release is generated. Browser evidence contains full before/after sequences, video and JSON. Downloads expire after7 days.
 
 ## Native evidence samples
 
