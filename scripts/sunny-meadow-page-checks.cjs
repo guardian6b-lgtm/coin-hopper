@@ -9,7 +9,7 @@ module.exports=async function meadowPage(page,output,label='browser'){
   for(let level=1;level<6;level++){
    const same=await page.evaluate(level=>{startLevel(level);cam=400;meadowSettings.mode='standard';draw();cx.getImageData(0,0,W,H);draw();const a=cx.getImageData(0,0,W,H).data;meadowSettings.mode='illustrated';draw();const b=cx.getImageData(0,0,W,H).data;return a.every((v,i)=>v===b[i]);},level);assert.equal(same,true,'No art rollout into Level'+(level+1));
   }results.push('PASS Levels2–6 remain pixel-identical with illustrated mode selected');
-  const menus=await page.evaluate(()=>{showMenu('title','title');meadowSettings.mode='standard';draw();draw();const a=cv.toDataURL();meadowSettings.mode='illustrated';draw();return a===cv.toDataURL()});assert.equal(menus,true);results.push('PASS title backdrop stays pixel-identical after returning from gameplay');
+  const menus=await page.evaluate(()=>{showMenu('title','title');meadowSettings.mode='standard';draw();cx.getImageData(0,0,W,H);draw();const a=cx.getImageData(0,0,W,H).data;meadowSettings.mode='illustrated';draw();const b=cx.getImageData(0,0,W,H).data;return a.every((v,i)=>v===b[i])});assert.equal(menus,true);results.push('PASS title backdrop stays pixel-identical after returning from gameplay');
   const metrics=[];
   for(const mode of ['standard','illustrated','lite']){
    await page.evaluate(mode=>{newGame();meadowSettings.mode=mode;for(let i=0;i<30;i++){update();draw();}},mode);
