@@ -10,10 +10,10 @@ Fix commits remain on `codex/owner-playtest-followup`, stacked against `codex/st
 | Owner baseline before edits | PASS |337Node tests |
 | P0 independent commit50fea40 | PASS |339Node tests |
 | Combat independent commitdb3eb81 | PASS |367Node tests, detached checkout |
-| Combined repair/music/Core suite | PASS |380Node tests at first candidate;43targeted cases pass after Core placement/focus repairs (382total cases); existing regression cases retained and intentional timing/UI expectations revised |
+| Combined repair/music/Core suite | PASS |380Node tests at first candidate;43targeted cases pass after Core placement/focus repairs (383total cases including upper-route camera coverage); existing regression cases retained and intentional timing/UI expectations revised |
 | Six levels ×five heroes | PASS |30Chromium routes, no powers/shields; identical3755campaign total,3lives; new Guardian five-opening route |
 | Chromium retained browser suite | PASS |94PASS groups, one separately labeled file-mode NOT TESTED |
-| Chromium mobile/layout/animation +new charge/Core checks | PASS |14Stage H groups +11follow-up groups; native844×390/portrait/short-height controls, all five charge tiers/independent Core/pause |
+| Chromium mobile/layout/animation +new charge/Core checks | PASS |15Stage H groups (including six legal native-landscape routes) +11follow-up groups; native844×390/portrait/short-height controls, all five charge tiers/independent Core/pause |
 | Real Web Audio | PASS |10distinct loop signals/seams, two loops each, independent buses/mute/master headroom; Summit event/phase cases also inNode |
 | Blocked/corrupt storage | PASS |Original keys safe, prototype defaults OFF; persistence tests |
 | Native screenshots | PASS |Exact-owner-before/after844×390,960×540,390×844 picker/world/Brick Hills/Guardian; Core/combat screenshots are labeled fixtures |
@@ -38,3 +38,5 @@ Use [coordinated playtest guide](owner-followup-playtest.md). Physical touch erg
 Open balance proposals are documented in [design note](owner-followup-design.md): quantized5HP bands, bounded charge strengths, onebossHP/opening, shield→Core precedence, optional shared six-shot Core and opt-in extra pickup locations. Existing scoring formula/level geometry/base physics remain guarded; longer boss time changes its time bonus. No Levels7–12, Team Rally or Enhanced Edition code is included.
 
 Follow-up pickup audit corrected two trial Core positions above their raised platforms and added standing/jump collection tests; native keyboard Core returns canvas focus. The executable test helper restores its prior hero after isolated fixtures, preserving later persistence checks.
+
+The coordinated Windows artifact now emits a runtime PASS/FAIL/NOT TESTED matrix and exact source/executable checksums from actual CI reports, and refuses sealing if either executable smoke test fails. New landscape route instrumentation checks thousands of legal-route frames, including upper platforms; it observes rendering only.

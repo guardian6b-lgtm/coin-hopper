@@ -151,6 +151,8 @@ jobs:
           $files | Sort-Object Name | ForEach-Object {
             "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
           } | Set-Content "$env:WINDOWS_ARTIFACTS/SHA256SUMS.txt"
+          node scripts/seal-owner-playtest.cjs "$env:WINDOWS_ARTIFACTS"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Upload temporary executable and verification artifacts
         if: always()
         uses: actions/upload-artifact@v4

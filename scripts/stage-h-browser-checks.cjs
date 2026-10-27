@@ -72,6 +72,7 @@ module.exports=async function stageHBrowser(browser,url,output,{engine='chromium
   results.push(`PASS ${engine}: all five heroes have eight distinct native gameplay-scale articulated frames`);
   await page.evaluate("showMenu('pause')");const frozen=await page.evaluate('JSON.stringify({pl,time,ability,enemyCombat,enemies})');await page.evaluate('for(let i=0;i<120;i++)update();draw()');assert.equal(await page.evaluate('JSON.stringify({pl,time,ability,enemyCombat,enemies})'),frozen);
   await page.getByRole('button',{name:'Resume',exact:true}).tap();await page.setViewportSize({width:390,height:844});await page.evaluate('draw()');assert.equal(await page.evaluate('tb.right||tb.jump||tb.left'),false);
+  results.push(await require('./landscape-route-checks.cjs')(page,url,output,engine));
   await context.setOffline(true);await page.evaluate('update();draw()');results.push(`PASS ${engine}: pause freezes animation/combat, rotation clears held inputs, active game continues with network offline`);
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(output,`stage-h-${engine}-results.json`),JSON.stringify({engine,results,captures,errors,physicalDevices:'NOT TESTED'},null,2));return results;
  }finally{await context.close();}

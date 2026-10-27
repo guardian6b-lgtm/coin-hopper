@@ -65,3 +65,7 @@ test('trial Core placements sit outside solid terrain and are collectible from t
 test('keyboard Core activation restores canvas focus so ordinary movement remains available',()=>{
  const g=ready('nova');g.eval('pl.core={ammo:6,cooldown:0}');g.element('core-button').focus();g.domEvent('core-button','click',{detail:0});assert.equal(g.document.activeElement,g.element('c'));g.step();assert.equal(g.eval('pl.core.ammo'),5);
 });
+
+test('landscape framing follows high routes without changing simulation coordinates or low-ground control clearance',()=>{
+ const g=ready('hopper');g.eval('touchMode=true;innerWidth=844;innerHeight=390;fit();pl.y=50;pl.vy=0');const before=g.snapshot('({pl,cam,enemies,score,timer})');g.eval('draw()');assert.deepEqual(g.snapshot('({pl,cam,enemies,score,timer})'),before);const high=g.eval('parseFloat(cv.style.top)-H*sceneScale/2');assert.ok(high>-30);assert.ok(g.eval('72*sceneScale')+high>0);g.eval('pl.y=436;draw()');const low=g.eval('parseFloat(cv.style.top)-H*sceneScale/2');assert.ok(low+468*g.eval('sceneScale')<=328);
+});

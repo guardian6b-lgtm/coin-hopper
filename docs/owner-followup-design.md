@@ -4,7 +4,7 @@ Scope: [Issue28](https://github.com/guardian6b-lgtm/coin-hopper/issues/28), base
 
 ## Reproduction and P0 repairs
 
-Before844×390, the fixed96px touch reserve and contain-scaled960×540 page left a523px-wide scene. The revised full-width landscape view is844px wide: it crops decorative sky/lower soil, and at short heights shifts the walking surface above52px controls. No logical camera size, collision box or physics constants change. Portrait keeps contain scaling. Native HUD/controls remain CSS-sized with safe-area insets. Automated emulation does not establish physical notched-device or browser-bar correctness.
+Before844×390, the fixed96px touch reserve and contain-scaled960×540 page left a523px-wide scene. The revised full-width landscape view is844px wide: it crops decorative sky/lower soil, and at short heights shifts the walking surface above52px controls. High routes additionally shift the rendered canvas down as the player climbs, revealing upper platforms that a fixed crop would hide. This display-only framing never changes logical camera size, actor coordinates, collision boxes or physics constants. Portrait keeps contain scaling. Native HUD/controls remain CSS-sized with safe-area insets. Automated emulation does not establish physical notched-device or browser-bar correctness.
 
 The redundant top ability HUD is hidden; the existing Ability control holds charge percentage/ring and cooldown. All unselected picker faces receive a readable front face and balanced eyes over the existing local artwork; selected smiles and gameplay identity remain. Touch instructions omit Tab/E hints. Brick Hills uses connected aqueduct piers/arches instead of detached block dashes.
 
