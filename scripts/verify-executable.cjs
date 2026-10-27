@@ -260,4 +260,11 @@ async function main() {
   }
   console.log(JSON.stringify(report, null, 2));
 }
-main().catch(error => { console.error(error); process.exitCode = 1; });
+main().catch(error => {
+  console.error(error);
+  if(process.env.GITHUB_ACTIONS){
+    const detail=String(error.stack||error).replace(/%/g,'%25').replace(/\r/g,'%0D').replace(/\n/g,'%0A');
+    console.error(`::error title=Coin Hopper ${values.label} smoke::${detail}`);
+  }
+  process.exitCode = 1;
+});
