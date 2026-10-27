@@ -42,3 +42,6 @@ Follow-up pickup audit corrected two trial Core positions above their raised pla
 The coordinated Windows artifact now emits a runtime PASS/FAIL/NOT TESTED matrix and exact source/executable checksums from actual CI reports, and refuses sealing if either executable smoke test fails. New landscape route instrumentation checks thousands of legal-route frames, including upper platforms; it observes rendering only.
 
 Final charged-art correction: Ember fireball artwork scales with its real projectile radius; a native Canvas pixel-bounds check confirms a full charge is visibly larger than a tap. Tap artwork and damage timing remain intact.
+## Integrated isolated-art candidate
+
+The separate `codex/sunny-meadow-art-prototype` branch adds9tests (392total), three selectable Level1 rendering modes, exact original PNG provenance and byte checks, and real-engine/executable profiles. See [prototype report and native comparisons](sunny-meadow-prototype.md). The Windows artifact includes the repair work and opt-in art in a single coordinated candidate, without merging either branch. The separate PR is still required for review; owner acceptance is pending.
