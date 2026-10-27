@@ -1,5 +1,12 @@
 # Playable browser preview
 
+For Stage E / Issue #15, download **music-audio-browser-evidence**. The standalone
+page now plays original music after your first click/tap/key interaction. Settings
+has independent volumes and Mute all audio; pause/hidden windows stop the loop and
+resume retains its position. `music-preview/` includes eight WAV source loops and
+a checksum manifest for human listening. Signal tests do not certify audible
+quality. See `docs/music-audio.md`; no deployment or public release.
+
 For Stage D / Issue #13, download **visual-redesign-browser-evidence** from the
 visual redesign draft PR. Its standalone `index.html` embeds all character artwork;
 it needs no CDN, fonts or asset download. `before-stage-d.html` is the verified
@@ -61,7 +68,7 @@ damage-free routes that collect no shield pickups.
 - Mint leaf-eared enemies hop predictably. Stomp for the usual 50 points.
 - Pick up the cyan shield. Its bubble and SHIELD label mean one enemy/spike hit
   will be absorbed. Pits still cost a life. Restart restores the level's pickups.
-- Settings saves effects/music volume preferences. Music playback is not included.
+- Settings saves independent effects/music volumes and global mute; Stage E includes offline music playback.
 
 The preview does not update the published GitHub Pages game or publish an Electron
 release. See `docs/moonlit-gardens.md` in the source branch for test results and

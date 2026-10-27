@@ -13,6 +13,7 @@ const verifyExecutableAbilities = require('./ability-executable-checks.cjs');
 const verifyExecutableEnemies = require('./enemy-executable-checks.cjs');
 const verifyExecutableCampaign = require('./campaign-executable-checks.cjs');
 const captureVisual = require('./visual-captures.cjs');
+const verifyMusicPage = require('./music-page-checks.cjs');
 const { values } = parseArgs({ options: {
   executable: { type: 'string' }, label: { type: 'string', default: 'packaged' },
   output: { type: 'string' }, profile: { type: 'string' },
@@ -144,6 +145,20 @@ async function main() {
       pass('actual-offline-visual-captures','28 actual packaged renderer captures; native window sizes on Windows, emulated viewport on Linux. Scenes are controlled fixtures.');
       report.status='PASS';report.completedAt=new Date().toISOString();return;
     }
+    report.music=await verifyMusicPage(app.page,output,values.label);
+    pass('music-and-audio','Actual offline renderer: eight themes/two loops, volume/mute persistence, keyboard pause/resume, blur and real Web Audio mixing measurements. Audible/device acceptance NOT TESTED.');
+    if(process.platform==='win32'){
+      await app.page.getByRole('button',{name:'Play',exact:true}).click();await app.page.getByRole('button',{name:'Start game',exact:true}).click();
+      await app.main.evaluate('ciWindow.minimize();true');
+      await app.page.waitForFunction('state==="pause"&&musicState.source===null&&(ac.state!=="running"||masterGain.gain.value===0)');
+      const retained=await app.page.evaluate('musicState.offset');
+      await app.main.evaluate('ciWindow.restore();ciWindow.focus();true');
+      await app.page.waitForFunction('!document.hidden');
+      assert.equal(await app.page.evaluate('state'), 'pause');assert.equal(await app.page.evaluate('musicState.offset'),retained);
+      await app.page.getByRole('button',{name:'Resume',exact:true}).click();await app.page.waitForFunction('!!musicState.source&&ac.state==="running"');
+      await app.page.keyboard.press('Escape');await app.page.getByRole('button',{name:'Title screen',exact:true}).click();
+      pass('native-window-audio-pause','Actual Windows minimize/restore pauses game/music, retains loop position and requires explicit Resume; automated window APIs, not physical input.');
+    }else report.checks.push({name:'native-window-audio-pause',status:'NOT TESTED',detail:'Headless Linux has no native desktop; actual Windows CI runs minimize/restore checks.'});
     await app.page.getByRole('button', { name: 'Settings', exact: true }).click();
     for (const [name, value] of [['effects', 25], ['music', 80]]) {
       await app.page.locator(`#${name}-volume`).evaluate((input, next) => {

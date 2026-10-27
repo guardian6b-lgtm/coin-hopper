@@ -31,6 +31,12 @@ enemy shading, coins, shields and HUD share the new palette. Native menus remain
 interactive. Settings adds a saved reduced-motion preference; system reduced motion
 also applies. See [visual design, before/after screenshots and verification](docs/visual-redesign.md).
 
+**Stage E adds original looping music.** Title/select, all six scenes and the
+Guardian have locally synthesized arrangements, independent music/effects volume,
+saved global mute and pause/visibility handling. The score and sounds run offline;
+no audio download or CDN is required. Technical signal/mixing tests are distinct
+from human listening, which remains open. See [music and audio verification](docs/music-audio.md).
+
 Play the currently published browser game: https://guardian6b-lgtm.github.io/coin-hopper/
 
 > **Release vs. development:** The published `main` game and downloadable Windows
@@ -67,8 +73,9 @@ cosmetic-only on its own branch; this stacked Issue #5 branch adds the powers.
 See [ability rules and provisional balance](docs/abilities.md) and
 [the PASS / FAIL / NOT TESTED report](docs/abilities-verification.md).
 
-Use Settings to save separate effects and music volume preferences. Music playback
-will arrive in a later upgrade. Restart level asks for confirmation, resets that
+Use Settings to save separate effects and music volumes and **Mute all audio**.
+Music starts after your first interaction, pauses with the game or hidden window,
+and resumes from its loop position. Restart level asks for confirmation, resets that
 level's coins and earned points, and keeps your remaining lives.
 
 Hoppers follow a steady hopping rhythm and award the usual **50 points** when
@@ -179,9 +186,10 @@ The visual overhaul remains staged in separate drafts. Stage D / Issue #13 adds
 the reference-derived characters, all six scene/tile palettes, live rounded menus,
 HUD and enemy/effect presentation, plus reduced motion. This artwork is an
 interactive game interpretation of the approved reference; formal human art
-acceptance is still open. Original looping music remains Stage E / Issue #15;
-music playback is not implemented yet, and its volume preference is saved for
-that stage. Persistent progression remains Stage F / Issue #16.
+acceptance is still open. Stage E / Issue #15 implements the original procedural
+score, all scene/boss themes, volume/mute, offline operation and mixing protection.
+Human listening and hardware output acceptance remain open. Persistent progression
+remains Stage F / Issue #16.
 
 Browser and Windows installer/portable editions are verified separately; current
 automated results and remaining gates are in the [ability report](docs/abilities-verification.md)

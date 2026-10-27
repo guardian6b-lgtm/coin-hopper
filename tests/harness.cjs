@@ -8,7 +8,7 @@ function createGame({ html, saved = {}, storageBlocked = false } = {}) {
   const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
   if (!script) throw new Error('The game inline script was not found');
   const listeners = new Map(), frames = [], delayed = [], elements = new Map();
-  const storage = new Map(Object.entries(saved)), audio = { gains: [], oscillators: [] };
+  const storage = new Map(Object.entries(saved)), audio = { gains: [], oscillators: [], buffers: [], sources: [], compressors: [] };
   const noop = () => {};
   let document;
   const bind = (map, name, callback) => {
@@ -142,7 +142,20 @@ function createGame({ html, saved = {}, storageBlocked = false } = {}) {
   });
   class AudioContext {
     constructor() { this.currentTime = 0; this.state = 'running'; this.destination = {}; }
-    createGain() { const gain = { gain: audioParam(1), connections: [], connect(target) { this.connections.push(target); return target; }, disconnect: noop }; audio.gains.push(gain); return gain; }
+    createGain() { const gain = { context:this, gain: audioParam(1), connections: [], connect(target) { this.connections.push(target); return target; }, disconnect: noop }; audio.gains.push(gain); return gain; }
+    createDynamicsCompressor() {
+      const node={context:this,connections:[],connect(target){this.connections.push(target);return target;},disconnect:noop};
+      for(const name of ['threshold','knee','ratio','attack','release'])node[name]=audioParam(0);
+      audio.compressors.push(node);return node;
+    }
+    createBuffer(channels,length,sampleRate) {
+      const data=Array.from({length:channels},()=>new Float32Array(length));
+      const buffer={length,sampleRate,duration:length/sampleRate,numberOfChannels:channels,getChannelData:index=>data[index]};audio.buffers.push(buffer);return buffer;
+    }
+    createBufferSource() {
+      const node={context:this,loop:false,connections:[],starts:[],stops:[],connect(target){this.connections.push(target);return target;},disconnect:noop,start(...args){this.starts.push(args);},stop(...args){this.stops.push(args);}};
+      audio.sources.push(node);return node;
+    }
     createOscillator() {
       const oscillator = { frequency: audioParam(0), connections: [], connect(target) { this.connections.push(target); return target; }, start: noop, stops: [], stop(time) { this.stops.push(time); }, disconnect: noop };
       audio.oscillators.push(oscillator); return oscillator;
