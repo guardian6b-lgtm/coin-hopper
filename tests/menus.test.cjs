@@ -203,7 +203,7 @@ test('confirmed restart resets only current-level points, coins, timer, and obje
   game.click('Restart level');
   assert.deepEqual(game.snapshot('({state,lvl,lives,score,levelScore,timer,got:coins.filter(c=>c.got).length,coinCount:coins.length,enemyCount:enemies.length,atStart:pl.x===start.x&&pl.y===start.y})'), {
     state: 'play', lvl: 1, lives: 2, score: 200, levelScore: 0, timer: 0,
-    got: 0, coinCount: 21, enemyCount: 5, atStart: true,
+    got: 0, coinCount: 38, enemyCount: 8, atStart: true,
   });
   // Recollecting and restarting cannot add points to earlier levels.
   game.eval('coins[0].got=1;score+=10;levelScore+=10');
@@ -219,7 +219,7 @@ test('touch entry from the native title enables controls before the first canvas
   game.domEvent('menu', 'pointerdown', { pointerType: 'touch' });
   game.click('Play');game.click('Start game');
   assert.equal(game.eval('touchMode'), true);
-  assert.equal(game.element('pause-button').hidden, true);
+  assert.equal(game.element('pause-button').hidden, false);
   game.canvasEvent('touchstart', { touches: [{ clientX: 190, clientY: 470 }, { clientX: 875, clientY: 465 }] });
   assert.equal(game.eval('held("right")'), true);
   assert.equal(game.eval('held("jump")'), true);
@@ -250,7 +250,7 @@ test('completion shows collected coins through deaths and advances using its nat
   game.eval('newGame();coins[0].got=1;coins[1].got=1;score=20;levelScore=20;pl.inv=0;hurt();enemies=[];pl.x=flag.x;pl.vx=0');
   game.step();
   assert.equal(game.eval('state'), 'done');
-  assert.match(game.element('menu-content').textContent, /Coins: 2 \/ 20/);
+  assert.match(game.element('menu-content').textContent, /Coins: 2 \/ 37/);
   game.click('Next level');
   assert.equal(game.eval('lvl'), 1);
   assert.equal(game.eval('state'), 'play');

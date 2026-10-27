@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createGame, onFlatGround } = require('./harness.cjs');
-const routes = require('./fixtures/routes.cjs');
+const routes = require('./fixtures/campaign-routes.cjs').slice(0,4);
 const roster = ['hopper', 'minty', 'ember', 'nova', 'bolt'];
 const preference = 'coinhopper_character_v1';
 const select = (game, id) => { game.click('Play');game.click('character-' + id);game.click('Start game'); };
@@ -183,12 +183,12 @@ for (const id of roster) {
     assert.equal(game.eval('pl.character'), id);
   });
 
-  test(`${id} completes all four unmodified routes with unchanged results and no protection`, () => {
+  test(`${id} completes all four expanded routes with the same rules and no protection`, () => {
     const game = createGame();select(game, id);
     const outcomes = [];
     for (const [index, route] of routes.entries()) {
       game.event('keydown', { code: 'ArrowRight' });let next = 0;
-      for (let frame = 0; frame < 1100 && game.eval('state') === 'play'; frame++) {
+      for (let frame = 0; frame < route.maxFrames && game.eval('state') === 'play'; frame++) {
         if (route.jump[next]?.[0] === frame) { game.event(route.jump[next][1] ? 'keydown' : 'keyup', { code: 'Space' });next++; }
         game.step();
       }
@@ -199,14 +199,9 @@ for (const id of roster) {
       game.click(game.eval('lvl+1===LEVELS.length') ? 'Finish' : 'Next level');
     }
     assert.equal(game.eval('state'), game.eval('LEVELS.length')>4?'play':'win');
-    // Outcomes recorded from verified base f2c8751. All variants use the same
+    // Stage H route scores change only because levels have additional coins/enemies/time. All variants use the same
     // movement/collision and award rules; fixtures are
     // replayed end-to-end, not implemented with character-specific shortcuts.
-    assert.deepEqual(outcomes, [
-      { score: 500, levelScore: 500, lives: 3 },
-      { score: 1045, levelScore: 545, lives: 3 },
-      { score: 1590, levelScore: 545, lives: 3 },
-      { score: 2190, levelScore: 600, lives: 3 },
-    ]);
+    let total=0;assert.deepEqual(outcomes,routes.map(r=>({score:(total+=r.score),levelScore:r.score,lives:3})));
   });
 }

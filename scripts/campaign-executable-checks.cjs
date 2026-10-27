@@ -27,7 +27,7 @@ module.exports=async function verifyExecutableCampaign(app,output,label){
         await page.getByRole('button',{name:index===routes.length-1?'Finish':'Next level',exact:true}).click();
         results.push({character:hero,level:route.name,status:'PASS',score:route.score,total,checks:['actual offline renderer','normal New Game/Next flow without direct level setup','legal no-power/no-shield route','baseline movement','three lives','earned progression','native mandatory boss/victory flow']});
       }
-      assert.equal(total,3510);assert.equal(await page.evaluate('state'),'win');assert.equal(await page.evaluate('score'),3510);
+      assert.equal(total,routes.reduce((n,r)=>n+r.score,0));assert.equal(await page.evaluate('state'),'win');assert.equal(await page.evaluate('score'),total);
       assert.equal(await page.evaluate('progress.completed.every(Boolean)'),true);
     }
     await choose('nova');

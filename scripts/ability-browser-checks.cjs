@@ -112,7 +112,7 @@ module.exports = async function verifyAbilities(browser, url, output) {
       await mp.screenshot({ path: path.join(output, 'ability-mobile-landscape.png') });
       for (const size of [{ width: 390, height: 844 }, { width: 320, height: 240 }]) {
         await mp.setViewportSize(size);
-        await mp.waitForFunction('Math.abs(parseFloat(cv.style.width)-Math.min(innerWidth/960,innerHeight/540)*960)<.1',null,{polling:50});
+        await mp.waitForFunction('Math.abs(parseFloat(cv.style.width)-Math.min(innerWidth/960,(innerHeight-(touchMode?96:0))/540)*960)<.1',null,{polling:50});
         await mp.evaluate('draw()');
         const box=await mp.locator('#ability-button').boundingBox(),canvas=await mp.locator('#c').boundingBox();
         assert.ok(box.width>=44&&box.height>=44&&box.x>=0&&box.y>=0&&box.x+box.width<=size.width&&box.y+box.height<=size.height,JSON.stringify({box,size}));

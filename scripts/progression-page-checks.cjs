@@ -15,7 +15,7 @@ module.exports=async function verifyProgressionPage(page,output,label='browser',
     await page.evaluate('window.__progressRAF=requestAnimationFrame;requestAnimationFrame=()=>0');await page.waitForTimeout(40);
     try{
       await page.getByRole('button',{name:'Play',exact:true}).click();await page.getByRole('button',{name:'Hopper',exact:true}).click();await page.getByRole('button',{name:'Start game',exact:true}).click();
-      await replay(page,firstRoute);assert.equal(await page.evaluate('state'), 'done');assert.equal(await page.evaluate('score===500&&lives===3&&unlockedCount()===2&&progress.lastLevel===1'),true);
+      await replay(page,firstRoute);assert.equal(await page.evaluate('state'), 'done');assert.equal(await page.evaluate('score'),firstRoute.score);assert.equal(await page.evaluate('lives===3&&unlockedCount()===2&&progress.lastLevel===1'),true);
       await page.screenshot({path:path.join(output,`${label}-progress-earned-route.png`)});
     }finally{await page.evaluate('requestAnimationFrame=window.__progressRAF;delete window.__progressRAF;last=performance.now();accum=0;requestAnimationFrame(frame)');}
     results.push('PASS fresh locks/disabled Continue, keyboard Level Select, guarded locked entry and legal no-power route earns Level 2');

@@ -1,9 +1,10 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {createGame}=require('./harness.cjs');
-test('visual redesign preserves all six definitions, balance tables and authoritative simulation functions',()=>{
+test('Stage H preserves archived definitions, ability/enemy tables and unchanged collision/ability/AI functions',()=>{
   const baseline=require('./fixtures/visual-baseline.json'),g=createGame(),hash=v=>crypto.createHash('sha256').update(v.replace(/\r\n/g,'\n')).digest('hex');
-  assert.equal(hash(g.eval('JSON.stringify({LEVELS,ABILITIES,ENEMY_TYPES,ENEMY_COMBAT,ENEMY_DAMAGE})')),baseline.dataHash);
-  for(const [name,expected]of Object.entries(baseline.functions))assert.equal(hash(g.eval(name+'.toString()')),expected,name);
+  assert.equal(hash(g.eval('JSON.stringify({LEVELS:FOUNDATION_LEVELS,ABILITIES,ENEMY_TYPES,ENEMY_COMBAT,ENEMY_DAMAGE})')),baseline.dataHash);
+  // Issue26 explicitly authorizes High Jump, retry points and a new boss; keep the unchanged collision/ability/AI functions locked.
+  for(const [name,expected]of Object.entries(baseline.functions).filter(([name])=>!['update','hurt','spawn','updateGuardian'].includes(name)))assert.equal(hash(g.eval(name+'.toString()')),expected,name);
 });
 test('approved reference is the exact original PNG, not a generated replacement',()=>{
   const bytes=fs.readFileSync(path.join(__dirname,'../docs/art/reference/coin_hopper_character_selection.png'));

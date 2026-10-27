@@ -1,5 +1,28 @@
 # Coin Hopper
 
+
+**Stage H is implemented for integrated owner playtesting in [draft PR #27](https://github.com/guardian6b-lgtm/coin-hopper/pull/27).**
+It extends all six levels with new platform/coin/encounter sections and attempt-local
+retry terraces; adds two-charge **High Jump leaf boots**, a fairer Starry Night crossing,
+eight-frame articulated hero locomotion, native touch action buttons, layered dimensional
+scenery and illustrated enemies/pickups/abilities. Stone Guardian has three phases with
+stone shockwaves, boulders and debris; ordinary builds expose health, not AI commands
+or countdowns. All five optional character powers, base movement/hitboxes/scoring,
+settings/music and earned unlocks are preserved. The original approved PNG is unchanged.
+
+Use the **[single Windows/Android-browser/iOS-browser playtest guide](docs/stage-h-playtest.md)**
+and [Stage H test results, native screenshots and remaining acceptance checks](docs/stage-h-verification.md).
+No native APK/IPA, preview deployment or public release is created. Physical devices,
+audible quality, art and gameplay balance still need owner acceptance.
+
+The earlier stage descriptions and approved roadmap below are retained as history.
+Their map-preservation and two-phase-boss statements apply to those separate branches;
+Issue #26 explicitly authorizes Stage H's extensions, Level3 correction and boss rebuild.
+High Jump uses the ordinary Jump control (two equal grounded launches, **no double-jump**),
+independently of E/Ability. Retry pennants are local to this attempt; Continue/Level Select
+still start at a level's beginning with 0 points/3 lives. Coins and defeated enemies do not
+regenerate on checkpoint death; Restart rolls back level points before restoring content.
+
 A small self-contained browser platformer. Jump across the levels, stomp enemies, and grab every coin.
 
 Choose Hopper, Minty, Ember, Nova, or Bolt before a new run. Each now has an

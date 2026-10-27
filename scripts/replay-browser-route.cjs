@@ -12,7 +12,7 @@ module.exports=async function replayBrowserRoute(page,route,capture=async()=>{})
   try{
     for(const event of events){
       if(await page.evaluate('state')!=='play')break;
-      await page.evaluate(count=>{for(let i=0;i<count&&state==='play';i++){update();draw();}},event.frame-tick);
+      await page.evaluate(count=>{for(let i=0;i<count&&state==='play';i++)update();draw();},event.frame-tick);
       tick=event.frame;await capture(tick);
       if(await page.evaluate('state')!=='play')break;
       if(event.key)await page.keyboard[event.down?'down':'up'](event.key);

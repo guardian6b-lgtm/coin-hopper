@@ -1,0 +1,2 @@
+# Keep the single-file game identical in Windows and browser playtest bundles.
+index.html text eol=lf

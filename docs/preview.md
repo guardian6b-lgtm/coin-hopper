@@ -1,3 +1,5 @@
+> **Latest coordinated owner build: Stage H / draft PR #27.** Use [Stage H playtest instructions](stage-h-playtest.md) for the exact Windows/browser bundle, checksums and real Android Chrome/iOS Safari same-Wi-Fi path. The old published Pages page and prior artifacts are different builds. No deployment or APK/IPA is supplied. Historical preview notes follow.
+
 # Playable browser preview
 
 For final Stage G / Issue #14, download **six-level-verification-browser-evidence**

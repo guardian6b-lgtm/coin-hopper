@@ -157,7 +157,7 @@ async function main() {
             await rp.screenshot({ path: path.join(output, `gameplay-${id}.png`) });captured = true;
           }
           if(index===4&&id==='nova'&&tick>=400&&!caveCaptured){await rp.screenshot({path:path.join(output,'crystal-caverns-route.png')});caveCaptured=true;}
-          if(index===5&&id==='nova'&&route.captureFrames.includes(tick))await rp.screenshot({path:path.join(output,`skyline-route-${tick}.png`)});
+          if(index===5&&id==='nova'&&(route.captureFrames||[]).includes(tick))await rp.screenshot({path:path.join(output,`skyline-route-${tick}.png`)});
         });
         assert.equal(await rp.evaluate('state'), 'done', route.name);
         assert.equal(await rp.evaluate('lvl'), index);

@@ -2,18 +2,23 @@ name: Windows verification
 
 on:
   push:
-    branches: [codex/moonlit-gardens, codex/character-select-redesign, codex/character-abilities, codex/enemy-balance, codex/crystal-caverns, codex/skyline-summit, codex/visual-redesign, codex/music-audio, codex/progression, codex/release-verification]
+    branches: [codex/moonlit-gardens, codex/character-select-redesign, codex/character-abilities, codex/enemy-balance, codex/crystal-caverns, codex/skyline-summit, codex/visual-redesign, codex/music-audio, codex/progression, codex/release-verification, codex/stage-h-integrated]
     paths:
       - index.html
+      - .gitattributes
       - desktop/**
       - tests/**
       - scripts/verify-executable.cjs
+      - scripts/verify-packaged-page.cjs
       - scripts/ability-executable-checks.cjs
       - scripts/enemy-executable-checks.cjs
       - scripts/enemy-fixture.cjs
       - scripts/campaign-executable-checks.cjs
       - scripts/replay-browser-route.cjs
       - scripts/visual-captures.cjs
+      - scripts/stage-h-page-checks.cjs
+      - docs/stage-h*
+      - docs/screenshots/stage-h/**
       - scripts/music-page-checks.cjs
       - scripts/progression-page-checks.cjs
       - .github/workflows/windows-verification.yml
@@ -29,7 +34,7 @@ concurrency:
 jobs:
   windows-x64:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
@@ -64,12 +69,8 @@ jobs:
       - name: Copy the PR game page
         working-directory: desktop
         run: npm run copy-index
-      - name: Check the copied page matches the PR head
-        shell: pwsh
-        run: |
-          if ((Get-FileHash index.html).Hash -ne (Get-FileHash desktop/index.html).Hash) {
-            throw 'Desktop page differs from PR source'
-          }
+      - name: Check copied and canonical Git page bytes before packaging
+        run: node scripts/verify-packaged-page.cjs
       - name: Build Windows x64 NSIS and portable without publishing
         id: build
         working-directory: desktop
@@ -129,6 +130,21 @@ jobs:
           if ($portable.Count -ne 1) { throw 'Expected exactly one portable executable' }
           node scripts/verify-executable.cjs --executable "$($portable[0].FullName)" --label portable --output "$env:WINDOWS_ARTIFACTS"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Seal the integrated Stage H Windows and phone-browser playtest bundle
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.ref_name == 'codex/stage-h-integrated' }}
+        shell: pwsh
+        run: |
+          Copy-Item index.html "$env:WINDOWS_ARTIFACTS/index.html"
+          Copy-Item docs/stage-h-playtest.md "$env:WINDOWS_ARTIFACTS/START-HERE.md"
+          Copy-Item docs "$env:WINDOWS_ARTIFACTS/docs" -Recurse
+          $nsis = Get-Content "$env:WINDOWS_ARTIFACTS/nsis-installed.json" -Raw | ConvertFrom-Json
+          $portable = Get-Content "$env:WINDOWS_ARTIFACTS/portable.json" -Raw | ConvertFrom-Json
+          @("# Stage H exact-build verification", "", "Commit: $env:GITHUB_SHA", "NSIS actual executable: $($nsis.status)", "Portable actual executable: $($portable.status)", "", "See [full report](docs/stage-h-verification.md) and [owner instructions](docs/stage-h-playtest.md). Physical Android/iOS, human Windows, audible and art/balance acceptance remain NOT TESTED.") | Set-Content "$env:WINDOWS_ARTIFACTS/VERIFICATION.md"
+          Copy-Item scripts/serve-stage-h.cjs "$env:WINDOWS_ARTIFACTS/serve-preview.cjs"
+          $files = @(Get-ChildItem "$env:WINDOWS_ARTIFACTS" -File | Where-Object { $_.Extension -eq '.exe' -or $_.Name -eq 'index.html' -or $_.Name -eq 'serve-preview.cjs' })
+          $files | Sort-Object Name | ForEach-Object {
+            "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name
+          } | Set-Content "$env:WINDOWS_ARTIFACTS/SHA256SUMS.txt"
       - name: Upload temporary executable and verification artifacts
         if: always()
         uses: actions/upload-artifact@v4
