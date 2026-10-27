@@ -236,7 +236,7 @@ async function main() {
     report.enemies=await verifyExecutableEnemies(app,output,values.label);
     pass('multi-hit-enemies','All five heroes interact with and defeat both new types; Sentinel shots, pause, shield and cleanup pass in the actual executable');
     report.expansionRoutes=await verifyExecutableCampaign(app,output,values.label);
-    pass('expansion-no-power-routes','All five heroes complete each new level in the actual offline renderer with legal keyboard inputs, no powers/shield/damage and expected scores; fixed 60 Hz replay');
+    pass('six-level-no-power-campaigns','All five heroes complete all six levels and the required boss through normal New Game/Next/Finish, with legal keyboard inputs, no powers/shield/damage, earned unlocks and 3510 points; fixed 60 Hz replay, not a human playthrough.');
     // Show the new level in the packaged binary; this is a runtime fixture, not
     // a natural completion route (all four routes run in the Node suite).
     await app.page.evaluate('startLevel(3)');

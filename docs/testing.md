@@ -134,3 +134,16 @@ five responsive sizes, simulated touch and blocked storage. Actual offline
 executables run the same native progression flows and Windows content-window
 resizes. See [progression rules and manual gates](progression.md); human/device
 acceptance remains NOT TESTED.
+
+## Stage G final verification
+
+The final branch keeps the verified Stage F game HTML unchanged and extends actual
+offline executable replay to **five complete six-level campaigns (30 routes)**,
+using normal New Game / Next / Finish with 3510 points and three lives per hero.
+It retains **308 Node tests** and **94 Chromium checks**, plus a separate direct
+file-URL capability check. Local managed Chromium denied file navigation, so that
+additional local case is NOT TESTED; hosted Chromium reports its own result as a
+CI notice. HTTP/offline browser and actual Electron `app.asar` file loading are
+separate completed checks. Exact-head Windows builds/30-route smoke results,
+temporary artifacts and human acceptance are recorded in the verification draft
+and [final verification guide](release-verification.md). No merge/release/deployment.
