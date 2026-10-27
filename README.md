@@ -1,5 +1,9 @@
 # Coin Hopper
 
+**Issue28 owner-playtest follow-up** adds full-width Android landscape layout, clearer picker faces/touch instructions, compact on-button charge/cooldown, tap/hold/release powers, readable2.8s Guardian openings and HP-based pressure. New original level arrangements evolve across Skyline Summit; Settings offers a reversible, default-OFF limited-shot Star Core/pickup trial. See [design and balance decisions](docs/owner-followup-design.md), [coordinated Windows/mobile playtest instructions](docs/owner-followup-playtest.md) and [verification/gaps](docs/owner-followup-verification.md). Sunny Meadow illustrated art remains a separate opt-in prototype; no rollout to other levels is authorized.
+
+The adventure is planned for **12levels**. Level6 Stone Guardian is the **midpoint boss** and ends Chapter One; Levels7–12, the true final boss, Team Rally and Windows Enhanced Edition remain future plans, without code in this iteration.
+
 
 **Stage H is implemented for integrated owner playtesting in [draft PR #27](https://github.com/guardian6b-lgtm/coin-hopper/pull/27).**
 It extends all six levels with new platform/coin/encounter sections and attempt-local
@@ -191,7 +195,7 @@ special abilities.
 See [character-select design, Issue #4](https://github.com/guardian6b-lgtm/coin-hopper/issues/4)
 and [approved abilities, Issue #5](https://github.com/guardian6b-lgtm/coin-hopper/issues/5).
 
-### Stronger enemies and Level 6 final boss
+### Stronger enemies and Level 6 midpoint boss
 
 The first-draft enemy concepts have been approved to balance the new abilities.
 **Shellback and Crystal Sentinel appear in Level 5; Skyline Summit adds Nightwing
@@ -207,10 +211,10 @@ not locked values. Existing walkers and hoppers stay unchanged.
 | **Crystal Sentinel** | 2 | Implemented in Level 5: charges before slow terrain-blocked projectiles |
 | **Stone Guardian** | 5 | Implemented Level 6 boss: guarded wind-up, slam/shockwaves, recovery opening and faster phase two |
 
-**Stone Guardian is the approved final encounter at the end of Skyline Summit
+**Stone Guardian is the approved midpoint encounter at the end of Skyline Summit
 (Level 6).** Its fight has a visible health bar, readable wind-up/attack/recovery
 windows, a faster second phase, and a one-time defeat effect.
-Defeating the Guardian unlocks the final exit and six-level victory. All five
+Defeating the Guardian unlocks this chapter’s exit and Chapter One completion. All five
 characters must be able to win the battle even **without** special abilities.
 No unavoidable attacks, projectile hits through solid terrain, or duplicated
 boss-defeat rewards.
