@@ -8,19 +8,23 @@ const path = require('node:path');
 const { chromium } = require('playwright');
 const routes = require('../tests/fixtures/routes.cjs');
 const verifyAbilities = require('./ability-browser-checks.cjs');
+const verifyEnemies = require('./enemy-browser-checks.cjs');
+const buildEnemyPreview = require('./enemy-preview.cjs');
 
 const output = process.env.COIN_HOPPER_TEST_OUTPUT || path.join(os.tmpdir(), 'coin-hopper-browser-check');
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'));
+const arena = buildEnemyPreview(html);
 const server = http.createServer((request, response) => {
-  if (request.url !== '/') { response.writeHead(404); response.end(); return; }
+  if (request.url !== '/' && request.url !== '/enemy-arena.html') { response.writeHead(404); response.end(); return; }
   response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-  response.end(html);
+  response.end(request.url === '/' ? html : arena);
 });
 const results = [];
 const errors = [];
 
 async function main() {
   fs.mkdirSync(output, { recursive: true });
+  fs.writeFileSync(path.join(output, 'enemy-arena.html'), arena);
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const url = `http://127.0.0.1:${server.address().port}/`;
   const executablePath = process.env.CHROMIUM_PATH || (fs.existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined);
@@ -212,6 +216,7 @@ async function main() {
     assert.equal(await bp.evaluate('pl.character'), 'ember');
     await blocked.close();results.push('PASS blocked browser storage safely permits character choice and gameplay');
     results.push(...await verifyAbilities(browser, url, output));
+    results.push(...await verifyEnemies(browser, url, output));
     assert.deepEqual(errors, []);
     fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ browser: browser.version(), results, errors }, null, 2));
     console.log(results.join('\n'));

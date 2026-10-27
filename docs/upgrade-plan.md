@@ -50,3 +50,9 @@ Issue #4 adds the isolated cosmetic character-selection foundation (draft PR #8)
 Issue #5 adds [five optional powers](abilities.md) in a separate stacked draft PR.
 The [verification report](abilities-verification.md) records regressions and human
 acceptance gates. Neither change starts Levels 5/6 or the world-art overhaul.
+
+Issue #6 Phase 1 adds [shared HP, Shellback and Crystal Sentinel mechanics](enemies-phase-one.md)
+in a separate draft targeting the verified ability branch. No new enemy placements
+in Levels 1–4, Nightwing, Level 5/6 maps or Stone Guardian boss are included.
+The six-level roadmap and mandatory final boss remain approved future work;
+README reconciles those plans with the separate, unmerged documentation PR #7.

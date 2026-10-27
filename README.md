@@ -59,6 +59,30 @@ stack, award points, or protect against pits. Protection clears on death, level
 completion, and restart. Used pickups stay used after death; restarting the level
 restores them. See [the Stage 3 guide](docs/moonlit-gardens.md) for details.
 
+## Stronger enemies — Phase 1 (implemented for isolated review)
+
+[Issue #10](https://github.com/guardian6b-lgtm/coin-hopper/issues/10), following
+[Issue #6](https://github.com/guardian6b-lgtm/coin-hopper/issues/6), adds a shared
+health/damage system and two enemy types on `codex/enemy-balance`:
+
+- **Shellback:** 2 HP, slower armored patrol, with a visible cracked shell after
+  the first hit.
+- **Crystal Sentinel:** 2 HP, a visible 0.8-second wind-up and locked aim before
+  firing a slow, dodgeable crystal projectile. Solid terrain stops its shots.
+- Stomps, Crown Slam, Fireball and Chain Lightning each deal one HP. Vine Snare
+  immobilizes both types and freezes Sentinel attack timing; Star Glide retains
+  normal stomp/collision behavior. Every character can defeat either by stomping.
+- The first armor hit gives no points; a defeat awards **+50 once**. A short
+  per-enemy repeat-hit guard prevents simultaneous attacks from double-damaging.
+  Existing walkers/hoppers remain one-hit enemies with unchanged rewards.
+
+**Neither new enemy is placed in Levels 1–4.** All four maps and no-power routes
+remain intact. The browser evidence artifact includes a separate `enemy-arena.html`
+review fixture with character selection and Reset Shellback / Reset Sentinel
+buttons. It is not a campaign level or part of the shipped browser/Electron page.
+See [enemy rules and initial balance](docs/enemies-phase-one.md) and the
+[PASS / FAIL / NOT TESTED report with screenshots](docs/enemies-verification.md).
+
 ## Approved expansion roadmap and implementation status
 
 The goal for the next expanded, downloadable edition is **six polished levels**;
@@ -81,7 +105,8 @@ style with a responsive **Choose Your Hopper** screen. Selection and all five po
 are **implemented in this draft branch**, pending human acceptance and integration.
 All characters use the same base running/jumping physics, hitbox, and damage rules;
 powers add tactical options only when explicitly activated. They are not available
-in the published three-level game. No stronger enemies or boss are added here.
+in the published three-level game. Stronger enemy mechanics are isolated for review;
+their campaign placements and the boss remain future stages.
 
 | Character | Appearance | Implemented ability on this draft branch |
 | --- | --- | --- |
@@ -105,18 +130,19 @@ and [approved abilities, Issue #5](https://github.com/guardian6b-lgtm/coin-hoppe
 ### Stronger enemies and Level 6 final boss
 
 The first-draft enemy concepts have been approved to balance the new abilities.
-**Shellback, Nightwing, Crystal Sentinel and the Stone Guardian boss remain planned
-and are not implemented in this PR.** Their HP and attack timings are **initial
-playtest targets**, not locked values. Existing walkers and hoppers stay unchanged.
+**Shellback and Crystal Sentinel mechanics are implemented in isolation in this
+phase; their campaign placements remain planned. Nightwing and the Stone Guardian
+boss are not implemented.** HP and attack timings are **initial playtest targets**,
+not locked values. Existing walkers and hoppers stay unchanged.
 
 | Enemy | Proposed HP | Mechanic |
 | --- | ---: | --- |
 | Walker | 1 | Existing ground patrol; unchanged in original levels |
 | Hopper | 1 | Existing timed jumping patrol in Moonlit Gardens |
-| **Shellback** | 2 | Armored enemy: a visible cracked-shell state after first hit |
-| **Nightwing** | 1 | Flying patrol with clearly warned dive attacks |
-| **Crystal Sentinel** | 2 | Ranged threat that charges before firing slow projectiles |
-| **Stone Guardian** | 5 | Required final boss with slam/shockwaves and escalating attack phases |
+| **Shellback** | 2 | Implemented mechanic, not placed: visible cracked-shell state after first hit |
+| **Nightwing** | 1 | Planned flying patrol with clearly warned dive attacks |
+| **Crystal Sentinel** | 2 | Implemented mechanic, not placed: charges before slow terrain-blocked projectiles |
+| **Stone Guardian** | 5 | Planned required final boss with slam/shockwaves and escalating attack phases |
 
 **Stone Guardian is the approved final encounter at the end of Skyline Summit
 (Level 6).** The boss fight is planned to feature a visible health bar, readable
