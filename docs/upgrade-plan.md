@@ -79,5 +79,8 @@ and Continue from a level beginning with fresh score/lives. Play/New Game keeps
 earned unlocks. No new checkpoints; original death/restart rules remain intact.
 See [progression semantics](progression.md).
 
-Next: #14 final
-technical/human release-readiness records. No release is authorized by this plan.
+Issue #14 / Stage G records final technical gates and the human/device acceptance
+protocol in [release verification](release-verification.md). All six normal campaign
+routes run for every hero in actual offline executables. Physical devices, audible
+quality, formal art/accessibility and subjective balance remain human checks.
+No release, merge, deployment or tag is authorized by this plan.

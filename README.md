@@ -43,6 +43,14 @@ Completing a level saves its unlock immediately. New Game keeps earned unlocks;
 saved progress never banks score, lives, pickups or boss damage. Level 6 always
 requires a fresh Guardian defeat. See [progression rules and verification](docs/progression.md).
 
+**Stage G records final technical verification.** The verification branch adds
+complete five-hero × six-level campaigns inside the actual offline executables,
+plus the retained 308-test regression and browser/audio/progression checks.
+[Final evidence and human acceptance checklist](docs/release-verification.md)
+link the independent draft stack and distinguish automation from physical-device,
+audible, art, accessibility and balance acceptance. Nothing from this expansion has
+been merged or released.
+
 Play the currently published browser game: https://guardian6b-lgtm.github.io/coin-hopper/
 
 > **Release vs. development:** The published `main` game and downloadable Windows

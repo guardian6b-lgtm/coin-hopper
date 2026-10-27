@@ -1,4 +1,4 @@
-// New-level legal keyboard routes inside the actual offline packaged renderer.
+// All six legal keyboard routes inside the actual offline packaged renderer.
 // RAF is suspended only for deterministic replay, then restored; product code is untouched.
 const assert=require('node:assert/strict');
 const path=require('node:path');
@@ -14,17 +14,21 @@ module.exports=async function verifyExecutableCampaign(app,output,label){
     await page.getByRole('button',{name:hero[0].toUpperCase()+hero.slice(1),exact:true}).click();await page.getByRole('button',{name:'Start game',exact:true}).click();
   };
   try{
-    for(const hero of ['hopper','minty','ember','nova','bolt'])for(const [offset,route]of routes.slice(4).entries()){
-      await choose(hero);await page.evaluate(index=>startLevel(index),offset+4);
-      let captured=false;
-      await replay(page,route,async tick=>{if(hero==='nova'&&tick>=400&&!captured){await page.screenshot({path:path.join(output,`${label}-level-${offset+5}.png`)});captured=true;}});
-      assert.equal(await page.evaluate('state'),'done');assert.equal(await page.evaluate('lives'),3);
-      assert.equal(await page.evaluate('levelScore'),route.score);assert.equal(await page.evaluate('shields.some(s=>s.got)'),false);
-      assert.equal(await page.evaluate('ability.cooldown===0&&pl.character'),hero);
-      const final=await page.evaluate('lvl+1===LEVELS.length');
-      await page.getByRole('button',{name:final?'Finish':'Next level',exact:true}).click();
-      if(final)assert.equal(await page.evaluate('state'),'win');
-      results.push({character:hero,level:route.name,status:'PASS',checks:['actual offline renderer','legal no-power/no-shield route','baseline movement','three lives','expected score','native completion flow']});
+    for(const hero of ['hopper','minty','ember','nova','bolt']){
+      await choose(hero);let total=0;
+      for(const [index,route]of routes.entries()){
+        assert.equal(await page.evaluate('lvl'),index);let captured=false;
+        await replay(page,route,async tick=>{if(hero==='nova'&&tick>=400&&!captured){await page.screenshot({path:path.join(output,`${label}-level-${index+1}.png`)});captured=true;}});
+        total+=route.score;
+        assert.equal(await page.evaluate('state'),'done');assert.equal(await page.evaluate('lives'),3);
+        assert.equal(await page.evaluate('score'),total);assert.equal(await page.evaluate('levelScore'),route.score);assert.equal(await page.evaluate('shields.some(s=>s.got)'),false);
+        assert.equal(await page.evaluate('ability.cooldown===0&&pl.character'),hero);
+        assert.ok(await page.evaluate('unlockedCount()')>=Math.min(routes.length,index+2));
+        await page.getByRole('button',{name:index===routes.length-1?'Finish':'Next level',exact:true}).click();
+        results.push({character:hero,level:route.name,status:'PASS',score:route.score,total,checks:['actual offline renderer','normal New Game/Next flow without direct level setup','legal no-power/no-shield route','baseline movement','three lives','earned progression','native mandatory boss/victory flow']});
+      }
+      assert.equal(total,3510);assert.equal(await page.evaluate('state'),'win');assert.equal(await page.evaluate('score'),3510);
+      assert.equal(await page.evaluate('progress.completed.every(Boolean)'),true);
     }
     await choose('nova');
     return results;

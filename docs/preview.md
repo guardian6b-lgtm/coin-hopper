@@ -1,5 +1,12 @@
 # Playable browser preview
 
+For final Stage G / Issue #14, download **six-level-verification-browser-evidence**
+from the verification draft. It contains the complete standalone HTML, final
+screenshots/JSON and eight original WAV source loops. Windows artifacts include
+NSIS and portable builds, checksums and five complete six-level recorded campaigns
+per actual executable. See `docs/release-verification.md` for scoped results and
+human acceptance gaps. No deployment or public release is performed.
+
 For Stage F / Issue #16, download **progression-browser-evidence**. Play starts a
 new run at Sunny Meadow, keeping earned unlocks. Continue and Level Select start
 at a level beginning with **0 points and 3 lives**, through the five-character
