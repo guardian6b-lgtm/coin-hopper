@@ -329,9 +329,10 @@ function updateSentinel(enemy){
 }
 function updateEnemyProjectiles(){
   const kept=[],shots=enemyCombat.projectiles;
+  const onScreen=shot=>shot.x+shot.radius>=cam-T&&shot.x-shot.radius<=cam+W+T;
   for(let i=0;i<shots.length;i++){
     const shot=shots[i];
-    if(!targetAlive(shot.owner))continue;
+    if(!targetAlive(shot.owner)||!onScreen(shot))continue;
     const tx=shot.x+shot.vx*DT,ty=shot.y+shot.vy*DT;
     const wall=abilityTrace(shot.x,shot.y,tx,ty,shot.radius,false);
     const hit=segmentEntry(shot.x,shot.y,tx,ty,pl.x-shot.radius,pl.y-shot.radius,pl.x+pl.w+shot.radius,pl.y+pl.h+shot.radius);
@@ -343,7 +344,7 @@ function updateEnemyProjectiles(){
     }
     if(wall.kind==='wall'){enemyBurst(wall.x,wall.y,'#e2b7ff',4);continue;}
     shot.x=tx;shot.y=ty;shot.life=tickDown(shot.life);
-    if(shot.life>0&&shot.y>-T&&shot.y<ROWS*T+T)kept.push(shot);
+    if(shot.life>0&&shot.y>-T&&shot.y<ROWS*T+T&&onScreen(shot))kept.push(shot);
   }
   enemyCombat.projectiles=kept;return false;
 }

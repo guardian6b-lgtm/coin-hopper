@@ -220,6 +220,13 @@ test('shots expire and leaving world bounds removes them without damage or scori
   assert.equal(game.eval('enemyCombat.projectiles.length'), 0);assert.equal(game.eval('lives'), 3);assert.equal(game.eval('score'), 0);
 });
 
+test('offscreen hostile shots despawn with a one-tile margin, including after camera movement', () => {
+  const game=setup('sentinel');shot(game,',x:1100,y:200');shot(game,',x:500,y:200');game.step();
+  assert.deepEqual(game.snapshot('enemyCombat.projectiles.map(p=>p.x)'),[500]);
+  game.eval('cam=1500;updateEnemyProjectiles()');
+  assert.equal(game.eval('enemyCombat.projectiles.length'),0);assert.equal(game.eval('lives'),3);assert.equal(game.eval('score'),0);
+});
+
 test('defeating a Sentinel removes only its owned shots, without farming or friendly-fire points', () => {
   const game = setup('sentinel');shot(game, ',x:500');
   game.eval("enemies.push(createEnemy('sentinel',600,432));enemyCombat.projectiles.push({...enemyCombat.projectiles[0],owner:enemies[1]});damageEnemy(enemies[0],'fireball');enemies[0].hitTime=0;damageEnemy(enemies[0],'stomp')");

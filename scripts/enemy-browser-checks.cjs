@@ -73,7 +73,9 @@ module.exports = async function verifyEnemies(browser, url, output) {
     await page.evaluate("grid[12][6]='#';enemyCombat.projectiles=[{owner:enemies[0],x:300,y:452,vx:-12000,vy:0,radius:6,life:3}]");
     await step(1);assert.equal(await page.evaluate('enemyCombat.projectiles.length'),0);assert.equal(await page.evaluate('lives'),3);
     await page.screenshot({path:path.join(output,'sentinel-wall-impact.png')});
-    results.push('PASS real-browser continuous projectile collision stops before terrain/player');
+    await page.evaluate('enemyCombat.projectiles=[{owner:enemies[0],x:1100,y:200,vx:0,vy:0,radius:6,life:3}]');
+    await step(1);assert.equal(await page.evaluate('enemyCombat.projectiles.length'),0);
+    results.push('PASS real-browser continuous projectile collision stops before terrain/player and offscreen shots despawn');
 
     await page.evaluate(seed,{type:'sentinel'});await page.evaluate('pl.shield=true;enemyCombat.projectiles=[{owner:enemies[0],x:pl.x+13,y:pl.y+16,vx:0,vy:0,radius:6,life:3}]');
     await step(1);assert.equal(await page.evaluate('lives===3&&!pl.shield&&pl.inv===1&&enemyCombat.projectiles.length===0'),true);

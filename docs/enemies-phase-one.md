@@ -34,7 +34,8 @@ cleanup. Fallen enemies grant no score. Legacy coin/stomp/flag rewards stay inta
 Sentinel locks its aim at the **start** of the visible wind-up. The gold warning
 ring, dashed direction and exclamation mark remain visible while charging. The
 pink/lavender crystal travels at **130px/s**, radius **6px**, for at most **3s**;
-it does not home or track. Acquisition requires clear terrain line of sight for
+it does not home or track. Shots leaving the view plus a one-tile margin despawn,
+including when the camera moves away. Acquisition requires clear terrain line of sight for
 the shot radius. Continuous segment collision stops both slow and fast shots at
 solid terrain; walls win exact collision ties with the player. Offscreen charging
 is canceled rather than releasing an unseen attack. At most 32 hostile shots can

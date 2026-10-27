@@ -14,7 +14,7 @@ its dependency-checkpoint comment and PR #9's final evidence were read first.
 
 | Check | Result | Scope / evidence |
 | --- | --- | --- |
-| Full local Node suite | PASS | **195 tests**, no failures/skips on Node 24.19.0; all 135 baseline tests retained plus 60 enemy tests. Hosted CI repeats on Node 22 Linux and Windows. |
+| Full local Node suite | PASS | **196 tests**, no failures/skips on Node 24.19.0; all 135 baseline tests retained plus 61 enemy tests. Hosted CI repeats on Node 22 Linux and Windows. |
 | HP, damage and scoring | PASS | Two HP, no first-hit score, 0.3s guard, flash expiry, original bounce, one defeat award and 0.4s cleanup. Simultaneous projectile+stomp cannot double-hit; no duplicate chain or farming. Legacy one-hit types pass all regressions. |
 | Every hero / both enemy types | PASS | Ten fights starting on the floor using only legal movement/jump input against default patrol/attack AI, ten isolated two-stomp collision cases, plus attacking powers, snare/expiry and active-glide stomp checks. Real browser/Electron fixtures exercise each pair as well. |
 | Campaign maps and routes | PASS | All four complete level definitions match the verified parent. No new enemy placements/markers. Route fixtures, terrain collision and character renderer match parent; every hero completes all four legal-input no-power routes, final score 2190 / three lives / no shield pickup. |

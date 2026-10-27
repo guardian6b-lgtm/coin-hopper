@@ -61,7 +61,8 @@ restores them. See [the Stage 3 guide](docs/moonlit-gardens.md) for details.
 
 ## Stronger enemies — Phase 1 (implemented for isolated review)
 
-[Issue #6](https://github.com/guardian6b-lgtm/coin-hopper/issues/6) adds a shared
+[Issue #10](https://github.com/guardian6b-lgtm/coin-hopper/issues/10), following
+[Issue #6](https://github.com/guardian6b-lgtm/coin-hopper/issues/6), adds a shared
 health/damage system and two enemy types on `codex/enemy-balance`:
 
 - **Shellback:** 2 HP, slower armored patrol, with a visible cracked shell after
@@ -104,7 +105,8 @@ style with a responsive **Choose Your Hopper** screen. Selection and all five po
 are **implemented in this draft branch**, pending human acceptance and integration.
 All characters use the same base running/jumping physics, hitbox, and damage rules;
 powers add tactical options only when explicitly activated. They are not available
-in the published three-level game. No stronger enemies or boss are added here.
+in the published three-level game. Stronger enemy mechanics are isolated for review;
+their campaign placements and the boss remain future stages.
 
 | Character | Appearance | Implemented ability on this draft branch |
 | --- | --- | --- |
