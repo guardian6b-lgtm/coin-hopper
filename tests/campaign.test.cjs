@@ -48,9 +48,11 @@ for(const hero of heroes){
     for(const [index,route]of routes.entries()){
       assert.equal(game.eval('lvl'),index);replay(game,route);total+=route.score;
       assert.equal(game.eval('score'),total);assert.equal(game.eval('pl.character'),hero);
+      assert.equal(game.eval('unlockedCount()'),Math.min(routes.length,index+2));
       game.click(index===routes.length-1?'Finish':'Next level');
     }
     assert.equal(game.eval('state'),'win');assert.equal(game.eval('score'),total);
+    assert.deepEqual(game.snapshot('progress.completed'),Array(routes.length).fill(true));
     assert.match(game.element('menu-description').textContent,new RegExp(`All ${routes.length} levels complete`));
   });
 
