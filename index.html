@@ -1554,10 +1554,10 @@ function drawAbilityEffects(){
     cx.fillStyle='#b8f29d';cx.beginPath();cx.ellipse(x-20,y-10,7,3,-.6,0,7);cx.ellipse(x+19,y-22,7,3,.6,0,7);cx.fill();
   }
   for(const shot of ability.projectiles){
-    const x=shot.x-cam,y=shot.y,face=Math.sign(shot.vx);
+    const scale=Math.max(1,shot.radius/ABILITIES.ember.radius),face=Math.sign(shot.vx);cx.save();cx.translate(shot.x-cam,shot.y);cx.scale(scale,scale);const x=0,y=0;
     cx.fillStyle='#ffbd57';cx.beginPath();cx.moveTo(x-face*25,y-7);cx.quadraticCurveTo(x-face*12,y,x-face*25,y+7);cx.lineTo(x,y);cx.fill();
     cx.fillStyle='#f97543';cx.beginPath();cx.arc(x,y,10+Math.sin(ability.clock*24),0,7);cx.fill();
-    cx.fillStyle='#fff0a4';cx.beginPath();cx.arc(x+face*2,y-2,5,0,7);cx.fill();for(let n=0;n<3;n++){cx.fillStyle=n%2?'#ffe57e':'#e98340';cx.beginPath();cx.ellipse(x-face*(14+n*7),y+Math.sin(ability.clock*15+n)*5,3,2,0,0,7);cx.fill();}
+    cx.fillStyle='#fff0a4';cx.beginPath();cx.arc(x+face*2,y-2,5,0,7);cx.fill();for(let n=0;n<3;n++){cx.fillStyle=n%2?'#ffe57e':'#e98340';cx.beginPath();cx.ellipse(x-face*(14+n*7),y+Math.sin(ability.clock*15+n)*5,3,2,0,0,7);cx.fill();}cx.restore();
   }
   for(const fx of ability.effects){
     const t=fx.age/fx.total,x=fx.x-cam,y=fx.y;cx.globalAlpha=Math.min(1,fx.life/fx.total*2);

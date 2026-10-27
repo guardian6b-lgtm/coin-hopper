@@ -32,6 +32,10 @@ module.exports=async function followupPage(page,output,label='browser'){
   await page.screenshot({path:path.join(output,`${label}-guardian-open.png`)});
   assert.equal(await page.evaluate("(()=>{const b=enemies.find(e=>e.type==='guardian');return damageEnemy(b,'slam','#fff',3)&&!damageEnemy(b,'fireball','#fff',3)&&b.health===4&&b.attackTimer===2.8})()"),true);
   await page.screenshot({path:path.join(output,`${label}-guardian-hit.png`)});results.push('PASS Guardian: bright opening, one HP maximum at full charge, preserved2.8s recovery');
+  const fireBounds=await page.evaluate(()=>{
+   newGame();resetAbility();enemies=[];cam=0;ability.clock=0;const bounds=[];
+   for(const radius of [ABILITIES.ember.radius,ABILITIES.ember.radius*Math.sqrt(3)]){cx.clearRect(0,0,W,H);ability.projectiles=[{x:200,y:200,vx:360,radius}];drawAbilityEffects();const data=cx.getImageData(140,150,120,100).data;let left=120,right=0,top=100,bottom=0;for(let y=0;y<100;y++)for(let x=0;x<120;x++)if(data[(y*120+x)*4+3]>100){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}bounds.push({width:right-left+1,height:bottom-top+1});}return bounds;
+  });assert.ok(fireBounds[1].width>fireBounds[0].width*1.4&&fireBounds[1].height>fireBounds[0].height*1.4,JSON.stringify(fireBounds));results.push('PASS Ember full-charge projectile is visibly larger in real Canvas pixels, matching its increased radius');
   await page.evaluate("showMenu('title','title')");return results;
  }finally{await page.evaluate(initial=>{selectedCharacter=initial;newGame();},initial);await page.evaluate('requestAnimationFrame=window.__followupRAF;delete window.__followupRAF;last=performance.now();accum=0;requestAnimationFrame(frame)');fs.writeFileSync(path.join(output,`${label}-owner-followup.json`),JSON.stringify({results,humanAcceptance:'NOT TESTED'},null,2));}
 };
