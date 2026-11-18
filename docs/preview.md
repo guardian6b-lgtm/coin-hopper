@@ -2,6 +2,23 @@
 
 # Playable browser preview
 
+## Guarded local preview
+
+From the checkout root with Node.js 22 or later, run:
+
+```sh
+node scripts/preview.cjs
+```
+
+Open the exact URL printed by the command, usually `http://127.0.0.1:4173/`.
+Use `--port 0` to choose an available port or `--port 4180` to choose a specific
+one. Press Ctrl+C to stop the server.
+
+The command reads the existing root `index.html` once at startup and serves
+those bytes on IPv4 loopback. It accepts GET and HEAD at `/` and `/index.html`
+and checks the Host header against the bound address and port. Restart the
+preview after editing the HTML. The command supports access from this computer only.
+
 For final Stage G / Issue #14, download **six-level-verification-browser-evidence**
 from the verification draft. It contains the complete standalone HTML, final
 screenshots/JSON and eight original WAV source loops. Windows artifacts include
