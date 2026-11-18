@@ -37,7 +37,7 @@ test('the Hopper rig is dispatched for Hopper gameplay and picker portraits only
       drawPortrait(document.createElement('canvas'), '${character}', true);
     `);
     assert.equal(takeDraws().length, 0, character);
-    assert.equal(game.eval('window.atlasDraws'), 2, character);
+    assert.equal(game.eval('window.atlasDraws'), 0, character);
   }
 
   game.eval("drawPortrait(document.createElement('canvas'), 'hopper', true)");
