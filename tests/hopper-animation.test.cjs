@@ -8,9 +8,10 @@ function observeHopper(game) {
   game.eval(`
     window.hopperDraws = [];
     const paintHopper = drawHopper;
-    drawHopper = (ctx, x, y, height, face, pose, clock) => {
+    drawHopper = (...args) => {
+      const [, x, y, height, face, pose, clock] = args;
       window.hopperDraws.push({ x, y, height, face, pose, clock });
-      return paintHopper(ctx, x, y, height, face, pose, clock);
+      return paintHopper(...args);
     };
   `);
   return () => game.snapshot('window.hopperDraws.splice(0)');
