@@ -1,0 +1,129 @@
+'use strict';
+
+const fs = require('node:fs');
+const http = require('node:http');
+const path = require('node:path');
+const { createHash } = require('node:crypto');
+const { startPreview } = require('./preview.cjs');
+
+const host = '127.0.0.1';
+const defaultPort = 4174;
+const root = path.resolve(__dirname, '..');
+const assetDirectory = path.join(root, 'dev', 'ember-v31');
+const baselineHash = '80ab671de40be1bec752b7e2c080fb1695e46529a5a759e31ffdcd69d6bc3984';
+const manifestHash = '530bfb22e8cc36da6bd54ceeb6efc78693bdf864abcaba3681afd9b70b96a6b7';
+const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+const usage = 'Usage: node scripts/ember-preview.cjs [--enable-ember-v31] [--port 4174]';
+
+function hash(bytes) {
+  return createHash('sha256').update(bytes).digest('hex');
+}
+
+function loadPack(assetRoot) {
+  const bytes = fs.readFileSync(path.join(assetRoot, 'manifest.json'));
+  if (hash(bytes) !== manifestHash) throw new Error('Ember v3.1 manifest failed checksum validation.');
+  const pack = JSON.parse(bytes);
+  for (const [name, clip] of Object.entries(pack.clips)) {
+    const image = fs.readFileSync(path.join(assetRoot, clip.file));
+    if (hash(image) !== clip.sha256 || !image.subarray(0, 8).equals(pngSignature) ||
+        image.readUInt32BE(16) !== clip.width * clip.count || image.readUInt32BE(20) !== clip.height) {
+      throw new Error('Ember v3.1 ' + name + ' strip failed validation.');
+    }
+    clip.data = 'data:image/png;base64,' + image.toString('base64');
+  }
+  return pack;
+}
+
+function composeEmberPage({ enabled = false, assetRoot = assetDirectory, onFallback = () => {} } = {}) {
+  const baseline = fs.readFileSync(path.join(root, 'index.html'));
+  if (enabled !== true) return baseline;
+  if (hash(baseline) !== baselineHash) throw new Error('This experiment requires the exact R6-C HTML.');
+  try {
+    const pack = loadPack(assetRoot);
+    const runtime = fs.readFileSync(path.join(assetDirectory, 'runtime.js'), 'utf8');
+    if (/<\/script/i.test(runtime)) throw new Error('Unexpected inline script terminator.');
+    const source = baseline.toString('utf8');
+    const offset = source.lastIndexOf('</script>');
+    if (offset < 0) throw new Error('R6-C script terminator unavailable.');
+    return Buffer.from(source.slice(0, offset) + '\n' + runtime + '\ninstallEmberV31(' +
+      JSON.stringify(pack) + ');\n' + source.slice(offset));
+  } catch (error) {
+    onFallback(error);
+    return baseline;
+  }
+}
+
+async function startEmberPreview(port = defaultPort, options = {}) {
+  if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid preview port.');
+  if (options.enabled !== true) return startPreview(port);
+  const page = composeEmberPage(options);
+  const server = http.createServer({ requestTimeout: 15000, headersTimeout: 10000, keepAliveTimeout: 1000 },
+    (request, response) => {
+      const boundPort = request.socket.localPort;
+      const hosts = request.headersDistinct.host;
+      const allowedHost = hosts?.length === 1 &&
+        (hosts[0] === host + ':' + boundPort || (boundPort === 80 && hosts[0] === host));
+      response.setHeader('Cache-Control', 'no-store');
+      response.setHeader('X-Content-Type-Options', 'nosniff');
+      response.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+      if (!allowedHost) {
+        response.writeHead(403).end();
+        return;
+      }
+      if (request.method !== 'GET' && request.method !== 'HEAD') {
+        response.writeHead(405, { Allow: 'GET, HEAD' }).end();
+        return;
+      }
+      if (request.url !== '/' && request.url !== '/index.html') {
+        response.writeHead(404).end();
+        return;
+      }
+      response.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Length': page.length
+      }).end(request.method === 'HEAD' ? undefined : page);
+    });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(port, host, () => {
+      server.removeListener('error', reject);
+      resolve();
+    });
+  });
+  return server;
+}
+
+async function main(args) {
+  if (args.length === 1 && args[0] === '--help') {
+    console.log(usage);
+    return;
+  }
+  let enabled = false;
+  let port;
+  for (let index = 0; index < args.length; index++) {
+    if (args[index] === '--enable-ember-v31' && !enabled) enabled = true;
+    else if (args[index] === '--port' && port === undefined && /^\d+$/.test(args[index + 1] ?? '')) {
+      port = Number(args[++index]);
+    } else throw new Error(usage);
+  }
+  let fallback = false;
+  const server = await startEmberPreview(port, {
+    enabled,
+    onFallback(error) {
+      fallback = true;
+      console.warn('Ember v3.1 is OFF. ' + error.message);
+    }
+  });
+  console.log('Ember v3.1 ' + (enabled && !fallback ? 'ON' : 'OFF') + ' at http://' +
+    host + ':' + server.address().port + '/');
+  for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => server.close());
+}
+
+module.exports = { composeEmberPage, startEmberPreview };
+
+if (require.main === module) {
+  main(process.argv.slice(2)).catch(error => {
+    console.error('Ember preview: ' + error.message);
+    process.exitCode = 1;
+  });
+}

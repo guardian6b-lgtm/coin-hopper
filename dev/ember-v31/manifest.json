@@ -1,0 +1,61 @@
+{
+  "archiveSha256": "778e9778f9d1d3e9cc9f98b230cbc6a1b602a83c249a33d91c89c5cb2915a1c1",
+  "runEntry": 11,
+  "stridePixels": 69.33333333333333,
+  "clips": {
+    "idle": {
+      "file": "ember_idle_strip_1x.png",
+      "sha256": "f067f48aa07bb84b019d2ab19bd68fcd606aa904c1aa2ad7ab3648b3e7da86fa",
+      "width": 43,
+      "height": 61,
+      "count": 4,
+      "pivot": [
+        14.94,
+        58.84
+      ],
+      "fps": 8,
+      "holds": {}
+    },
+    "runstart": {
+      "file": "ember_runstart_strip_1x.png",
+      "sha256": "2b5cccab4afe99c90c1120cf7244ed4dcdf8d71f86856a0f0db9b7e14486d204",
+      "width": 48,
+      "height": 61,
+      "count": 4,
+      "pivot": [
+        13.94,
+        57.84
+      ],
+      "fps": 60,
+      "holds": {}
+    },
+    "run": {
+      "file": "ember_run_strip_1x.png",
+      "sha256": "3e7fbb7a775e145c8b90244ab14cc9bfda9f637f674ef7d14d6bce415592cff6",
+      "width": 48,
+      "height": 67,
+      "count": 16,
+      "pivot": [
+        12.94,
+        63.84
+      ],
+      "fps": 60,
+      "holds": {}
+    },
+    "jump": {
+      "file": "ember_jump_strip_1x.png",
+      "sha256": "b944653c47f1f048a51b0cbcfd40dfccc3c0adf4a1beefc8fe789be519f46fd7",
+      "width": 52,
+      "height": 66,
+      "count": 7,
+      "pivot": [
+        17.94,
+        62.84
+      ],
+      "fps": 10,
+      "holds": {
+        "5": 2
+      }
+    }
+  }
+}
