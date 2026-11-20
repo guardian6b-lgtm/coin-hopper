@@ -8,14 +8,22 @@ function installEmberV31(pack) {
   const baseMenu = syncMenu;
   const baseChoose = chooseCharacter;
   const { clips, runEntry, stridePixels } = pack;
+  // A shared envelope keeps changing cells and facing from shifting the body
+  // at the left world edge. Include the full transparent source cell.
+  const leftReach = Math.max(...Object.values(clips).map(clip =>
+    Math.max(clip.pivot[0], clip.width - clip.pivot[0])));
   const images = {};
   const frameDistance = stridePixels / clips.run.count;
+  // Closest run-start silhouette to each run cel at its foot pivot (native
+  // premultiplied RGBA difference). Retrace from there to the standing pose.
+  const stopEntryByRunFrame = [1, 2, 2, 3, 3, 3, 3, 3, 3, 2, 2, 3, 3, 3, 3, 3];
   const epsilon = 1e-7;
   const jumpFrameTicks = Math.round(1 / (clips.jump.fps * DT));
   const landingTicks = jumpFrameTicks * (clips.jump.holds[5] ?? 1);
   let ready = false;
   let failed = false;
   let remaining = Object.keys(clips).length;
+  emberV31GroundShadowReady = () => ready && !failed;
   let track = null;
   let painted = { source: 'procedural', clip: null, index: null, face: null };
 
@@ -87,7 +95,7 @@ function installEmberV31(pack) {
   function freshTrack(player, fromSpawn) {
     return {
       player, clip: 'idle', index: 0, face: player.face,
-      direction: 0, phase: 0, ticks: 0, distance: 0,
+      direction: 0, phase: 0, ticks: 0, distance: 0, stopping: false,
       spawnProtection: fromSpawn, settling: fromSpawn && !player.ground
     };
   }
@@ -109,7 +117,7 @@ function installEmberV31(pack) {
   function idle(face) {
     const ticks = track.clip === 'idle' ? track.ticks + 1 : 0;
     const index = Math.floor(ticks * DT * clips.idle.fps + epsilon) % clips.idle.count;
-    Object.assign(track, { clip: 'idle', index, face, ticks, direction: 0, phase: 0 });
+    Object.assign(track, { clip: 'idle', index, face, ticks, direction: 0, phase: 0, stopping: false });
   }
 
   function airborne(player) {
@@ -119,7 +127,19 @@ function installEmberV31(pack) {
     let index;
     if (player.vy < -75) index = ticks < jumpFrameTicks ? 1 : 2;
     else index = player.vy > 75 ? 4 : 3;
-    Object.assign(track, { clip: 'jump', index, face: player.face, ticks, direction: 0, phase: 0 });
+    Object.assign(track, { clip: 'jump', index, face: player.face, ticks, direction: 0, phase: 0, stopping: false });
+  }
+
+  function settleRun() {
+    if (track.clip !== 'run' && track.clip !== 'runstart') return false;
+    if (!track.stopping) {
+      const index = track.clip === 'run' ? stopEntryByRunFrame[track.index] : track.index;
+      Object.assign(track, { clip: 'runstart', index, ticks: 0, direction: 0, phase: 0, stopping: true });
+    } else if (++track.ticks % 2 === 0) {
+      if (track.index === 0) return false;
+      track.index--;
+    }
+    return true;
   }
 
   function grounded(player, before) {
@@ -136,12 +156,13 @@ function installEmberV31(pack) {
           return;
         }
       }
-      idle(player.face);
+      if (!settleRun()) idle(player.face);
       return;
     }
 
     const direction = Math.sign(delta);
     const traveled = Math.abs(delta);
+    track.stopping = false;
     track.distance += traveled;
     if (track.direction !== direction) {
       // A true start uses the four authored acceleration frames. A reversal
@@ -153,7 +174,10 @@ function installEmberV31(pack) {
       });
     } else if (track.clip === 'runstart') {
       const accelerating = direction * player.vx >= direction * before.vx - epsilon;
-      if (accelerating && track.index + 1 < clips.runstart.count) track.index++;
+      // A short tap can brake during run-start. Keep its existing lean until
+      // travel stops or acceleration resumes, without jumping to a sprint pose.
+      if (!accelerating) return;
+      if (track.index + 1 < clips.runstart.count) track.index++;
       else Object.assign(track, { clip: 'run', index: runEntry, phase: 0 });
     } else {
       track.phase = (track.phase + traveled) % stridePixels;
@@ -193,21 +217,35 @@ function installEmberV31(pack) {
     else airborne(pl);
   };
 
-  drawCharacter = function drawWithEmberPreview(ctx, id, x, y, w, h, face, pose, ...rest) {
-    if (ctx !== cx || !rest[4]) return baseDraw(ctx, id, x, y, w, h, face, pose, ...rest);
+  function usesSprite(id, pose) {
     const locomotion = pose === 'idle' || pose === 'run' || pose === 'jump' || pose === 'fall' || pose === 'land' ||
       (pose === 'hurt' && track?.spawnProtection);
-    // Preserve the existing Fireball gesture and its registered hand cues for
-    // charge, release and recovery. All other unsupported poses also fall back.
-    if (!ready || failed || id !== 'ember' || track?.player !== pl ||
-        !locomotion || ability.charging || ability.cast > 0 || abilityEdge) {
+    return ready && !failed && id === 'ember' && track?.player === pl &&
+      locomotion && !ability.charging && ability.cast <= 0 && !abilityEdge;
+  }
+
+  function leftBoundaryInset(player) {
+    const overhang = leftReach - player.w / 2;
+    if (overhang <= 0 || player.x >= 2 * overhang) return 0;
+    // Full clearance at the wall, easing back to the real foot anchor as the
+    // player moves away. Use world position so camera scrolling cannot trigger it.
+    const proximity = 1 - Math.max(0, player.x) / (2 * overhang);
+    return overhang * proximity * proximity;
+  }
+
+  emberV31ShadowOffset = (player, anchors) =>
+    usesSprite(player.character, anchors.visual.pose) ? leftBoundaryInset(player) : 0;
+
+  drawCharacter = function drawWithEmberPreview(ctx, id, x, y, w, h, face, pose, ...rest) {
+    if (ctx !== cx || !rest[4]) return baseDraw(ctx, id, x, y, w, h, face, pose, ...rest);
+    if (!usesSprite(id, pose)) {
       painted = { source: 'procedural', clip: null, index: null, face: null };
       return baseDraw(ctx, id, x, y, w, h, face, pose, ...rest);
     }
     const { clip, index, face: spriteFace } = track;
     const { width, height, pivot } = clips[clip];
     ctx.save();
-    ctx.translate(x, y);
+    ctx.translate(x + leftBoundaryInset(pl), y);
     ctx.scale(spriteFace, 1);
     // One source pixel is one world pixel. The native art has a similar rest
     // silhouette to the procedural rig despite its different normalization.

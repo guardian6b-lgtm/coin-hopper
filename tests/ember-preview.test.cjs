@@ -183,6 +183,37 @@ function startControl(game) {
   return game.element('menu-actions').firstElementChild;
 }
 
+test('the opt-in sprite fits at the left world edge and returns smoothly to its foot anchor', async () => {
+  const game = await createPreviewGame({ enabled: true });
+  controls(game, down('ArrowLeft'));
+  game.step(60);
+  assert.equal(game.eval('pl.x'), 0);
+  game.eval(`
+    globalThis.edgeAnchor = [];
+    cx.translate = (x, y) => { edgeAnchor = [x, y]; };
+  `);
+  function measure(x, camera) {
+    game.eval(`pl.x = ${x}; cam = ${camera}; drawPlayer()`);
+    const [anchorX, anchorY] = game.snapshot('edgeAnchor');
+    assert.equal(anchorY, game.eval('pl.y + pl.h'));
+    assert.equal(visual(game).source, 'sprite');
+    assert.equal(game.eval('pl.x'), x);
+    assert.equal(game.eval('cam'), camera);
+    return anchorX + camera;
+  }
+  const wall = measure(0, 0);
+  assert.ok(wall >= 48 - 12.94, 'full mirrored run cell clears x=0, even at its widest');
+  let prior = wall;
+  for (let x = 1; x <= 50; x++) {
+    const next = measure(x, 0);
+    assert.ok(next > prior && next - prior <= 1.000001, 'drawing moves monotonically as the collider leaves the wall');
+    prior = next;
+  }
+  assert.equal(prior, 63);
+  assert.equal(measure(400, 395), 413, 'a viewport edge in mid-level does not activate wall clearance');
+  assert.deepEqual(game.snapshot('[pl.w,pl.h]'), [26, 32]);
+});
+
 function watchAtlasDraws(game) {
   game.eval(`
     globalThis.firstDrawCalls = [];
@@ -569,13 +600,76 @@ test('decelerating gait advances by resolved world distance and settles into idl
       workedAtSubCap = true;
     } else {
       assert.equal(vx, 0);
-      assert.equal(clip, 'idle');
+      assert.equal(clip, 'runstart', 'the game is stationary while the sprite settles');
     }
     lastX = x;
     lastIndex = index;
   });
   assert.equal(workedAtSubCap, true);
   assert.ok(repeatedFrames > 0, 'slow steps do not unconditionally advance the atlas by one frame');
+  replay([game], [[8, 'finish cosmetic stop']]);
+  assert.equal(visual(game).clip, 'idle');
+});
+
+test('stationary Ember retraces existing approach poses, with immediate interruption by movement or takeoff', async () => {
+  const game = await createPreviewGame({ enabled: true });
+  function sprintThenStop(direction) {
+    const key = direction === 1 ? 'ArrowRight' : 'ArrowLeft';
+    replay([game], [[15, 'build speed', down(key)]]);
+    controls(game, up(key));
+    for (let i = 0; i < 10 && game.eval('pl.vx') !== 0; i++) replay([game], [[1, 'brake']]);
+    assert.equal(game.eval('pl.vx'), 0);
+    const start = visual(game);
+    assert.equal(start.clip, 'runstart');
+    assert.equal(start.face, direction);
+    return start.index;
+  }
+  for (const direction of [1, -1]) {
+    const index = sprintThenStop(direction);
+    const stopX = game.eval('pl.x');
+    for (let tick = 1; tick <= 2 * (index + 1); tick++) {
+      replay([game], [[1, 'stationary recover']]);
+      const sample = visual(game);
+      assert.equal(game.eval('pl.x'), stopX);
+      const expected = index - Math.floor(tick / 2);
+      assert.equal(sample.clip, expected < 0 ? 'idle' : 'runstart');
+      if (expected >= 0) assert.equal(sample.index, expected);
+    }
+  }
+  sprintThenStop(1);
+  replay([game], [[1, 'new movement immediately interrupts stop', down('ArrowLeft')]]);
+  assert.ok(game.eval('pl.vx') < 0);
+  assert.equal(visual(game).face, -1);
+  assert.equal(visual(game).index, 0);
+  replay([game], [[2, 'short tap stopping', up('ArrowLeft')]]);
+  assert.equal(game.eval('pl.vx'), 0);
+  assert.equal(visual(game).clip, 'runstart');
+  replay([game], [[1, 'jump immediately interrupts stop', down('Space')]]);
+  assert.ok(game.eval('pl.vy') < 0);
+  assert.equal(visual(game).clip, 'jump');
+});
+
+test('run-start keeps the native contact within a pixel into run frame 11 in both directions', async () => {
+  // Centroids of the lowest occupied row (alpha > 128) in each native cell.
+  const contactX = [29, 28, 25.5, 22.5, 18.5];
+  for (const direction of [1, -1]) {
+    const game = await createPreviewGame({ enabled: true });
+    game.eval(`
+      globalThis.testSpriteOffset = null;
+      cx.drawImage = (image, ...args) => { if (image instanceof Image) testSpriteOffset = args[4]; };
+    `);
+    const positions = [];
+    replay([game], [[5, 'start through first run cel', down(direction === 1 ? 'ArrowRight' : 'ArrowLeft')]], (g, label, tick) => {
+      const { clip, index, face } = visual(g);
+      assert.equal(clip, tick === 4 ? 'run' : 'runstart');
+      assert.equal(index, tick === 4 ? 11 : tick);
+      assert.equal(face, direction);
+      const anchor = g.eval('pl.x + pl.w / 2');
+      positions.push(anchor + face * (g.eval('testSpriteOffset') + contactX[tick]));
+    });
+    assert.ok(Math.max(...positions) - Math.min(...positions) < 0.62,
+      'the authored native contact spans about 0.61 px before rasterization');
+  }
 });
 
 test('sprite paint uses the authored 1x cell and pivot and reflects about the existing foot anchor', async () => {

@@ -40,9 +40,17 @@ function composeEmberPage({ enabled = false, assetRoot = assetDirectory, onFallb
   if (hash(baseline) !== baselineHash) throw new Error('This experiment requires the exact R6-C HTML.');
   try {
     const pack = loadPack(assetRoot);
-    const runtime = fs.readFileSync(path.join(assetDirectory, 'runtime.js'), 'utf8');
+    const runtime = ['shadow.js', 'runtime.js']
+      .map(name => fs.readFileSync(path.join(assetDirectory, name), 'utf8')).join('\n');
     if (/<\/script/i.test(runtime)) throw new Error('Unexpected inline script terminator.');
-    const source = baseline.toString('utf8');
+    const original = baseline.toString('utf8');
+    // Change only the stock player-shadow statement in the checksum-pinned
+    // in-memory preview. Character artwork and the Fireball path follow it.
+    const shadowLine = /^  cx\.save\(\);cx\.globalAlpha=\.16;cx\.fillStyle='#283655';[^\r\n]+cx\.restore\(\);$/gm;
+    if (Array.from(original.matchAll(shadowLine)).length !== 1) throw new Error('R6-C player shadow unavailable.');
+    const source = original.replace(shadowLine, line =>
+      "  if (p.character === 'ember' && emberV31GroundShadowReady()) drawEmberGroundShadow(p, anchors);\n" +
+      '  else {\n' + line + '\n  }');
     const offset = source.lastIndexOf('</script>');
     if (offset < 0) throw new Error('R6-C script terminator unavailable.');
     return Buffer.from(source.slice(0, offset) + '\n' + runtime + '\ninstallEmberV31(' +

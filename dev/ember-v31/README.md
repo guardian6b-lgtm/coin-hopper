@@ -8,7 +8,7 @@ node scripts/ember-preview.cjs --enable-ember-v31 --port 4174
 
 Open the printed IPv4 loopback URL, choose **Play**, select **Ember**, and start the game. The switch is a local launcher flag. With no flag, the launcher serves the ordinary R6-C page. The preview snapshots the page and assets on startup, so restart it after changing preview files. Use a separate browser profile when comparing runs.
 
-The experimental renderer displays exact 1× pixels from four verified transparent FORGE strips. The recorded per-clip foot pivot maps to the current collision box's bottom center. Mirroring uses that same pivot. The nominal 56 px artwork is close to Ember's existing 55–56 px neutral painted extent. The R6-C rig's 48 px value is a normalization, so the asset stays at 1:1 scale.
+The experimental renderer uses four verified transparent FORGE strips at 1:1 scale. It mirrors each pose around its recorded foot pivot. Near the left world boundary the renderer eases the entire sprite inward, up to 22.06 px, so the widest mirrored pose fits. This also applies when Ember turns at the wall. The neutral painted height is about 56 px.
 
 The four run-start frames use fixed simulation ticks during a normal accelerating start. The run loop enters at frame 11 and advances with resolved grounded travel. During reversal the sprite follows actual travel until the new direction takes over. With no resolved horizontal travel the gait stops. The jump frame selection follows vertical motion and uses the recorded 10 fps interval for the early rise and landing timing. Jump anticipation is skipped so the rise can render on the accepted takeoff tick. Movement, a new jump, and ability poses can interrupt landing or settle.
 
@@ -18,4 +18,8 @@ The opted-in picker temporarily holds Ember's **Start game** button while the fo
 
 Fireball uses the R6-C charge, release, and recovery art. Phase 2 needs verified effect-free casting body frames and hand anchors, with release aligned to the existing projectile spawn. The FORGE originals remain in the verified backup. Cast, 4× artwork, and master files are outside this preview.
 
-Known art concerns to review in motion include the reported run-start drift, the `run_03` to `run_04` pop, and the direct cut to idle. A switch between the sprite and R6-C Fireball art may also be visible. This preview is for controlled gameplay testing.
+Once grounded horizontal movement stops, Ember settles by retracing the existing run-start poses toward idle. The previous running frame determines the starting pose. Movement and jumping can interrupt this visual recovery immediately.
+
+Run-start keeps the authored pivot. In the native-size Edge comparison a trial subpixel adjustment introduced a one-pixel wobble in the planted foot during acceleration. Foot shape also changes with the authored squash, so a mathematical contact centroid alone is insufficient to judge drift.
+
+The runtime shadow projects onto the nearest exposed solid surface beneath each part of its footprint. It fades and narrows with clearance and clips at platforms, pit lips and world edges. The jump strip itself also contains a small painted gray oval that stays with the feet. Removing it calls for an approved shadow-free export on the same canvases and pivots. The authored bounce from `run_03` to `run_04` also remains visible. The preview retains all sixteen run frames and the existing Fireball art switch.
