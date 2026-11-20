@@ -14,6 +14,8 @@ The four run-start frames use fixed simulation ticks during a normal acceleratin
 
 The ordinary `index.html` and `scripts/preview.cjs` are the verified R6-C files. Only the explicit experiment injects a render observer into its in-memory page. A missing or invalid pack falls back to the ordinary page. A browser image failure leaves all of Ember's sprite frames disabled.
 
+The opted-in picker temporarily holds Ember's **Start game** button while the four strips decode. Other heroes can start normally, and a failed decode re-enables Start with the R6-C renderer. The preview seeds Ember's idle at spawn, including a restart or respawn, and keeps it through the first passive drop to the floor. Spawn protection and its original flashing still apply. A genuine same-player shield or Core hit continues to use R6-C's hurt art. The gate acts before play begins, and gameplay input still runs through R6-C.
+
 Fireball uses the R6-C charge, release, and recovery art. Phase 2 needs verified effect-free casting body frames and hand anchors, with release aligned to the existing projectile spawn. The FORGE originals remain in the verified backup. Cast, 4× artwork, and master files are outside this preview.
 
 Known art concerns to review in motion include the reported run-start drift, the `run_03` to `run_04` pop, and the direct cut to idle. A switch between the sprite and R6-C Fireball art may also be visible. This preview is for controlled gameplay testing.

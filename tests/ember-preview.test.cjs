@@ -107,7 +107,15 @@ function castReplay() {
 function imagePrelude(failure) {
   return `
     globalThis.previewImageLoads = [];
+    globalThis.previewImageCallbacks = [];
+    globalThis.previewDecodeCallbacks = [];
+    const previewDecodeOutcome = ${JSON.stringify(failure)};
     globalThis.Image = class PreviewImage {
+      constructor() {
+        if (previewDecodeOutcome === 'deferred-decode') {
+          this.decode = () => new Promise((resolve, reject) => previewDecodeCallbacks.push({ resolve, reject }));
+        }
+      }
       set src(uri) {
         const base64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
         const encoded = uri.slice('data:image/png;base64,'.length);
@@ -123,12 +131,16 @@ function imagePrelude(failure) {
         this.naturalHeight = read32(20);
         const first = globalThis.previewImageLoads.length === 0;
         globalThis.previewImageLoads.push([this.naturalWidth, this.naturalHeight]);
-        if (first && ${JSON.stringify(failure)} === 'size') this.naturalWidth++;
-        this.complete = true;
-        Promise.resolve().then(() => {
-          if (first && ${JSON.stringify(failure)} === 'decode') this.onerror?.();
+        if (first && previewDecodeOutcome === 'size') this.naturalWidth++;
+        const complete = () => {
+          this.complete = true;
+          if (first && (previewDecodeOutcome === 'decode' || previewDecodeOutcome === 'delayed-error')) this.onerror?.();
           else this.onload?.();
-        });
+        };
+        if (previewDecodeOutcome === 'delayed' || previewDecodeOutcome === 'delayed-error') {
+          globalThis.previewImageCallbacks.push(complete);
+        }
+        else Promise.resolve().then(complete);
       }
     };
   `;
@@ -138,11 +150,15 @@ function originalPage() {
   return fs.readFileSync(indexPath);
 }
 
-async function createPreviewGame({ enabled = false, failure = null, id = 'ember' } = {}) {
+function previewFixture({ enabled = false, failure = null, id = 'ember', assetRoot } = {}) {
   const { composeEmberPage } = require('../scripts/ember-preview.cjs');
-  const page = composeEmberPage({ enabled }).toString('utf8');
+  const page = composeEmberPage({ enabled, assetRoot }).toString('utf8');
   const html = page.replace('<script>', '<script>' + imagePrelude(failure));
-  const game = createGame({ html, saved: { [characterKey]: id } });
+  return createGame({ html, saved: { [characterKey]: id } });
+}
+
+async function createPreviewGame(options) {
+  const game = previewFixture(options);
   // Let image event promises and consequent aggregate load promises settle.
   await new Promise(resolve => setImmediate(resolve));
   prepare(game);
@@ -153,6 +169,42 @@ async function createPreviewGame({ enabled = false, failure = null, id = 'ember'
 
 function visual(game) {
   return game.snapshot('globalThis.emberV31.snapshot()');
+}
+
+function enterRun(game, character = 'ember') {
+  game.click('Play');
+  game.click('character-' + character);
+  game.click('Start game');
+  assert.equal(game.eval('state'), 'play');
+  assert.equal(game.eval('pl.character'), character);
+}
+
+function startControl(game) {
+  return game.element('menu-actions').firstElementChild;
+}
+
+function watchAtlasDraws(game) {
+  game.eval(`
+    globalThis.firstDrawCalls = [];
+    const paintImage = cx.drawImage;
+    cx.drawImage = (image, ...args) => {
+      if (image instanceof Image) globalThis.firstDrawCalls.push(args);
+      return paintImage.call(cx, image, ...args);
+    };
+  `);
+}
+
+function assertEmberSpawnDraw(game, reason) {
+  const before = frameSnapshot(game);
+  assert.equal(before.simulation.pl.inv, 1, reason);
+  game.eval('firstDrawCalls.length = 0; draw()');
+  const sample = visual(game);
+  assert.equal(sample.ready, true, reason);
+  assert.equal(sample.source, 'sprite', reason);
+  assert.equal(sample.clip, 'idle', reason);
+  assert.equal(sample.index, 0, reason);
+  assert.equal(game.eval('firstDrawCalls.length'), 1, reason);
+  assert.deepEqual(frameSnapshot(game), before, 'painting a fresh spawn cannot advance physics or saves');
 }
 
 test('default and explicit OFF serve the original bytes, and missing opted-in assets fall back', () => {
@@ -209,6 +261,169 @@ test('an image error or wrong decoded dimensions restores the procedural rendere
     const { ready, failed, source } = visual(game);
     assert.deepEqual({ ready, failed, source }, { ready: false, failed: true, source: 'procedural' }, failure);
     assert.equal(game.eval('pl.character'), 'ember');
+  }
+});
+
+test('the first Ember gameplay paint uses the atlas before the first simulation update', async () => {
+  const game = previewFixture({ enabled: true, id: 'hopper' });
+  await new Promise(resolve => setImmediate(resolve));
+  watchAtlasDraws(game);
+  enterRun(game);
+  assert.equal(game.eval('time'), 0);
+  assert.equal(game.eval('pl.ground'), false, 'the original spawn still needs its first ground update');
+  assertEmberSpawnDraw(game, 'initial start');
+  replay([game], [[4, 'initial four-pixel floor settle']], game => {
+    assert.equal(visual(game).source, 'sprite');
+    assert.equal(visual(game).clip, 'idle', 'settling onto the spawn floor is not a player landing');
+  });
+  assert.equal(game.eval('pl.ground && pl.landTime > 0 && pl.inv > 0'), true);
+  replay([game], [[1, 'first move under spawn immunity', down('ArrowRight')]]);
+  assert.equal(game.eval('pl.inv > 0'), true);
+  assert.equal(visual(game).clip, 'runstart');
+});
+
+test('while decoding, only Ember waits in the chooser and all four strips unlock its first sprite paint', () => {
+  const game = previewFixture({ enabled: true, failure: 'delayed' });
+  watchAtlasDraws(game);
+  game.click('Play');
+  const before = [...game.storage.entries()];
+  assert.equal(visual(game).ready, false);
+  assert.equal(startControl(game).disabled, true);
+  assert.match(startControl(game).textContent, /Loading Ember artwork/);
+  startControl(game).click();
+  game.eval("activateMenuAction('start-character')");
+  assert.equal(game.eval('state'), 'characters');
+  assert.equal(game.eval('typeof pl'), 'undefined');
+  assert.deepEqual([...game.storage.entries()], before);
+
+  game.click('character-nova');
+  assert.equal(startControl(game).disabled, false, 'other heroes can still start');
+  game.click('character-ember');
+  assert.equal(startControl(game).disabled, true);
+
+  game.eval('previewImageCallbacks.splice(0, 3).forEach(complete => complete())');
+  assert.equal(visual(game).ready, false);
+  assert.equal(startControl(game).disabled, true, 'partial readiness cannot expose a mixed renderer');
+  game.eval('previewImageCallbacks.shift()()');
+  assert.equal(visual(game).ready, true);
+  assert.equal(startControl(game).disabled, false);
+  game.click('Start game');
+  assert.equal(game.eval('state'), 'play');
+  assertEmberSpawnDraw(game, 'first start after delayed decoding');
+});
+
+test('a late decode error releases the cold chooser gate without starting or changing a saved game', () => {
+  const game = previewFixture({ enabled: true, failure: 'delayed-error' });
+  watchAtlasDraws(game);
+  game.click('Play');
+  const before = [...game.storage.entries()];
+  assert.equal(startControl(game).disabled, true);
+  game.eval('previewImageCallbacks.shift()()');
+  assert.equal(visual(game).failed, true);
+  assert.equal(startControl(game).disabled, false);
+  assert.equal(game.eval('state'), 'characters', 'fallback still needs the original start action');
+  assert.deepEqual([...game.storage.entries()], before);
+  game.click('Start game');
+  assert.equal(game.eval('state'), 'play');
+  assert.equal(game.eval('pl.character'), 'ember');
+  game.eval('draw()');
+  assert.equal(visual(game).source, 'procedural');
+  assert.equal(game.eval('firstDrawCalls.length'), 0);
+});
+
+test('browser decode promises settle before Ember is startable and a rejected decode allows fallback', async () => {
+  for (const rejects of [false, true]) {
+    const game = previewFixture({ enabled: true, failure: 'deferred-decode' });
+    await new Promise(resolve => setImmediate(resolve));
+    game.click('Play');
+    assert.equal(game.eval('previewDecodeCallbacks.length'), 4);
+    assert.equal(visual(game).ready, false);
+    assert.equal(startControl(game).disabled, true);
+    if (rejects) {
+      game.eval("previewDecodeCallbacks.shift().reject(new Error('fixture decode rejected'))");
+    }
+    game.eval('previewDecodeCallbacks.splice(0).forEach(({ resolve }) => resolve())');
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(visual(game).ready, !rejects);
+    assert.equal(visual(game).failed, rejects);
+    assert.equal(startControl(game).disabled, false);
+    watchAtlasDraws(game);
+    game.click('Start game');
+    game.eval('draw()');
+    assert.equal(visual(game).source, rejects ? 'procedural' : 'sprite');
+    assert.equal(game.eval('firstDrawCalls.length'), rejects ? 0 : 1);
+  }
+});
+
+test('restart and a pit death each paint the new Ember on their first gameplay frame', async () => {
+  const game = previewFixture({ enabled: true });
+  await new Promise(resolve => setImmediate(resolve));
+  watchAtlasDraws(game);
+  enterRun(game);
+  replay([game], [[12, 'travel away from spawn', down('ArrowRight')]]);
+  assert.ok(visual(game).distance > 0);
+  game.eval('globalThis.previousPlayer = pl');
+  game.click('pause-button');
+  game.click('Restart level');
+  game.click('Restart level');
+  assert.equal(game.eval('pl !== previousPlayer'), true);
+  assert.equal(game.eval('timer'), 0, 'draw precondition is the restart before updates resume');
+  assertEmberSpawnDraw(game, 'restart');
+  assert.equal(visual(game).distance, 0);
+
+  replay([game], [[12, 'travel from restart', down('ArrowRight')]]);
+  assert.ok(visual(game).distance > 0);
+  game.eval('globalThis.previousPlayer = pl; pl.y = ROWS * T + 60');
+  const livesBefore = game.eval('lives');
+  game.step();
+  assert.equal(game.eval('lives'), livesBefore - 1);
+  assert.equal(game.eval('pl !== previousPlayer'), true);
+  assertEmberSpawnDraw(game, 'pit respawn');
+  assert.equal(visual(game).distance, 0);
+});
+
+test('nonfatal shield impact uses the existing hurt renderer and returns to the atlas after recovery', async () => {
+  const game = await createPreviewGame({ enabled: true });
+  watchAtlasDraws(game);
+  const livesBefore = game.eval('lives');
+  game.eval(`
+    globalThis.previousPlayer = pl;
+    pl.shield = true;
+    enemies = [createEnemy('walker', pl.x, pl.y + 4)];
+    enemies[0].vx = 0;
+    enemies[0].root = 99;
+  `);
+  game.step();
+  assert.equal(game.eval('lives'), livesBefore);
+  assert.equal(game.eval('pl === previousPlayer'), true);
+  assert.equal(game.eval('pl.shield'), false, 'the actual contact consumed the shield');
+  assert.equal(game.eval('pl.inv'), 1, 'the original hurt invulnerability is active');
+  game.eval('firstDrawCalls.length = 0; draw()');
+  assert.equal(visual(game).source, 'procedural');
+  assert.equal(game.eval('firstDrawCalls.length'), 0);
+  game.eval('enemies = []');
+  replay([game], [[61, 'recover from the actual hit']]);
+  assert.equal(visual(game).source, 'sprite');
+});
+
+test('missing server assets and failed browser decoding both allow Ember to start procedurally', async () => {
+  for (const options of [
+    { assetRoot: path.join(root, 'no-ember-assets-in-this-test') },
+    { failure: 'decode' }
+  ]) {
+    const game = previewFixture({ enabled: true, ...options });
+    await new Promise(resolve => setImmediate(resolve));
+    watchAtlasDraws(game);
+    enterRun(game);
+    game.eval('draw()');
+    assert.equal(game.eval('firstDrawCalls.length'), 0);
+    if (options.failure) {
+      assert.equal(visual(game).failed, true);
+      assert.equal(visual(game).source, 'procedural');
+    } else {
+      assert.equal(game.eval('typeof globalThis.emberV31'), 'undefined');
+      assert.deepEqual(game.snapshot('globalThis.previewImageLoads'), []);
+    }
   }
 });
 
