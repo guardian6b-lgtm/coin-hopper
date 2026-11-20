@@ -1,4 +1,4 @@
-# Ember v3.1.1 controlled locomotion preview
+# Ember v3.1.1 controlled visual continuity preview
 
 Run from this checkout with Node.js v22.23.5.
 
@@ -14,9 +14,13 @@ The four run-start frames use fixed simulation ticks during a normal acceleratin
 
 The ordinary `index.html` and `scripts/preview.cjs` are the verified R6-C files. Only the explicit experiment injects a render observer into its in-memory page. A missing or invalid pack falls back to the ordinary page. A browser image failure leaves all of Ember's sprite frames disabled.
 
-The opted-in picker temporarily holds Ember's **Start game** button while the four strips decode. Other heroes can start normally, and a failed decode re-enables Start with the R6-C renderer. The preview seeds Ember's idle at spawn, including a restart or respawn, and keeps it through the first passive drop to the floor. Spawn protection and its original flashing still apply. A genuine same-player shield or Core hit continues to use R6-C's hurt art. The gate acts before play begins, and gameplay input still runs through R6-C.
+The opted-in picker temporarily holds Ember's **Start game** button while the four strips decode. Other heroes can start normally, and a failed decode re-enables Start with the R6-C renderer. The preview seeds Ember's idle at spawn, including a restart or respawn, and keeps it through the first passive drop to the floor. Spawn protection and its original flashing still apply.
 
-Fireball uses the R6-C charge, release, and recovery art. Phase 2 needs verified effect-free casting body frames and hand anchors, with release aligned to the existing projectile spawn. The FORGE originals remain in the verified backup. Cast, 4× artwork, and master files are outside this preview.
+R6-D4 uses temporary poses from the approved movement strips. At rest Ember holds run-start frame 0 while charging, frame 2 on release and cast, then frame 1 in recovery. During travel he keeps the gait or airborne frame and faces the Fireball direction. The queued release can paint before the next tick. Only the game creates a projectile.
+
+A shield or Star Core hit uses the landing squash (jump frame 5) on the ground or the tucked jump (frame 2) in the air. After the first 0.15 seconds of immunity, movement uses the usual travel frames. A stationary grounded Ember keeps the squash until protection expires. The existing flash and reduced-motion setting still apply. Losing a life starts the new player's normal spawn idle.
+
+The eight FORGE casting candidates have a painted Fireball and a fixed 900 ms sequence. Dedicated casting needs effect-free body frames, an interruptible charge hold, and hand anchors for both facings aligned to the game's immediate release. Dedicated grounded and airborne damage poses also await FORGE artwork and owner approval.
 
 Once grounded horizontal movement stops, Ember settles by retracing the existing run-start poses toward idle. The previous running frame determines the starting pose. Movement and jumping can interrupt this visual recovery immediately.
 

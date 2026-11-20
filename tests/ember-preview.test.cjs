@@ -413,7 +413,7 @@ test('restart and a pit death each paint the new Ember on their first gameplay f
   assert.equal(visual(game).distance, 0);
 });
 
-test('nonfatal shield impact uses the existing hurt renderer and returns to the atlas after recovery', async () => {
+test('shield impact paints the approved squash, keeps protection, and recovers to idle', async () => {
   const game = await createPreviewGame({ enabled: true });
   watchAtlasDraws(game);
   const livesBefore = game.eval('lives');
@@ -430,11 +430,14 @@ test('nonfatal shield impact uses the existing hurt renderer and returns to the 
   assert.equal(game.eval('pl.shield'), false, 'the actual contact consumed the shield');
   assert.equal(game.eval('pl.inv'), 1, 'the original hurt invulnerability is active');
   game.eval('firstDrawCalls.length = 0; draw()');
-  assert.equal(visual(game).source, 'procedural');
-  assert.equal(game.eval('firstDrawCalls.length'), 0);
+  assert.equal(visual(game).source, 'sprite');
+  assert.equal(visual(game).clip, 'jump');
+  assert.equal(visual(game).index, 5);
+  assert.equal(game.eval('firstDrawCalls.length'), 1);
   game.eval('enemies = []');
   replay([game], [[61, 'recover from the actual hit']]);
   assert.equal(visual(game).source, 'sprite');
+  assert.equal(visual(game).clip, 'idle');
 });
 
 test('missing server assets and failed browser decoding both allow Ember to start procedurally', async () => {
@@ -455,6 +458,13 @@ test('missing server assets and failed browser decoding both allow Ember to star
       assert.equal(game.eval('typeof globalThis.emberV31'), 'undefined');
       assert.deepEqual(game.snapshot('globalThis.previewImageLoads'), []);
     }
+    controls(game, down('KeyE'));
+    game.eval('drawPlayer()');
+    controls(game, up('KeyE'));
+    game.step();
+    game.eval('drawPlayer()');
+    assert.equal(game.eval('ability.projectiles.length'), 1);
+    assert.equal(game.eval('firstDrawCalls.length'), 0, 'failed artwork stays procedural during Fireball');
   }
 });
 
@@ -489,12 +499,12 @@ test('recorded Ember inputs keep simulation, saves, and real Fireball outcomes i
       assert.equal(shots.length, 1);
       assert.equal(shots[0].vx, 420);
       assert.equal(shots[0].damage, label === 'tap release' ? 1 : 3);
-      assert.equal(visual(game).source, 'procedural');
+      assert.equal(visual(game).source, 'sprite');
       projectileFrames.push(shots[0]);
     }
     if (label === 'charge hold') {
       if (step === 0) for (const item of games) placeTarget(item);
-      assert.equal(visual(game).source, 'procedural');
+      assert.equal(visual(game).source, 'sprite');
     }
     if (label === 'cast recovery' && step === 29) assert.equal(visual(game).clip, 'idle');
     tick++;
@@ -503,6 +513,120 @@ test('recorded Ember inputs keep simulation, saves, and real Fireball outcomes i
   assert.equal(on.eval('score'), 100, 'both live projectile hit rewards are exercised');
   assert.equal(on.storage.get(characterKey), 'ember');
   assert.equal(tick, 513, 'the full deterministic input trace was compared');
+});
+
+test('Fireball paints grounded charge, queued release and recovery holds on the original input ticks', async () => {
+  const game = await createPreviewGame({ enabled: true });
+  watchAtlasDraws(game);
+  function assertHold(index) {
+    const before = frameSnapshot(game);
+    game.eval('firstDrawCalls.length = 0; drawPlayer()');
+    assert.equal(visual(game).source, 'sprite');
+    assert.equal(visual(game).clip, 'runstart');
+    assert.equal(visual(game).index, index);
+    assert.deepEqual(game.snapshot('firstDrawCalls'), [
+      [index * 48, 0, 48, 61, -13.94, -57.84, 48, 61]
+    ]);
+    assert.deepEqual(frameSnapshot(game), before);
+  }
+
+  controls(game, down('KeyE'));
+  assertHold(0);
+  game.step(95);
+  assert.equal(game.eval('ability.charge'), 1.2);
+  assertHold(0);
+  controls(game, up('KeyE'));
+  assertHold(2);
+  assert.equal(game.eval('ability.projectiles.length'), 0);
+  game.step();
+  assertHold(2);
+  assert.deepEqual(game.snapshot('ability.projectiles.map(p => [p.vx, p.damage])'), [[420, 3]]);
+  game.step(8);
+  assertHold(1);
+  game.step(6);
+  game.eval('drawPlayer()');
+  assert.equal(visual(game).clip, 'idle');
+});
+
+test('Fireball keeps approved airborne travel through a grounded charge, takeoff, release and landing', async () => {
+  const off = await createPreviewGame();
+  const on = await createPreviewGame({ enabled: true });
+  const flightFrames = new Set();
+  replay([off, on], [
+    [4, 'grounded charge', down('KeyE')],
+    [8, 'jump during charge', down('Space')],
+    [1, 'airborne release', up('KeyE')],
+    [8, 'airborne recovery'],
+    [59, 'land and settle', up('Space')]
+  ], (game, label, step) => {
+    const painted = visual(game);
+    assert.equal(painted.source, 'sprite');
+    if (!game.eval('pl.ground')) {
+      assert.equal(painted.clip, 'jump');
+      assert.ok(painted.index >= 1 && painted.index <= 4);
+      flightFrames.add(painted.index);
+    }
+    if (label === 'jump during charge' && step === 0) assert.equal(game.eval('pl.vy'), -610);
+    if (label === 'airborne release') assert.equal(game.eval('ability.projectiles.length'), 1);
+  });
+  assert.deepEqual([...flightFrames].sort(), [1, 2, 3, 4]);
+  assert.equal(visual(on).clip, 'idle');
+});
+
+test('a reversing cast faces the projectile and left-wall casting preserves native cell clearance', async () => {
+  const game = await createPreviewGame({ enabled: true });
+  replay([game], [
+    [10, 'run right', down('ArrowRight')],
+    [1, 'reverse and charge', up('ArrowRight'), down('ArrowLeft'), down('KeyE')]
+  ]);
+  assert.ok(game.eval('pl.vx > 0'));
+  assert.equal(visual(game).clip, 'run');
+  assert.equal(visual(game).face, -1);
+  replay([game], [[1, 'release while braking', up('KeyE')]]);
+  assert.equal(game.eval('ability.projectiles[0].vx'), -420);
+  assert.equal(visual(game).face, -1);
+
+  replay([game], [[200, 'continue to boundary and recharge'], [1, 'charge at wall', down('KeyE')]]);
+  assert.equal(game.eval('pl.x'), 0);
+  assert.equal(visual(game).index, 0);
+  controls(game, up('KeyE'));
+  game.eval('globalThis.wallAnchor = null; cx.translate = (x, y) => { wallAnchor = x; }; drawPlayer()');
+  assert.equal(visual(game).clip, 'runstart');
+  assert.equal(visual(game).index, 2);
+  assert.equal(visual(game).face, -1);
+  assert.ok(game.eval('wallAnchor') >= 48 - 13.94);
+});
+
+test('real airborne Core damage preserves the sprite, immunity, reduced motion and the OFF simulation', async () => {
+  const off = await createPreviewGame();
+  const on = await createPreviewGame({ enabled: true });
+  const games = [off, on];
+  replay(games, [[8, 'rise', down('Space')]]);
+  for (const game of games) {
+    game.eval(`
+      visualSettings.reduced = true;
+      pl.core = { ammo: 6, cooldown: 0 };
+      enemies = [createEnemy('walker', pl.x, pl.y + 4)];
+      enemies[0].vx = 0;
+      enemies[0].root = 99;
+    `);
+  }
+  replay(games, [[1, 'Core contact']], game => {
+    assert.equal(game.eval('pl.core'), null);
+    assert.equal(game.eval('pl.inv'), 1);
+    assert.equal(game.eval('lives'), 3);
+    assert.equal(game.eval('pl.ground'), false);
+    assert.equal(visual(game).clip, 'jump');
+    assert.equal(visual(game).index, 2);
+  });
+  replay(games, [[10, 'contact during immunity', up('Space')]]);
+  assert.equal(on.eval('lives'), 3);
+  for (const game of games) game.eval('enemies = []');
+  replay(games, [[65, 'protected flight, landing and recovery']], game => {
+    assert.equal(visual(game).source, 'sprite');
+  });
+  assert.ok(on.eval('pl.inv <= 0 && pl.ground'));
+  assert.equal(visual(on).clip, 'idle');
 });
 
 test('idle loops, four authored run-start ticks join run_11, and wall contact stops phase travel', async () => {

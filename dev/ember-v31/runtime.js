@@ -13,6 +13,8 @@ function installEmberV31(pack) {
   const leftReach = Math.max(...Object.values(clips).map(clip =>
     Math.max(clip.pivot[0], clip.width - clip.pivot[0])));
   const images = {};
+  const fireballHolds = { charge: 0, cast: 2, recover: 1 }; // Grounded run-start cells.
+  const spritePoses = new Set(['idle', 'run', 'jump', 'fall', 'land', 'hurt', ...Object.keys(fireballHolds)]);
   const frameDistance = stridePixels / clips.run.count;
   // Closest run-start silhouette to each run cel at its foot pivot (native
   // premultiplied RGBA difference). Retrace from there to the standing pose.
@@ -218,10 +220,7 @@ function installEmberV31(pack) {
   };
 
   function usesSprite(id, pose) {
-    const locomotion = pose === 'idle' || pose === 'run' || pose === 'jump' || pose === 'fall' || pose === 'land' ||
-      (pose === 'hurt' && track?.spawnProtection);
-    return ready && !failed && id === 'ember' && track?.player === pl &&
-      locomotion && !ability.charging && ability.cast <= 0 && !abilityEdge;
+    return ready && !failed && id === 'ember' && track?.player === pl && spritePoses.has(pose);
   }
 
   function leftBoundaryInset(player) {
@@ -242,7 +241,23 @@ function installEmberV31(pack) {
       painted = { source: 'procedural', clip: null, index: null, face: null };
       return baseDraw(ctx, id, x, y, w, h, face, pose, ...rest);
     }
-    const { clip, index, face: spriteFace } = track;
+    let { clip, index, face: spriteFace } = track;
+    const hold = abilityEdge ? fireballHolds.cast : fireballHolds[pose];
+    if (hold !== undefined) {
+      // A queued release can be drawn before the next simulation tick. Face
+      // the actual shot direction, retaining the moving feet or airborne pose.
+      spriteFace = pl.face;
+      if (pl.ground && pl.vx === 0) {
+        clip = 'runstart';
+        index = hold;
+      }
+    } else if (pose === 'hurt' && !track.spawnProtection &&
+        (pl.inv > 0.85 || (pl.ground && pl.vx === 0))) {
+      // Brief contact flinch, then travel resumes. A stationary hurt hold
+      // also reads with reduced motion. The game controls the invulnerability.
+      clip = 'jump';
+      index = pl.ground ? 5 : 2;
+    }
     const { width, height, pivot } = clips[clip];
     ctx.save();
     ctx.translate(x + leftBoundaryInset(pl), y);
