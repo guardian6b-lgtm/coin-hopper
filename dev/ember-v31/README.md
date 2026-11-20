@@ -1,4 +1,4 @@
-# Ember v3.1 controlled locomotion preview
+# Ember v3.1.1 controlled locomotion preview
 
 Run from this checkout with Node.js v22.23.5.
 
@@ -22,4 +22,4 @@ Once grounded horizontal movement stops, Ember settles by retracing the existing
 
 Run-start keeps the authored pivot. In the native-size Edge comparison a trial subpixel adjustment introduced a one-pixel wobble in the planted foot during acceleration. Foot shape also changes with the authored squash, so a mathematical contact centroid alone is insufficient to judge drift.
 
-The runtime shadow projects onto the nearest exposed solid surface beneath each part of its footprint. It fades and narrows with clearance and clips at platforms, pit lips and world edges. The jump strip itself also contains a small painted gray oval that stays with the feet. Removing it calls for an approved shadow-free export on the same canvases and pivots. The authored bounce from `run_03` to `run_04` also remains visible. The preview retains all sixteen run frames and the existing Fireball art switch.
+The runtime shadow projects onto the nearest exposed solid surface beneath each part of its footprint. It fades and narrows with clearance and clips at platforms, pit lips and world edges. The v3.1.1 art correction supplies seven shadow-free jump poses and adjusts the painted face on `run_03` and `run_04`. The manifest records the SHA-256 of the original v3.1 archive and the correction ZIP. Only the two verified 1× run and jump strips from the correction are loaded alongside the original idle and run-start strips.

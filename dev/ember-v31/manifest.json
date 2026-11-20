@@ -1,5 +1,6 @@
 {
   "archiveSha256": "778e9778f9d1d3e9cc9f98b230cbc6a1b602a83c249a33d91c89c5cb2915a1c1",
+  "correctionArchiveSha256": "0325f92e2801353956c425b8ea08650a038155c059ce8fec60b3568efe57552d",
   "runEntry": 11,
   "stridePixels": 69.33333333333333,
   "clips": {
@@ -31,7 +32,7 @@
     },
     "run": {
       "file": "ember_run_strip_1x.png",
-      "sha256": "3e7fbb7a775e145c8b90244ab14cc9bfda9f637f674ef7d14d6bce415592cff6",
+      "sha256": "310bd8ed873af37f463a9157e1aa105b2d94e5c11ce25820f375d33f99d6131f",
       "width": 48,
       "height": 67,
       "count": 16,
@@ -44,7 +45,7 @@
     },
     "jump": {
       "file": "ember_jump_strip_1x.png",
-      "sha256": "b944653c47f1f048a51b0cbcfd40dfccc3c0adf4a1beefc8fe789be519f46fd7",
+      "sha256": "f01e283fcfdcc63a6f26c534be911c4333fd19ec99fdcb53ebc986778faf5b5c",
       "width": 52,
       "height": 66,
       "count": 7,

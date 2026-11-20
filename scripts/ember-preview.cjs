@@ -11,7 +11,7 @@ const defaultPort = 4174;
 const root = path.resolve(__dirname, '..');
 const assetDirectory = path.join(root, 'dev', 'ember-v31');
 const baselineHash = '80ab671de40be1bec752b7e2c080fb1695e46529a5a759e31ffdcd69d6bc3984';
-const manifestHash = '530bfb22e8cc36da6bd54ceeb6efc78693bdf864abcaba3681afd9b70b96a6b7';
+const manifestHash = 'e1d6f0714df2719d0c8b71d06467a372acf1e88af1c4b1eff893e7a19b31923a';
 const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const usage = 'Usage: node scripts/ember-preview.cjs [--enable-ember-v31] [--port 4174]';
 
