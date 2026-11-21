@@ -13,7 +13,7 @@ const assetDirectory = path.join(root, 'dev', 'ember-v31');
 const baselineHash = '80ab671de40be1bec752b7e2c080fb1695e46529a5a759e31ffdcd69d6bc3984';
 const manifestHash = 'e1d6f0714df2719d0c8b71d06467a372acf1e88af1c4b1eff893e7a19b31923a';
 const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-const usage = 'Usage: node scripts/ember-preview.cjs [--enable-ember-v31] [--port 4174]';
+const usage = 'Usage: node scripts/ember-preview.cjs [--enable-ember-v31] [--enable-walker-b1] [--port 4174]';
 
 function hash(bytes) {
   return createHash('sha256').update(bytes).digest('hex');
@@ -62,10 +62,16 @@ function composeEmberPage({ enabled = false, assetRoot = assetDirectory, onFallb
   }
 }
 
+function composeDevelopmentPage(options = {}) {
+  const page = composeEmberPage(options);
+  if (options.walker !== true) return page;
+  return require('./walker-page.cjs').addWalkerPreview(page, options);
+}
+
 async function startEmberPreview(port = defaultPort, options = {}) {
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Invalid preview port.');
-  if (options.enabled !== true) return startPreview(port);
-  const page = composeEmberPage(options);
+  if (options.enabled !== true && options.walker !== true) return startPreview(port);
+  const page = composeDevelopmentPage(options);
   const server = http.createServer({ requestTimeout: 15000, headersTimeout: 10000, keepAliveTimeout: 1000 },
     (request, response) => {
       const boundPort = request.socket.localPort;
@@ -108,27 +114,35 @@ async function main(args) {
     return;
   }
   let enabled = false;
+  let walker = false;
   let port;
   for (let index = 0; index < args.length; index++) {
     if (args[index] === '--enable-ember-v31' && !enabled) enabled = true;
+    else if (args[index] === '--enable-walker-b1' && !walker) walker = true;
     else if (args[index] === '--port' && port === undefined && /^\d+$/.test(args[index + 1] ?? '')) {
       port = Number(args[++index]);
     } else throw new Error(usage);
   }
   let fallback = false;
+  let walkerFallback = false;
   const server = await startEmberPreview(port, {
-    enabled,
+    enabled, walker,
+    onWalkerFallback(error) {
+      walkerFallback = true;
+      console.warn('Walker B1 is OFF. ' + error.message);
+    },
     onFallback(error) {
       fallback = true;
       console.warn('Ember v3.1 is OFF. ' + error.message);
     }
   });
-  console.log('Ember v3.1 ' + (enabled && !fallback ? 'ON' : 'OFF') + ' at http://' +
+  console.log('Ember v3.1 ' + (enabled && !fallback ? 'ON' : 'OFF') +
+    (walker ? ', Walker B1 ' + (walkerFallback ? 'OFF' : 'ON') : '') + ' at http://' +
     host + ':' + server.address().port + '/');
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => server.close());
 }
 
-module.exports = { composeEmberPage, startEmberPreview };
+module.exports = { composeEmberPage, composeDevelopmentPage, startEmberPreview };
 
 if (require.main === module) {
   main(process.argv.slice(2)).catch(error => {

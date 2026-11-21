@@ -1,0 +1,78 @@
+{
+  "idle": {
+    "frames": 4,
+    "fps": 10,
+    "ticks_per_frame": 6,
+    "canvas_1x": [
+      44,
+      41
+    ],
+    "pivot_1x": [
+      21.5,
+      38.5
+    ],
+    "order": [
+      "idle_0",
+      "idle_1",
+      "idle_2",
+      "idle_3"
+    ]
+  },
+  "walk": {
+    "frames": 8,
+    "fps": 30,
+    "ticks_per_frame": 2,
+    "canvas_1x": [
+      44,
+      41
+    ],
+    "pivot_1x": [
+      21.5,
+      38.5
+    ],
+    "order": [
+      "walk_00",
+      "walk_01",
+      "walk_02",
+      "walk_03",
+      "walk_04",
+      "walk_05",
+      "walk_06",
+      "walk_07"
+    ]
+  },
+  "idle_to_walk": {
+    "frames": 2,
+    "fps": 10,
+    "ticks_per_frame": 6,
+    "canvas_1x": [
+      44,
+      41
+    ],
+    "pivot_1x": [
+      21.5,
+      38.5
+    ],
+    "order": [
+      "idle_to_walk_0",
+      "idle_to_walk_1"
+    ]
+  },
+  "walk_to_idle": {
+    "frames": 2,
+    "fps": 10,
+    "ticks_per_frame": 6,
+    "canvas_1x": [
+      44,
+      41
+    ],
+    "pivot_1x": [
+      21.5,
+      38.5
+    ],
+    "order": [
+      "walk_to_idle_0",
+      "walk_to_idle_1"
+    ]
+  }
+}
