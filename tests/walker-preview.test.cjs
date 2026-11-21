@@ -65,12 +65,14 @@ test('a changed strip fails the release hash before any Walker code is included'
   assert.match(errors[0], /checksum mismatch.*walker_walk_strip/);
 });
 
-test('browser decode or dimension failure retains the original live Walker path', async () => {
+test('browser decode or dimension failure retains the original live and defeated Walker path', async () => {
   for (const failure of ['size', 'decode']) {
     const game = await gameWithWalker(failure);
     assert.equal(game.eval('walkerB1.status'), 'failed');
     assert.equal(tick(game), null);
     assert.equal(game.eval('actor.vx'), -55);
+    assert.equal(game.eval("damageEnemy(actor, 'fireball')"), true);
+    assert.equal(paint(game), null);
   }
 });
 
@@ -136,21 +138,92 @@ test('an airborne Walker holds neutral through horizontal travel and starts loco
   assert.ok(airborne>6);assert.equal(paint(game).clip,'idle_to_walk');
 });
 
-test('a real stomp retains the original squash, score, bounce and timed removal',async()=>{
+test('a real stomp draws an illustrated squash and retains the original score, bounce and removal',async()=>{
   const game=await gameWithWalker();
   game.eval('pl.x=actor.x;pl.y=actor.y-pl.h-2;pl.vx=0;pl.vy=200;pl.ground=false;pl.buf=0;pl.coyote=0;');
-  assert.equal(tick(game),null);
+  const first = tick(game);
+  assert.equal(first.clip, 'idle');
+  assert.deepEqual(first.facing, [-1, 1]);
   assert.deepEqual(game.snapshot('[actor.dead,pl.vy,score,levelScore,lives]'),[.4,-380,50,50,3]);
   game.step(26);assert.equal(game.eval('enemies.includes(actor)'),false);
   assert.equal(game.eval('score'),50);
 });
 
-test('only live Walkers use the new renderer and reduced motion keeps the neutral pose',async()=>{
+test('other enemies keep their own live and death renderers and reduced motion uses the neutral pose',async()=>{
   const game=await gameWithWalker();
   for(const id of ['hopper','sentinel','nightwing','shellback','guardian']){
     game.eval("actor=createEnemy('"+id+"',260,350);");
     assert.equal(paint(game),null,id);
+    game.eval('actor.dead=.4');
+    assert.equal(paint(game),null,id);
   }
   game.eval('actor=createEnemy("walker",300,13*T-28);actor.type="walker";actor.vx=55;actor.ground=true;enemies=[actor];visualSettings.reduced=true');
   const sample=tick(game,20);assert.deepEqual([sample.clip,sample.frame,sample.facing[0]],['idle',0,1]);
+});
+
+for (const face of [-1, 1]) {
+  test('death holds the last painted walk cell around the original foot pivot, facing ' + face, async () => {
+    const game = await gameWithWalker();
+    game.eval('actor.vx=' + (face * 55));
+    const live = tick(game, 22);
+    assert.equal(live.clip, 'walk');
+    assert.ok(live.frame > 0);
+    game.step(3); // Updates can advance the gait between two visible frames.
+    assert.equal(game.eval("damageEnemy(actor, 'lightning')"), true);
+    const foot = game.snapshot('[actor.x + actor.w / 2, actor.y + actor.h]');
+    let priorHeight = 1;
+    for (let i = 0; game.eval('enemies.includes(actor)') && i < 30; i++) {
+      game.eval('cam=17.5');
+      const dead = paint(game);
+      assert.equal(dead.clip, live.clip);
+      assert.equal(dead.frame, live.frame);
+      assert.deepEqual(dead.args, live.args);
+      assert.deepEqual(dead.anchor, [foot[0] - 17.5, foot[1]]);
+      assert.equal(Math.sign(dead.facing[0]), face);
+      assert.ok(dead.facing[1] <= priorHeight && dead.facing[1] >= 0.56 - 1e-10);
+      if (i >= 6) assert.ok(Math.abs(dead.facing[1] - 0.56) < 1e-10);
+      priorHeight = dead.facing[1];
+      assert.deepEqual(paint(game), dead, 'extra paints do not advance the pose or timer');
+      game.step();
+    }
+    assert.ok(priorHeight < 0.57);
+    assert.equal(game.eval('enemies.includes(actor)'), false);
+    assert.equal(paint(game), null);
+  });
+}
+
+test('an airborne hit holds the illustrated flight pose at the airborne foot position', async () => {
+  const game = await gameWithWalker();
+  game.eval('actor.vx=55;actor.ground=false;actor.y-=100');
+  const live = tick(game, 3);
+  assert.deepEqual([live.clip, live.frame, live.facing[0]], ['idle', 0, 1]);
+  game.eval("damageEnemy(actor, 'fireball')");
+  const held = tick(game, 12);
+  assert.deepEqual(held.anchor, live.anchor);
+  assert.deepEqual(held.args, live.args);
+  assert.ok(held.facing[1] < 1);
+});
+
+test('reduced motion holds one static, foot-anchored squash through death', async () => {
+  const game = await gameWithWalker();
+  game.eval('visualSettings.reduced=true;actor.root=1');
+  const live = tick(game, 9);
+  game.eval("damageEnemy(actor, 'slam')");
+  const held = paint(game);
+  assert.deepEqual(held.args, live.args);
+  assert.deepEqual(held.anchor, live.anchor);
+  assert.deepEqual(held.facing, [-1.0875, 0.75]);
+  assert.deepEqual(tick(game, 8), held);
+  assert.deepEqual(tick(game, 13), held);
+});
+
+test('a stomp on the wall-reversal tick faces the resolved direction and preserves the visible cell', async () => {
+  const game = await gameWithWalker();
+  game.eval('actor.vx=55');
+  const live = tick(game, 18);
+  game.eval('grid[12][10]="#";actor.x=10*T-actor.w;pl.x=actor.x;pl.y=actor.y-pl.h-2;pl.vy=200;pl.ground=false;pl.inv=0');
+  const dead = tick(game);
+  assert.deepEqual(game.snapshot('[actor.vx,actor.dead,pl.vy,score]'),[-55,0.4,-380,50]);
+  assert.deepEqual(dead.args, live.args);
+  assert.deepEqual(dead.facing, [-1, 1]);
 });

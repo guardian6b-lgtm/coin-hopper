@@ -47,8 +47,7 @@ function installWalkerB1({ width, height, pivot, clips }) {
     }
   }
 
-  function displayed(enemy) {
-    const track = trackFor(enemy);
+  function displayed(enemy, track) {
     if (!enemy.ground || reducedMotion()) return { clip: 'idle', frame: 0, face: track.face };
     const clip = track.clip;
     const phase = clip === 'walk' ? track.distance / stepDistance : track.ticks * DT * clips[clip].fps;
@@ -74,11 +73,26 @@ function installWalkerB1({ width, height, pivot, clips }) {
       }
     };
     drawEnemy = function drawWithWalkerArt(enemy) {
-      if (!isWalker(enemy) || enemy.dead) return baseDraw(enemy);
-      const { clip, frame, face } = displayed(enemy);
+      if (!isWalker(enemy)) return baseDraw(enemy);
+      if (enemy.dead < 0) return;
+      const track = trackFor(enemy);
+      const defeated = enemy.dead > 0;
+      // Freeze the last visible cell, including when several updates run between paints.
+      // A first paint after impact uses the tracked pose, or neutral for a new actor.
+      if (!defeated || !track.paintedPose) track.paintedPose = displayed(enemy, track);
+      const { clip, frame, face } = track.paintedPose;
+      let scaleX = face, scaleY = 1;
+      if (defeated) {
+        // Ease into the squash over the first 0.10 s of the existing 0.4 s timer.
+        const t = Math.min(1, Math.max(0, (0.4 - enemy.dead) / 0.10));
+        const compression = reducedMotion() ? 0.25 : 0.44 * t * (2 - t);
+        // A wall or ledge can turn the actor on the same tick as a lethal stomp.
+        scaleX = (Math.sign(enemy.vx) || face) * (1 + 0.35 * compression);
+        scaleY = 1 - compression;
+      }
       cx.save();
       cx.translate(enemy.x + enemy.w / 2 - cam, enemy.y + enemy.h);
-      cx.scale(face, 1);
+      cx.scale(scaleX, scaleY);
       cx.drawImage(images[clip], frame * width, 0, width, height, -pivot[0], -pivot[1], width, height);
       cx.restore();
     };
