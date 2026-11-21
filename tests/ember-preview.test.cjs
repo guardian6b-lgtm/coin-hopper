@@ -827,3 +827,113 @@ test('sprite paint uses the authored 1x cell and pivot and reflects about the ex
   game.step(3);
   paint('runstart', -1, 48, 61, [13.94, 57.84]);
 });
+
+test('the picker waits for the last strip, then repaints Ember in place without saving a pending choice', () => {
+  const game = previewFixture({ enabled: true, failure: 'delayed', id: 'nova' });
+  game.click('Play');
+  const card = game.element('character-ember');
+  const canvas = card.querySelector('canvas');
+  const note = card.querySelector('[data-portrait-note]');
+  assert.equal(canvas.dataset.portrait, 'loading');
+  assert.equal(card.getAttribute('aria-busy'), 'true');
+  game.eval("chooseCharacter('ember', true)");
+  game.eval('previewImageCallbacks.splice(0, 3).forEach(complete => complete())');
+  assert.equal(canvas.dataset.portrait, 'loading');
+  assert.equal(startControl(game).disabled, true);
+  game.eval('previewImageCallbacks.shift()()');
+  assert.equal(canvas, card.querySelector('canvas'));
+  assert.equal(canvas.dataset.portrait, 'idle-strip');
+  assert.equal(note.hidden, true);
+  assert.equal(card.getAttribute('aria-busy'), 'false');
+  assert.equal(game.document.activeElement, card);
+  assert.equal(game.storage.get(characterKey), 'nova');
+  assert.equal(startControl(game).disabled, false);
+});
+
+test('a rejected image leaves the picker and gameplay on the same standard Ember after late callbacks', () => {
+  const game = previewFixture({ enabled: true, failure: 'delayed-error' });
+  game.click('Play');
+  const card = game.element('character-ember');
+  game.eval('previewImageCallbacks.splice(0).forEach(complete => complete())');
+  for (const id of ['bolt', 'ember', 'minty', 'nova', 'hopper', 'ember']) {
+    game.click('character-' + id);
+    assert.equal(card.querySelector('canvas').dataset.portrait, 'rig');
+    assert.equal(startControl(game).disabled, false);
+  }
+  assert.equal(card.getAttribute('aria-busy'), 'false');
+  assert.equal(card.querySelector('[data-portrait-note]').textContent, 'Standard artwork');
+  game.click('Start game');
+  game.eval('draw()');
+  assert.equal(visual(game).source, 'procedural');
+  assert.equal(game.eval('pl.character'), 'ember');
+});
+
+test('the static Ember portrait samples the verified first idle cell at the original pivot without touching the world track', async () => {
+  const game = await createPreviewGame({ enabled: true });
+  const before = frameSnapshot(game);
+  const track = visual(game);
+  game.eval(`
+    globalThis.pickerPaint = [];
+    const portrait = document.createElement('canvas');
+    portrait.getContext = () => ({
+      save() {}, restore() {},
+      translate(...args) { pickerPaint.push(['translate', ...args]); },
+      scale(...args) { pickerPaint.push(['scale', ...args]); },
+      drawImage(image, ...args) { pickerPaint.push([image.naturalWidth, image.naturalHeight, ...args]); }
+    });
+    drawPortrait(portrait, 'ember');
+    drawPortrait(portrait, 'ember', true);
+    drawPortrait(portrait, 'ember', false);
+  `);
+  assert.deepEqual(game.snapshot('pickerPaint'), [
+    ['scale', 2, 2], ['translate', 80 + 1.5 * (14.94 - 43 / 2), 97], ['scale', 1.5, 1.5],
+    [172, 61, 0, 0, 43, 61, -14.94, -58.84, 43, 61]
+  ]);
+  assert.deepEqual(visual(game), track);
+  assert.deepEqual(frameSnapshot(game), before);
+});
+
+test('four distinct live rigs supply the other portraits and selection does not repaint any of them', async () => {
+  const game = previewFixture({ enabled: true });
+  await new Promise(resolve => setImmediate(resolve));
+  game.eval(`
+    globalThis.pickerRigs = [];
+    const realRig = paintHeroRig;
+    paintHeroRig = function(ctx, id, parts, x, y, h, face, pose, ...rest) {
+      const playable = id === 'hopper' ? getHopperParts() : getIllustratedParts(id);
+      pickerRigs.push([id, parts === playable, h, face, pose]);
+      return realRig(ctx, id, parts, x, y, h, face, pose, ...rest);
+    };
+  `);
+  game.click('Play');
+  assert.equal(game.element('menu-title').textContent, 'Choose your hero');
+  for (const id of ['ember', 'bolt', 'nova', 'hopper', 'minty']) {
+    game.click('character-' + id);
+    assert.equal(game.element(id + '-power').textContent, game.eval(`ABILITIES['${id}'].name`));
+    assert.ok(game.element(id + '-flavor').textContent.length > 12);
+    assert.equal(game.element('character-' + id).getAttribute('aria-pressed'), 'true');
+  }
+  assert.deepEqual(game.snapshot('pickerRigs'), ['hopper', 'minty', 'nova', 'bolt'].map(id =>
+    [id, true, 48, 1, 'idle']));
+  assert.equal(game.eval('previewImageLoads.length'), 4);
+});
+
+for (const id of ['hopper', 'minty', 'ember', 'nova', 'bolt']) {
+  test(`the opt-in picker preserves ${id}'s confirmed save and simulation during identical inputs`, async () => {
+    const pair = [];
+    for (const enabled of [false, true]) {
+      const game = previewFixture({ enabled, id: 'hopper' });
+      await new Promise(resolve => setImmediate(resolve));
+      enterRun(game, id);
+      assert.equal(game.storage.get(characterKey), id);
+      prepare(game);
+      placeTarget(game);
+      pair.push(game);
+    }
+    replay(pair, [
+      [12, 'move', down('ArrowRight')], [1, 'jump', down('Space')],
+      [6, 'release jump and start ability', up('Space'), down('KeyE')],
+      [1, 'release ability', up('KeyE')], [48, 'recovery', up('ArrowRight')]
+    ]);
+  });
+}

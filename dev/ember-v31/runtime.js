@@ -25,6 +25,7 @@ function installEmberV31(pack) {
   let ready = false;
   let failed = false;
   let remaining = Object.keys(clips).length;
+  const setEmberPortrait = installRosterPicker(clips.idle, baseDraw);
   emberV31GroundShadowReady = () => ready && !failed;
   let track = null;
   let painted = { source: 'procedural', clip: null, index: null, face: null };
@@ -64,6 +65,7 @@ function installEmberV31(pack) {
   function failPack() {
     failed = true;
     ready = false;
+    setEmberPortrait(null);
     refreshStartButton();
   }
 
@@ -82,6 +84,7 @@ function installEmberV31(pack) {
     if (failed) return;
     if (--remaining === 0) {
       ready = true;
+      setEmberPortrait(images.idle);
       refreshStartButton();
     }
   }

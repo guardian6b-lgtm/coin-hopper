@@ -16,6 +16,10 @@ The ordinary `index.html` and `scripts/preview.cjs` are the verified R6-C files.
 
 The opted-in picker temporarily holds Ember's **Start game** button while the four strips decode. Other heroes can start normally, and a failed decode re-enables Start with the R6-C renderer. The preview seeds Ember's idle at spawn, including a restart or respawn, and keeps it through the first passive drop to the floor. Spawn protection and its original flashing still apply.
 
+In the R6-D5 picker, Ember's portrait uses idle frame 0 from the same decoded image as gameplay. Its 43 × 61 cell keeps its (14.94, 58.84) foot pivot. The card shows a loading message until the whole pack is ready. A decode failure labels the playable procedural portrait **Standard artwork**. Selection changes the card border and check mark while the portrait holds its pose.
+
+Hopper, Minty, Nova and Bolt use their current gameplay idle rigs. FORGE's later Minty, Nova and Bolt still masters await playable animation and integration. Hopper's separate review imagery also stays outside the picker. The five native buttons retain the game's existing arrow, Home, End and Tab navigation. **Start game** confirms and saves the selected hero.
+
 R6-D4 uses temporary poses from the approved movement strips. At rest Ember holds run-start frame 0 while charging, frame 2 on release and cast, then frame 1 in recovery. During travel he keeps the gait or airborne frame and faces the Fireball direction. The queued release can paint before the next tick. Only the game creates a projectile.
 
 A shield or Star Core hit uses the landing squash (jump frame 5) on the ground or the tucked jump (frame 2) in the air. After the first 0.15 seconds of immunity, movement uses the usual travel frames. A stationary grounded Ember keeps the squash until protection expires. The existing flash and reduced-motion setting still apply. Losing a life starts the new player's normal spawn idle.
