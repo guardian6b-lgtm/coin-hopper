@@ -1,0 +1,191 @@
+{
+  "master": "SHELLBACK \u2014 MASTER ART STANDARD v1.0",
+  "status": "APPROVED AND LOCKED (owner t447u, 2026-11-20 America/New_York)",
+  "source": "shellback-pilot/gateA_v1.1 (byte-identical)",
+  "facing": "right, 3/4 view",
+  "light": "upper-left key, right rim",
+  "pivot_convention": "foot pivot: x = midpoint of outer sole pixels in a 40-px (on 1024) contact band (all three feet); y = lowest solid foot row + 0.5 (alpha>=20). Intact and cracked share canvas and pivot at every scale.",
+  "sprites": {
+    "intact_full": {
+      "file": "shellback_v1.0_intact_full.png",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "pivot": [
+        512.5,
+        975.5
+      ],
+      "visual_wh_alpha_gt_12": [
+        792,
+        728
+      ],
+      "visual_wh_alpha_ge_128": [
+        791,
+        727
+      ],
+      "sha256": "dcc56bc4997620480a8faf66f5902e5b7992c9377b370a6676c02f4b2ad48395"
+    },
+    "cracked_full": {
+      "file": "shellback_v1.0_cracked_full.png",
+      "canvas": [
+        1024,
+        1024
+      ],
+      "pivot": [
+        512.5,
+        975.5
+      ],
+      "visual_wh_alpha_gt_12": [
+        792,
+        727
+      ],
+      "visual_wh_alpha_ge_128": [
+        791,
+        726
+      ],
+      "sha256": "a4a1fca185e099f31e3ecebc8ddac121d9a1a45d809c63b5dc2ac33ea79178b2"
+    },
+    "intact_1x": {
+      "file": "shellback_v1.0_intact_1x.png",
+      "canvas": [
+        44,
+        40
+      ],
+      "pivot": [
+        22.023,
+        37.727
+      ],
+      "visual_wh_alpha_gt_12": [
+        38,
+        35
+      ],
+      "visual_wh_alpha_ge_128": [
+        37,
+        34
+      ],
+      "sha256": "6b1399da16342deeec1f9af95e5e0f504e3e6de1fd85bf9dfef95d9e850ecfaa"
+    },
+    "cracked_1x": {
+      "file": "shellback_v1.0_cracked_1x.png",
+      "canvas": [
+        44,
+        40
+      ],
+      "pivot": [
+        22.023,
+        37.727
+      ],
+      "visual_wh_alpha_gt_12": [
+        38,
+        35
+      ],
+      "visual_wh_alpha_ge_128": [
+        37,
+        34
+      ],
+      "sha256": "eec5490b8699a0aa9eef368df978fab8f4458677fd647cdee0457c82108e45f7"
+    },
+    "intact_2x": {
+      "file": "shellback_v1.0_intact_2x.png",
+      "canvas": [
+        87,
+        79
+      ],
+      "pivot": [
+        43.047,
+        74.453
+      ],
+      "visual_wh_alpha_gt_12": [
+        75,
+        69
+      ],
+      "visual_wh_alpha_ge_128": [
+        75,
+        68
+      ],
+      "sha256": "05a21c373558d21eb9d1d104d734eff66294631ad84e222b6833653fa1d6d358"
+    },
+    "cracked_2x": {
+      "file": "shellback_v1.0_cracked_2x.png",
+      "canvas": [
+        87,
+        79
+      ],
+      "pivot": [
+        43.047,
+        74.453
+      ],
+      "visual_wh_alpha_gt_12": [
+        75,
+        69
+      ],
+      "visual_wh_alpha_ge_128": [
+        75,
+        68
+      ],
+      "sha256": "5424dde96f8e174586723fcf6282b50dff9313742c2ef689e4336382b32ecea2"
+    },
+    "intact_4x": {
+      "file": "shellback_v1.0_intact_4x.png",
+      "canvas": [
+        173,
+        157
+      ],
+      "pivot": [
+        85.593,
+        147.954
+      ],
+      "visual_wh_alpha_gt_12": [
+        149,
+        137
+      ],
+      "visual_wh_alpha_ge_128": [
+        147,
+        136
+      ],
+      "sha256": "c703462853aaa35bcae022f87b1b76b9a64572432ed173def09b8c3a4f7a1e9b"
+    },
+    "cracked_4x": {
+      "file": "shellback_v1.0_cracked_4x.png",
+      "canvas": [
+        173,
+        157
+      ],
+      "pivot": [
+        85.593,
+        147.954
+      ],
+      "visual_wh_alpha_gt_12": [
+        149,
+        137
+      ],
+      "visual_wh_alpha_ge_128": [
+        147,
+        135
+      ],
+      "sha256": "2c148721ee3c7beb8434abfe6fa7c2a3546ffc80ee8b118d305bc55b45915a73"
+    }
+  },
+  "native_1x": {
+    "target_height_px": 34,
+    "approx_visual": "~38\u00d735 px (alpha>12) / 37\u00d734 (alpha>=128) on a 44\u00d740 canvas"
+  },
+  "r6_d3_reference_values": {
+    "hp": 2,
+    "collider_px": [
+      34,
+      28
+    ],
+    "patrol_px_per_s": 40,
+    "damaged_state_render": "exists in R6-D3 (owner-stated)",
+    "note": "REFERENCE ONLY \u2014 not authorization to change gameplay. R6-D3 source was NOT available to FORGE; no line citations.",
+    "overhang_vs_34x28_1x_alpha_ge_128": {
+      "left": 1.0,
+      "right": 2.0,
+      "top": 5.7,
+      "assumption": "collider bottom-centre at foot pivot \u2014 UNVERIFIED"
+    }
+  },
+  "crack_overlay_reconstruct_max_err_opaque": 0
+}
