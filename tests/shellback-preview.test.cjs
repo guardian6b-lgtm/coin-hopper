@@ -42,7 +42,7 @@ test('Shellback defaults OFF with byte-identical ordinary and existing opt-in pa
   assert(html.includes('installShellbackS1('));
   assert(!html.includes('installEmberV31(') && !html.includes('installWalkerB1('));
   assert(composeDevelopmentPage({ shellback: true, enabled: true, walker: true }).includes('installRosterPicker('));
-  assert.equal(createHash('sha256').update(raw).digest('hex'), '80ab671de40be1bec752b7e2c080fb1695e46529a5a759e31ffdcd69d6bc3984');
+  assert.equal(createHash('sha256').update(raw).digest('hex'), 'f05b50ab148a7ec4bfa879689640ba36ddf1a1c3935e631a003ba1e529310cdc');
 });
 test('missing or tampered master data leaves the requested page and other feature flags intact', t => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'coinhopper-shellback-s1-'));

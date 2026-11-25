@@ -32,22 +32,13 @@ function installShellbackS1({ width, height, pivot, sprites }) {
       // Reuse the existing defeat squash and timer, with the same foot anchor.
       cx.scale(face * (enemy.dead ? 1.3 : 1), enemy.dead ? 0.3 : 1);
       cx.drawImage(image, -pivot[0], -pivot[1], width, height);
-      // Preserve the shared damage flash and HP indicators around the approved body.
+      // Preserve the shared damage flash around the approved body.
       if (enemy.hitFlash > 0) {
         cx.globalAlpha = 0.65;
         cx.fillStyle = '#fff';
         rr(-enemy.w / 2, -enemy.h, enemy.w, enemy.h, 8);
         cx.fill();
         cx.globalAlpha = 1;
-      }
-      if (!enemy.dead) for (let i = 0; i < enemy.maxHealth; i++) {
-        cx.fillStyle = i < enemy.health ? '#a5f4bf' : '#586078';
-        cx.strokeStyle = '#f0fbff';
-        cx.lineWidth = 1.3;
-        cx.beginPath();
-        cx.arc((i - (enemy.maxHealth - 1) / 2) * 10, -enemy.h - 12, 3.4, 0, 7);
-        cx.fill();
-        cx.stroke();
       }
       cx.restore();
     };

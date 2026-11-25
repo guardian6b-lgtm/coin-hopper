@@ -3,7 +3,7 @@
 
 The shared game already implements Shellback's 2 HP, 34×28 collider, 40 px/s patrol, wall/ledge reversal, 0.3-second hit guard, 0.4-second defeat cleanup and 50-point award. S1 reuses createEnemy, damageEnemy and the existing update loop.
 
-The new, independent --enable-shellback-s1 flag defaults off. It replaces only Shellback's rendered body with the approved Master v1.0 intact/cracked native stills. HP 2 shows intact, HP 1 shows cracked, and defeat holds cracked with the existing runtime squash. No authored death or locomotion animation is available in this pack. HP pips and the existing hit flash remain visible.
+The new, independent --enable-shellback-s1 flag defaults off. It replaces only Shellback's rendered body with the approved Master v1.0 intact/cracked native stills. HP 2 shows intact, HP 1 shows cracked, and defeat holds cracked with the existing runtime squash. No authored death or locomotion animation is available in this pack. R6-S3 removes floating HP dots throughout the game. The existing hit flash remains visible.
 
 ~~~powershell
 node scripts/ember-preview.cjs --enable-shellback-s1 --port 4174
