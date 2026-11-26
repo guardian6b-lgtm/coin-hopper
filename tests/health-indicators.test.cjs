@@ -5,16 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createGame, onFlatGround } = require('./harness.cjs');
-const { composeDevelopmentPage } = require('../scripts/ember-preview.cjs');
-
-async function gameWithArt() {
-  const stub = 'globalThis.Image=class{set src(value){this.naturalWidth=44;this.naturalHeight=40;Promise.resolve().then(()=>this.onload());}decode(){return Promise.resolve();}};';
-  const html = composeDevelopmentPage({ shellback: true }).toString().replace('<script>', () => '<script>' + stub);
-  const game = onFlatGround(createGame({ html }));
-  await new Promise(resolve => setImmediate(resolve));
-  assert.equal(game.eval('shellbackS1.status'), 'ready');
-  return game;
-}
+const { setup: gameWithArt } = require('./shellback-harness.cjs');
 function observeDots(game) {
   game.eval('globalThis.healthMarks=[];cx.arc=(x,y,r)=>{if(r===3.4&&y===-actor.h-12)healthMarks.push([x,y,r]);};');
 }

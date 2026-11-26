@@ -1,0 +1,23 @@
+{
+  "package_sha256": "8894309d6726e99ef7abd58dc2b6c36546d6c5b441969e1cb6ea480488fd5c15",
+  "source_metadata_sha256": "50d2f2497ebabb59d7415581d7518802b4347e8acabe059a055e15088a4568a6",
+  "width": 56,
+  "height": 40,
+  "pivot": [
+    28.0234375,
+    37.7265625
+  ],
+  "frames": 10,
+  "fps": 20.0,
+  "stride": 20.0,
+  "sprites": {
+    "intact": {
+      "file": "shellback_intact_walk_strip_1x_56x40x10.png",
+      "sha256": "232dcaed2f6b85dacccaa929214c82b374275a211a1e5cf5a5d6cbb16d919cb4"
+    },
+    "cracked": {
+      "file": "shellback_cracked_walk_strip_1x_56x40x10.png",
+      "sha256": "1ba4ce85c4cc3c71f2a7bdcbde9d7d2be43ee238b74cc86175f50c89e17434d7"
+    }
+  }
+}

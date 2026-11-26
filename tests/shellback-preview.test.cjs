@@ -6,27 +6,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
-const { createGame, onFlatGround } = require('./harness.cjs');
 const { composeDevelopmentPage } = require('../scripts/ember-preview.cjs');
-const directory = path.resolve(__dirname, '../dev/shellback-s1');
-const files = ['shellback_v1.0_metadata.json', 'shellback_v1.0_intact_1x.png', 'shellback_v1.0_cracked_1x.png'];
-const known = Object.fromEntries(['intact', 'cracked'].map(state => [
-  'data:image/png;base64,' + fs.readFileSync(path.join(directory, 'shellback_v1.0_' + state + '_1x.png')).toString('base64'), state
-]));
-async function setup({ enabled = true, failure = '' } = {}) {
-  const stub = 'const known=' + JSON.stringify(known) + ',failure=' + JSON.stringify(failure) + ';' +
-    'globalThis.Image=class {set src(uri){this.state=known[uri];this.naturalWidth=this.state==="cracked"&&failure==="size"?43:44;this.naturalHeight=40;' +
-    'Promise.resolve().then(()=>this.state==="cracked"&&failure==="load"?this.onerror():this.onload());}' +
-    'decode(){return this.state==="cracked"&&failure==="decode"?Promise.reject(Error("test decode")):Promise.resolve();}};';
-  const page = composeDevelopmentPage({ shellback: enabled }).toString().replace('<script>', () => '<script>' + stub);
-  const game = onFlatGround(createGame({ html: page }));
-  await new Promise(resolve => setImmediate(resolve));
-  game.eval('shields=[];highJumps=[];coreItems=[];globalThis.actor=createEnemy("shellback",300,13*T-28);actor.ground=true;enemies=[actor];');
-  game.eval('globalThis.sample=null;let anchor,scale;cx.translate=(x,y)=>{anchor=[x,y]};cx.scale=(x,y)=>{scale=[x,y]};' +
-    'cx.drawImage=(image,...args)=>{if(image.state)sample={state:image.state,anchor,scale,args}};');
-  return game;
-}
-function paint(game) { game.eval('sample=null;drawEnemy(actor)'); return game.snapshot('sample'); }
+const { setup, paint, directory, files } = require('./shellback-harness.cjs');
 function stomp(game) {
   game.eval('pl.x=actor.x;pl.y=actor.y-pl.h-2;pl.vx=0;pl.vy=200;pl.ground=false;pl.coyote=0;pl.buf=0;jumpEdge=false');
   game.step();
@@ -78,7 +59,7 @@ test('factory and resolved patrol preserve 2 HP, 34×28 and 40 px/s', async () =
   assert.deepEqual(game.snapshot('[actor.health,actor.maxHealth,actor.w,actor.h,actor.vx]'), [2,2,34,28,-40]);
   game.step(12);
   assert(Math.abs(game.eval('actor.x') - 292) < 1e-7);
-  assert.deepEqual(paint(game), { state: 'intact', anchor: game.snapshot('[actor.x+17-cam,actor.y+28]'), scale: [-1,1], args: [-22.023,-37.727,44,40] });
+  assert.deepEqual(paint(game), { state: 'intact', anchor: game.snapshot('[actor.x+17-cam,actor.y+28]'), scale: [-1,1], args: [4*56,0,56,40,-28.0234375,-37.7265625,56,40] });
 });
 for (const face of [-1, 1]) {
   test('first hit selects cracked art at the same foot pivot facing ' + face, async () => {
