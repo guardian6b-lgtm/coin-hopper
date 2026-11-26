@@ -1,0 +1,29 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: always
+    - when: never
+
+stages:
+  - test
+
+coin_hopper_regressions:
+  stage: test
+  image: node:22-alpine
+  timeout: 15m
+  interruptible: true
+  script:
+    - node --version
+    - mkdir -p ci-reports
+    - |
+      set +e
+      node --test > ci-reports/node-tests.tap 2>&1
+      status=$?
+      set -e
+      tail -n 45 ci-reports/node-tests.tap
+      exit "$status"
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths:
+      - ci-reports/node-tests.tap
